@@ -1,0 +1,114 @@
+<title>Atelier des mains LSF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500&display=swap">
+__STYLE__
+<style>
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.presets button{font:inherit;font-size:.85rem;font-weight:700;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
+.presets button:hover{border-color:var(--accent);color:var(--accent)}
+.tabs{grid-template-columns:repeat(4,1fr)}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-weight:700;z-index:1}
+</style>
+
+<div class="app">
+  <section class="stage-wrap">
+    <header class="top">
+      <h1>Atelier des mains <span>LSF</span></h1>
+      <div class="status" id="status"></div>
+    </header>
+    <div class="stage" id="stage">
+      <div class="loading" id="loading">Construction de la main 3D…</div>
+      <div class="tip" id="tip" hidden></div>
+      <div class="over tr"><span class="hint">Tire un doigt pour le plier · clic droit : bloquer · fond : tourner la vue</span></div>
+      <div class="over bl">
+        <button class="btn" data-view="face">Paume (face)</button>
+        <button class="btn" data-view="signeur">Dos (signeur)</button>
+        <button class="btn" data-view="profil">Profil</button>
+        <button class="btn" data-view="dessus">Dessus</button>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <nav class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="doigts">Doigts</button>
+      <button role="tab" aria-selected="false" data-tab="main">Main</button>
+      <button role="tab" aria-selected="false" data-tab="mvt">Mouvement</button>
+      <button role="tab" aria-selected="false" data-tab="lib">Biblio</button>
+    </nav>
+
+    <div class="pane" data-pane="doigts">
+      <div class="howto">
+        <div class="label" style="color:var(--accent)">Mode marionnette</div>
+        <p>Attrape le <b>bout</b> d'un doigt et tire vers la paume : le doigt se replie entier, la phalange du bout pliant un peu moins que celle du milieu, comme une vraie main.</p>
+        <p>Le <b>milieu</b> : base et milieu bougent. La <b>base</b> : le doigt pivote d'un bloc et s'écarte. Les phalanges sont rigides : rien ne s'étire.</p>
+        <p>La main ne peut pas se traverser : un doigt s'arrête sur la paume, sur ses voisins ou sur le pouce, et l'annulaire entraîne un peu ses voisins, comme une vraie main.</p>
+        <p><b>Clic droit</b> sur une phalange : bloque son articulation (cadenas). <kbd>Maj</kbd> + glisser : une seule articulation. Double-clic : doigt tendu.</p>
+      </div>
+      <div><div class="label">Configurations de départ</div></div>
+      <div class="presets" id="presets"></div>
+      <div id="jointBlocks" style="display:flex;flex-direction:column;gap:10px"></div>
+      <div class="actions"><button class="btn" id="unlockAll">Tout débloquer</button></div>
+    </div>
+
+    <div class="pane" data-pane="main" hidden>
+      <div class="howto"><p>Attrape la <b>paume</b> pour tourner la main dans tous les sens. <kbd>Maj</kbd> + paume pour la déplacer.</p></div>
+      <div class="field">
+        <span class="label">Main</span>
+        <div class="seg"><button id="mainD" aria-pressed="true">Droite</button><button id="mainG" aria-pressed="false">Gauche</button></div>
+      </div>
+      <div class="block"><h3>Orientation</h3><div id="orientRows"></div></div>
+      <div class="actions"><button class="btn" id="resetOrient">Remettre la main de face</button></div>
+    </div>
+
+    <div class="pane" data-pane="mvt" hidden>
+      <div class="field">
+        <span class="label">Mode</span>
+        <div class="seg"><button id="modePose" aria-pressed="true">Pose fixe</button><button id="modeMvt" aria-pressed="false">Mouvement</button></div>
+      </div>
+      <div id="mvtOn" hidden style="display:flex;flex-direction:column;gap:14px">
+        <div class="field">
+          <span class="label">La main pleine est</span>
+          <div class="seg"><button class="d" id="editD" aria-pressed="true">Début</button><button id="editF" aria-pressed="false">Fin</button></div>
+          <p class="note">Tu manipules la main pleine ; l'autre extrémité et les étapes restent en fantômes.</p>
+        </div>
+        <div class="actions"><button class="btn" id="copyDF">Copier début → fin</button><button class="btn" id="copyFD">Copier fin → début</button></div>
+        <div class="block"><h3>Décomposition</h3>
+          <div class="row nolock"><label for="etapes">Étapes</label><input type="range" id="etapes" min="1" max="4" step="1" value="2"><output id="etapesOut">2</output></div>
+          <label class="check" style="padding:6px 0"><input type="checkbox" id="fleche" checked> Flèche de trajectoire</label>
+        </div>
+        <button class="btn primary" id="play">▶ Jouer le mouvement</button>
+      </div>
+      <p class="note" id="mvtOff">En mode Mouvement, tu poses une main de début et une main de fin. L'atelier dessine les étapes intermédiaires en fantômes, comme pour « cent » qui glisse sur les zéros.</p>
+    </div>
+
+    <div class="pane" data-pane="lib" hidden>
+      <div class="block" style="padding-bottom:12px">
+        <h3>Enregistrer</h3>
+        <div class="field"><label class="label" for="nom">Nom</label><input id="nom" placeholder="ex. cent" maxlength="80"></div>
+        <div class="field" style="margin-top:8px"><label class="label" for="noteIn">Note (facultatif)</label><input id="noteIn" placeholder="ex. vue élève, glisse vers la droite" maxlength="200"></div>
+        <div class="actions" style="margin-top:10px"><button class="btn primary" id="save">Enregistrer</button></div>
+        <p class="msg" id="saveMsg"></p>
+      </div>
+      <div class="label">Bibliothèque</div>
+      <div class="lib" id="lib"><div class="empty">Chargement de la bibliothèque…</div></div>
+      <div class="block" style="padding-bottom:12px">
+        <h3>Export image</h3>
+        <div class="row nolock"><label for="taille">Taille</label>
+          <select id="taille" style="font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:4px"><option value="1024">1024 px</option><option value="2048" selected>2048 px</option></select><span></span></div>
+        <label class="check" style="padding:6px 0"><input type="checkbox" id="fondBlanc"> Fond blanc (sinon transparent, recadré)</label>
+        <div class="actions"><button class="btn primary" id="export">Exporter en PNG</button></div>
+        <p class="msg" id="exportMsg"></p>
+      </div>
+      <details class="block" style="padding-bottom:10px">
+        <summary class="label" style="cursor:pointer">Échanger en JSON</summary>
+        <div class="field" style="margin-top:8px"><textarea id="json" aria-label="Configuration en JSON"></textarea></div>
+        <div class="actions" style="margin-top:8px"><button class="btn" id="copyJson">Copier l'actuelle</button><button class="btn" id="importJson">Importer</button></div>
+        <p class="msg" id="jsonMsg"></p>
+      </details>
+      <p class="note">La main est construite à partir de tes deux dessins : le dessin paume habille l'avant, le dessin dos l'arrière. Seule la couleur a changé.</p>
+    </div>
+  </aside>
+</div>
+
+<dialog id="imgDlg"><p style="margin:0" class="note">Clic droit ou appui long sur l'image → « Enregistrer l'image ».</p><img id="imgOut" alt="Main exportée"><div class="actions" style="justify-content:flex-end"><button class="btn" id="closeDlg">Fermer</button></div></dialog>
