@@ -6,243 +6,176 @@
 <title>Découvrir le sept</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Playwrite+FR+Moderne:wght@300;400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@700&display=swap">
 <style>
-/* Mise en page : une seule scène pour le TBI — la table de classe à gauche (boîte d'œufs), une page de cahier Seyès à droite (le 7). */
+/* Une seule scène plein écran pour le TBI, sans aucun texte : la table (boîte d'œufs, cubes) à gauche, l'ardoise à droite. */
 :root {
-  --table: #e9eef0;      /* plateau de table, gris-bleu clair */
-  --paper: #fdfdf8;      /* page de cahier */
-  --seyes: #c8c4e8;      /* lignes Seyès violettes */
-  --marge: #e07070;      /* marge rouge */
-  --ink: #1f2c5c;        /* encre bleu nuit */
-  --muted: #6a7390;
-  --cube: #3fa957;       /* cubes verts */
+  --bg: #e6efe8;          /* fond unique, vert très pâle */
+  --ink: #233056;
+  --tile: #ffffff;
+  --tile-line: #cfd9d2;
+  --cube: #3fa957;
   --cube-dark: #23793a;
-  --carton: #cdb28a;     /* boîte à œufs */
+  --carton: #cdb28a;
   --carton-dark: #a98a5f;
   --carton-in: #dcc6a3;
-  --loop: #ec7a2a;       /* le tour de la boîte */
-  --model: #2a63d4;      /* le geste modèle */
-  --start: #2fa35a;
-  --card: #ffffff;
-  --line: #d5d9e6;
+  --loop: #ec7a2a;
+  --wood: #b07a45;
+  --wood-dark: #7c522b;
+  --slate: #2f4a3f;
+  --chalk: #f4f4ec;
+  --angle: #ffd84a;
+  --c1: #ffd23f;           /* craie jaune */
+  --c2: #ff7eb6;           /* craie rose */
+  --c3: #5cc8ff;           /* craie bleue */
   --skin: #f3c9a4;
   --skin-dark: #b98762;
-  --font-ui: "Andika", "Trebuchet MS", system-ui, sans-serif;
-  --font-cursive: "Playwrite FR Moderne", "Segoe Script", "Comic Sans MS", cursive;
+  --font-digit: "Andika", "Trebuchet MS", system-ui, sans-serif;
   color-scheme: light;
 }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  background: var(--table);
-  color: var(--ink);
-  font-family: var(--font-ui);
-  display: flex;
-  flex-direction: column;
-}
-.bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 18px;
-  padding: 10px 16px;
-  background: var(--paper);
-  border-bottom: 2px solid var(--line);
-}
-.steps { display: flex; flex-wrap: wrap; gap: 6px; }
-.step {
-  font: 700 1rem/1 var(--font-ui);
-  color: var(--muted);
-  background: transparent;
-  border: 2px solid var(--line);
-  border-radius: 999px;
-  padding: 8px 14px;
-  cursor: pointer;
-}
-.step b {
-  display: inline-grid; place-items: center;
-  width: 1.4em; height: 1.4em; margin-right: 6px;
-  border-radius: 50%; background: var(--line); color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.step[aria-current="step"] { color: var(--ink); border-color: var(--ink); }
-.step[aria-current="step"] b { background: var(--ink); color: var(--paper); }
-.hint {
-  flex: 1 1 280px; min-width: 0; margin: 0;
-  font-size: 1.15rem; font-weight: 700; text-wrap: balance;
-}
-.tools { display: flex; flex-wrap: wrap; gap: 6px; }
-.btn {
-  font: 700 0.95rem/1 var(--font-ui);
-  color: var(--ink);
-  background: var(--paper);
-  border: 2px solid var(--line);
-  border-radius: 10px;
-  padding: 9px 12px;
-  cursor: pointer;
-}
-.btn:hover { border-color: var(--muted); }
-.btn.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.btn[aria-pressed="true"] { border-color: var(--model); color: var(--model); }
-.btn:focus-visible, .step:focus-visible { outline: 3px solid var(--loop); outline-offset: 2px; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); overflow: hidden; }
+#stage { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; display: block; }
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
-.stage-wrap { flex: 1; min-height: 0; padding: 10px 16px; display: flex; }
-#stage { width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; display: block; }
+.tools { position: fixed; top: calc(8px + env(safe-area-inset-top, 0px)); right: 10px; display: flex; gap: 6px; z-index: 2; }
+.icon {
+  width: 40px; height: 40px; padding: 8px;
+  border: 0; border-radius: 10px;
+  background: rgba(255,255,255,.55); color: var(--ink);
+  cursor: pointer; opacity: .55;
+}
+.icon:hover, .icon:focus-visible { opacity: 1; }
+.icon:focus-visible { outline: 3px solid var(--loop); }
+.icon svg { width: 100%; height: 100%; display: block; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.icon[aria-pressed="false"] .on-only { display: none; }
+.icon[aria-pressed="true"] .off-only { display: none; }
 
 /* SVG */
-.table-bg { fill: var(--table); }
-.cahier { fill: url(#seyes); stroke: var(--line); stroke-width: 2; }
-.seyes-fine { stroke: var(--seyes); stroke-width: 1; opacity: .55; }
-.seyes-bold { stroke: var(--seyes); stroke-width: 1.6; }
-.paper-fill { fill: var(--paper); }
-.marge { stroke: var(--marge); stroke-width: 3; }
 .carton { fill: var(--carton); stroke: var(--carton-dark); stroke-width: 4; }
 .carton-in { fill: var(--carton-in); }
 .cup { fill: var(--carton); stroke: var(--carton-dark); stroke-width: 3; }
-.ridge { fill: var(--carton-dark); opacity: .55; }
-.shadow { fill: var(--ink); opacity: .08; }
+.ridge { fill: var(--carton-dark); opacity: .5; }
 
-.cube { cursor: default; }
-.step2 .cube { cursor: grab; }
-.step3 .cube { opacity: .55; }
-.cube.dragging { cursor: grabbing; }
-.cube { transition: transform .35s cubic-bezier(.3,1.4,.5,1), opacity .6s; }
-.cube.dragging { transition: none; }
+.cube { cursor: grab; transition: transform .35s cubic-bezier(.3,1.4,.5,1); }
+.cube.dragging { cursor: grabbing; transition: none; }
+.cube-inner { transition: transform .3s; }
 .cube-body { fill: var(--cube); stroke: var(--cube-dark); stroke-width: 4; }
 .cube-top { fill: #ffffff; opacity: .28; }
 .cube-stud { fill: var(--cube-dark); opacity: .35; }
 .cube.dragging .cube-body { filter: drop-shadow(0 10px 8px rgba(0,0,0,.25)); }
+.wiggle .cube-inner { animation: wiggle .7s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 90%; }
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0) translateY(0); }
+  20% { transform: rotate(-14deg) translateY(-8px); }
+  45% { transform: rotate(12deg) translateY(-14px); }
+  70% { transform: rotate(-8deg) translateY(-4px); }
+}
 
-.dot { fill: var(--paper); stroke: var(--ink); stroke-width: 3; stroke-dasharray: 8 8; opacity: 0; transition: opacity .6s; }
-.dot-core { fill: var(--ink); opacity: 0; transition: opacity .6s; }
-.show-dots .dot { opacity: .55; }
-.show-dots .dot-core { opacity: .5; }
-
-.ghost { fill: none; stroke: var(--ink); stroke-width: 64; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transition: opacity 1.2s ease; }
-
-.ink { fill: none; stroke: var(--ink); stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; }
 .loop { fill: none; stroke: var(--loop); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; transition: opacity .6s; }
-.loop.ok { stroke-width: 12; }
 .loop.fade { opacity: 0; }
 
-.model { fill: none; stroke: var(--model); stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; opacity: .85; stroke-dasharray: 1; stroke-dashoffset: 1; }
-.tag { opacity: 0; transition: opacity .4s; }
-.tag.on { opacity: 1; }
-.tag-badge { fill: var(--model); }
-.tag-num { fill: #ffffff; font: 700 34px var(--font-ui); text-anchor: middle; dominant-baseline: central; }
-.tag-text { fill: var(--model); font: 700 40px var(--font-ui); text-anchor: middle; }
-.start-dot { fill: var(--start); }
-.start-text { fill: var(--start); font: 700 30px var(--font-ui); text-anchor: middle; }
-.corner-ring { fill: none; stroke: var(--loop); stroke-width: 8; }
-.tag.on .corner-ring { animation: pulse 0.9s ease-out 2; transform-box: fill-box; transform-origin: center; }
-@keyframes pulse { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
-.word-sept { fill: var(--model); font: 400 96px var(--font-cursive); text-anchor: middle; }
-
-.card { opacity: 0; transform: translateY(24px); transition: opacity .5s ease, transform .5s ease; }
-.card.on { opacity: 1; transform: none; }
-.card-bg { fill: var(--card); stroke: var(--line); stroke-width: 3; }
-.card-cap { fill: var(--muted); font: 700 19px var(--font-ui); text-anchor: middle; }
-.digit { fill: var(--ink); font: 700 124px var(--font-ui); text-anchor: middle; }
-.word { fill: var(--ink); font: 400 50px var(--font-cursive); text-anchor: middle; }
+.tile { opacity: 0; transform: translateY(20px) scale(.8); transform-box: fill-box; transform-origin: center; transition: opacity .5s, transform .5s cubic-bezier(.3,1.5,.5,1); }
+.tile.on { opacity: 1; transform: none; }
+.tile-bg { fill: var(--tile); stroke: var(--tile-line); stroke-width: 3; }
+.digit { fill: var(--ink); font: 700 150px var(--font-digit); text-anchor: middle; }
 .die { fill: #ffffff; stroke: var(--ink); stroke-width: 4; }
 .pip { fill: var(--ink); }
 .skin { fill: var(--skin); stroke: var(--skin-dark); stroke-width: 3; }
-.row-label { fill: var(--muted); font: 700 22px var(--font-ui); }
+
+#slate { opacity: 0; transform: translateY(40px); transition: opacity .8s, transform .8s cubic-bezier(.3,1.3,.5,1); pointer-events: none; }
+#slate.on { opacity: 1; transform: none; pointer-events: auto; }
+.frame { fill: var(--wood); stroke: var(--wood-dark); stroke-width: 4; }
+.board { fill: var(--slate); }
+.seven { fill: none; stroke: var(--chalk); stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; }
+#seven { opacity: 0; transition: opacity .8s; }
+#seven.full { filter: drop-shadow(0 0 10px rgba(255,255,255,.45)); }
+.arc { fill: none; stroke: var(--angle); stroke-width: 7; stroke-linecap: round; opacity: 0; transition: opacity .4s; }
+.arc.on { opacity: 1; }
+.pdot { cursor: grab; transition: transform .3s cubic-bezier(.3,1.4,.5,1); }
+.pdot.dragging { transition: none; cursor: grabbing; }
+.pdot circle { fill: var(--chalk); }
+.pdot.set circle { fill: var(--angle); }
+.writing .pdot { pointer-events: none; }
+
+.chalk { cursor: pointer; opacity: 0; transition: opacity .5s, transform .35s cubic-bezier(.3,1.5,.5,1); }
+.chalks-on .chalk { opacity: 1; }
+.chalk.active { transform: translateY(-16px); }
+.chalk-star { opacity: 0; transition: opacity .4s; }
+.chalk.done .chalk-star { opacity: 1; }
+.ink { fill: none; stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; }
+.ink-g { transition: transform .9s cubic-bezier(.4,0,.2,1); }
+
+.slot { fill: #ffffff; fill-opacity: .5; stroke-width: 4; stroke-dasharray: 10 10; opacity: 0; transition: opacity .6s; }
+.chalks-on .slot { opacity: 1; }
+.big-star { fill: var(--angle); stroke: #c79a00; stroke-width: 6; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.big-star.pop { animation: pop 1.6s ease-out; }
+@keyframes pop {
+  0% { opacity: 0; transform: scale(.2) rotate(-30deg); }
+  25% { opacity: 1; transform: scale(1.15) rotate(8deg); }
+  75% { opacity: 1; transform: scale(1) rotate(0); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .cube, .card, .dot, .dot-core, .ghost, .loop, .tag { transition: none; }
-  .tag.on .corner-ring { animation: none; }
+  .cube, .tile, #slate, .pdot, .chalk, .ink-g { transition: none; }
+  .wiggle .cube-inner { animation-duration: 1.6s; }
 }
 </style>
 </head>
 <body>
 
-<header class="bar">
-  <nav class="steps" aria-label="Étapes">
-    <button class="step" data-step="1" aria-current="step"><b>1</b>La boîte de 6</button>
-    <button class="step" data-step="2"><b>2</b>Les cubes du 7</button>
-    <button class="step" data-step="3"><b>3</b>J'écris le 7</button>
-  </nav>
-  <p class="hint" id="hint" aria-live="polite">Entoure la boîte à œufs.</p>
-  <div class="tools">
-    <button class="btn" id="btnShow6" data-for="1">Montrer le 6</button>
-    <button class="btn" id="btnClear" data-for="3">Effacer</button>
-    <button class="btn" id="btnReplay" data-for="3">Voir le geste</button>
-    <button class="btn" id="btnBar" data-for="3" aria-pressed="false">Barre du 7</button>
-    <button class="btn primary" id="btnNext" data-for="1 2">Suivant →</button>
-    <button class="btn" id="btnSound" aria-pressed="true">Son</button>
-    <button class="btn" id="btnFull">Plein écran</button>
-    <button class="btn" id="btnReset">Recommencer</button>
-  </div>
-</header>
+<div class="tools">
+  <button class="icon" id="btnSound" aria-pressed="true" aria-label="Son" title="Son">
+    <svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="on-only" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/><path class="off-only" d="M16 9l5 6M21 9l-5 6"/></svg>
+  </button>
+  <button class="icon" id="btnErase" aria-label="Effacer la craie en cours" title="Effacer la craie en cours">
+    <svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="9" rx="3"/><path d="M7 8v9M3 20h18"/></svg>
+  </button>
+  <button class="icon" id="btnBravo" aria-label="Bravo pour la craie en cours" title="Bravo pour la craie en cours">
+    <svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg>
+  </button>
+  <button class="icon" id="btnFull" aria-label="Plein écran" title="Plein écran">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+  <button class="icon" id="btnReset" aria-label="Recommencer" title="Recommencer">
+    <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v5h5"/></svg>
+  </button>
+</div>
 
-<main class="stage-wrap">
-<svg id="stage" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Une boîte à œufs de 6 cubes verts, un septième cube à côté, et une page de cahier où l'on construit le 7.">
-  <defs>
-    <pattern id="seyes" width="48" height="48" patternUnits="userSpaceOnUse">
-      <rect class="paper-fill" width="48" height="48"/>
-      <path class="seyes-fine" d="M0 12H48M0 24H48M0 36H48"/>
-      <path class="seyes-bold" d="M0 0.5H48M0.5 0V48"/>
-    </pattern>
-  </defs>
+<svg id="stage" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Boîte à œufs, cubes et ardoise pour découvrir le nombre sept">
+  <rect x="-2000" y="-2000" width="5600" height="4900" style="fill: var(--bg)"/>
 
-  <rect class="table-bg" x="0" y="0" width="1600" height="900"/>
+  <g id="tiles"></g>
 
-  <!-- page de cahier -->
-  <rect class="cahier" x="840" y="20" width="740" height="860" rx="10"/>
-  <line class="marge" x1="904" y1="22" x2="904" y2="878"/>
-
-  <!-- boîte à œufs -->
   <g id="box">
-    <rect class="carton" x="80" y="80" width="560" height="320" rx="34"/>
-    <rect class="carton-in" x="96" y="96" width="528" height="288" rx="26"/>
+    <rect class="carton" x="120" y="300" width="500" height="280" rx="32"/>
+    <rect class="carton-in" x="136" y="316" width="468" height="248" rx="24"/>
     <g id="cups"></g>
   </g>
-  <ellipse class="shadow" cx="742" cy="290" rx="54" ry="12"/>
 
-  <!-- représentations -->
-  <g id="cards6"></g>
-  <g id="cards7"></g>
-
-  <!-- le 7 -->
-  <path id="ghost" class="ghost" d="M980 180 H1380 L1150 800"/>
-  <g id="dots"></g>
-
+  <g id="slots"></g>
   <g id="cubes"></g>
 
-  <g id="modelLayer">
-    <path id="m1" class="model" pathLength="1" d="M980 180 H1380"/>
-    <path id="m2" class="model" pathLength="1" d="M1380 180 L1150 800"/>
-    <path id="m3" class="model" pathLength="1" d="M1190 490 H1345"/>
-    <g id="tagStart" class="tag">
-      <circle class="start-dot" cx="980" cy="180" r="16"/>
-      <text class="start-text" x="980" y="112">départ</text>
+  <g id="slate">
+    <rect class="frame" x="830" y="36" width="740" height="760" rx="22"/>
+    <rect class="board" x="852" y="58" width="696" height="716" rx="10"/>
+    <g id="seven">
+      <path class="seven" d="M900 140 V200"/>
+      <path class="seven" d="M900 140 H1175"/>
+      <path class="seven" d="M1145 140 L1000 620"/>
+      <path class="seven" d="M1000 380 H1145"/>
     </g>
-    <g id="tag1" class="tag">
-      <circle class="tag-badge" cx="1180" cy="92" r="28"/>
-      <text class="tag-num" x="1180" y="92">1</text>
-      <text class="tag-text" x="1260" y="102">→</text>
-    </g>
-    <g id="tagCorner" class="tag">
-      <circle class="corner-ring" cx="1380" cy="180" r="44"/>
-      <text class="tag-text" x="1460" y="112">stop !</text>
-    </g>
-    <g id="tag2" class="tag">
-      <circle class="tag-badge" cx="1390" cy="370" r="28"/>
-      <text class="tag-num" x="1390" y="370">2</text>
-      <text class="tag-text" x="1390" y="438">↙</text>
-    </g>
-    <g id="tag3" class="tag">
-      <circle class="tag-badge" cx="1420" cy="490" r="28"/>
-      <text class="tag-num" x="1420" y="490">3</text>
-    </g>
-    <text id="wordSept" class="word-sept tag" x="1440" y="770">sept</text>
+    <g id="arcs"></g>
+    <g id="pdots"></g>
+    <g id="inks"></g>
+    <g id="chalks"></g>
   </g>
 
-  <g id="inkLayer"></g>
+  <g id="bigStarG"><path id="bigStar" class="big-star" d="M0 -90 L26 -30 L90 -26 L40 14 L56 78 L0 44 L-56 78 L-40 14 L-90 -26 L-26 -30 Z"/></g>
+  <g id="loopLayer"></g>
 </svg>
-</main>
+<canvas id="confetti"></canvas>
 
 <script>
 (() => {
@@ -251,6 +184,7 @@ body {
   const svg = $("#stage");
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const WORDS = ["un", "deux", "trois", "quatre", "cinq", "six", "sept"];
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
   function make(tag, attrs = {}, parent) {
     const n = document.createElementNS(NS, tag);
@@ -258,9 +192,9 @@ body {
     if (parent) parent.appendChild(n);
     return n;
   }
-  const sleep = (ms) => new Promise((r) => setTimeout(r, reduceMotion ? Math.min(ms, 200) : ms));
+  const norm = (x, y) => { const l = Math.hypot(x, y); return { x: x / l, y: y / l }; };
 
-  /* ---------- son ---------- */
+  /* ---------- voix ---------- */
   let soundOn = true;
   function say(text) {
     if (!soundOn || !("speechSynthesis" in window)) return;
@@ -271,150 +205,164 @@ body {
       const fr = speechSynthesis.getVoices().find((v) => v.lang && v.lang.startsWith("fr"));
       if (fr) u.voice = fr;
       speechSynthesis.speak(u);
-    } catch (e) { /* pas de voix disponible */ }
+    } catch (e) { /* pas de voix */ }
   }
 
-  /* ---------- boîte et cubes ---------- */
+  /* ---------- géométrie ---------- */
+  const BOX = { x: 120, y: 300, w: 500, h: 280 };
   const CUPS = [];
-  for (const y of [168, 312]) for (const x of [184, 360, 536]) CUPS.push({ x, y });
-  const OUTSIDE = { x: 742, y: 240 };
-  const cupsG = $("#cups");
-  CUPS.forEach((c) => make("ellipse", { class: "cup", cx: c.x, cy: c.y + 6, rx: 74, ry: 62 }, cupsG));
-  [[272, 240], [448, 240]].forEach(([x, y]) => make("circle", { class: "ridge", cx: x, cy: y, r: 12 }, cupsG));
-
-  const DOTS = [
-    { x: 980, y: 180 }, { x: 1180, y: 180 }, { x: 1380, y: 180 },
-    { x: 1322.5, y: 335 }, { x: 1265, y: 490 }, { x: 1207.5, y: 645 }, { x: 1150, y: 800 },
+  for (const y of [372, 508]) for (const x of [205, 370, 535]) CUPS.push({ x, y });
+  const SCATTER = [
+    { x: 150, y: 700, r: -18 }, { x: 310, y: 800, r: 24 }, { x: 460, y: 690, r: -8 },
+    { x: 620, y: 790, r: 32 }, { x: 735, y: 650, r: -26 }, { x: 740, y: 430, r: 14 }, { x: 770, y: 250, r: 20 },
   ];
-  const dotsG = $("#dots");
-  DOTS.forEach((d) => {
-    make("circle", { class: "dot", cx: d.x, cy: d.y, r: 48 }, dotsG);
-    make("circle", { class: "dot-core", cx: d.x, cy: d.y, r: 9 }, dotsG);
+
+  // Le 7 de l'ardoise : petite attaque à gauche, barre du haut, descente, barre du milieu.
+  const A = { x: 900, y: 140 }, B = { x: 1145, y: 140 }, C = { x: 1000, y: 620 }, X = { x: 1072.5, y: 380 };
+  const DOWN = norm(C.x - B.x, C.y - B.y), UP = { x: -DOWN.x, y: -DOWN.y };
+  const L = { x: -1, y: 0 }, R = { x: 1, y: 0 }, D = { x: 0, y: 1 };
+  const ANGLES = [
+    { v: A, u1: R, u2: D },
+    { v: B, u1: L, u2: DOWN },
+    { v: B, u1: R, u2: DOWN },
+    { v: X, u1: L, u2: UP },
+    { v: X, u1: R, u2: UP },
+    { v: X, u1: R, u2: DOWN },
+    { v: X, u1: L, u2: DOWN },
+  ].map((a) => {
+    const b = norm(a.u1.x + a.u2.x, a.u1.y + a.u2.y);
+    return { ...a, t: { x: a.v.x + b.x * 46, y: a.v.y + b.y * 46 } };
   });
+  const SEGS_REQUIRED = [[{ x: 900, y: 140 }, { x: 1175, y: 140 }], [B, C]];
+  const SEGS_ALLOWED = SEGS_REQUIRED.concat([[{ x: 900, y: 140 }, { x: 900, y: 200 }], [{ x: 1000, y: 380 }, { x: 1145, y: 380 }]]);
+  const MODEL_BOX = { x: 900, y: 140, w: 275, h: 480 };
+  const BOARD = { x: 852, y: 58, w: 696, h: 716 };
 
-  const cubesG = $("#cubes");
-  const cubes = [];
-  function buildCube(home) {
-    const g = make("g", { class: "cube" }, cubesG);
-    make("rect", { class: "cube-body", x: -42, y: -42, width: 84, height: 84, rx: 12 }, g);
-    make("rect", { class: "cube-top", x: -32, y: -34, width: 64, height: 16, rx: 8 }, g);
-    make("circle", { class: "cube-stud", cx: 0, cy: 6, r: 14 }, g);
-    const c = { el: g, home, x: home.x, y: home.y, dot: null };
-    g._cube = c;
-    cubes.push(c);
-    place(c, home.x, home.y);
-    return c;
-  }
-  function place(c, x, y) {
-    c.x = x; c.y = y;
-    c.el.style.transform = `translate(${x}px, ${y}px)`;
-  }
-  CUPS.forEach((c) => buildCube(c));
-  buildCube(OUTSIDE);
+  const COLORS = ["--c1", "--c2", "--c3"];
+  const CHALKS = [{ x: 1250 }, { x: 1360 }, { x: 1470 }];
+  const SLOTS = [{ x: 90, y: 640 }, { x: 330, y: 640 }, { x: 570, y: 640 }];
+  const SLOT_W = 200, SLOT_H = 230;
 
-  /* ---------- cartes de représentation ---------- */
+  /* ---------- décor statique ---------- */
+  const cupsG = $("#cups");
+  CUPS.forEach((c) => make("ellipse", { class: "cup", cx: c.x, cy: c.y + 6, rx: 70, ry: 58 }, cupsG));
+  [[288, 440], [452, 440]].forEach(([x, y]) => make("circle", { class: "ridge", cx: x, cy: y, r: 11 }, cupsG));
+
+  function arcPath(a, r) {
+    const p1 = { x: a.v.x + a.u1.x * r, y: a.v.y + a.u1.y * r };
+    const p2 = { x: a.v.x + a.u2.x * r, y: a.v.y + a.u2.y * r };
+    const cross = a.u1.x * a.u2.y - a.u1.y * a.u2.x;
+    return `M${p1.x} ${p1.y} A${r} ${r} 0 0 ${cross > 0 ? 1 : 0} ${p2.x} ${p2.y}`;
+  }
+  const arcEls = ANGLES.map((a) => make("path", { class: "arc", d: arcPath(a, 30) }, $("#arcs")));
+
+  // représentations du 6
   function hand(parent, count, tx, ty, s) {
-    // count : nombre de doigts levés (1 = index, 2 = index + majeur, 5 = main ouverte)
     const g = make("g", { transform: `translate(${tx} ${ty}) scale(${s})` }, parent);
-    const fingers = [
-      { x: 20, top: 18 }, { x: 37, top: 8 }, { x: 54, top: 16 }, { x: 70, top: 32 },
-    ];
+    const fingers = [{ x: 20, top: 18 }, { x: 37, top: 8 }, { x: 54, top: 16 }, { x: 70, top: 32 }];
     const thumbUp = count >= 5;
     if (thumbUp) make("rect", { class: "skin", x: -2, y: 62, width: 17, height: 50, rx: 8, transform: "rotate(-32 18 108)" }, g);
     fingers.forEach((f, i) => {
-      const up = i < Math.min(count, 4);
-      const top = up ? f.top : 64;
+      const top = i < Math.min(count, 4) ? f.top : 64;
       make("rect", { class: "skin", x: f.x, y: top, width: 15, height: 88 - top, rx: 7.5 }, g);
     });
     make("rect", { class: "skin", x: 16, y: 74, width: 72, height: 68, rx: 22 }, g);
     if (!thumbUp) make("rect", { class: "skin", x: 24, y: 96, width: 44, height: 16, rx: 8 }, g);
-    return g;
   }
-  function die(parent, x, y, size, n) {
-    make("rect", { class: "die", x, y, width: size, height: size, rx: size * 0.16 }, parent);
-    const a = size * 0.26, b = size * 0.5, c = size * 0.74, r = size * 0.085;
-    const P = {
-      1: [[b, b]],
-      6: [[a, a], [c, a], [a, b], [c, b], [a, c], [c, c]],
-    }[n];
-    P.forEach(([px, py]) => make("circle", { class: "pip", cx: x + px, cy: y + py, r }, parent));
-  }
-  function miniCube(parent, x, y, s) {
-    make("rect", { class: "cube-body", x: x - s / 2, y: y - s / 2, width: s, height: s, rx: s * 0.15, "stroke-width": 2 }, parent);
-  }
-  function card(parent, i, rowY, caption, draw) {
-    const x = 26 + i * 160;
-    const g = make("g", { class: "card" }, parent);
-    g.style.transitionDelay = `${i * 0.35}s`;
-    const inner = make("g", { transform: `translate(${x} ${rowY})` }, g);
-    make("rect", { class: "card-bg", x: 0, y: 0, width: 148, height: 196, rx: 18 }, inner);
+  const tilesG = $("#tiles");
+  const TILE_W = 150, TILE_H = 190, TILE_Y = 60;
+  function tile(i, draw) {
+    const g = make("g", { class: "tile" }, tilesG);
+    g.style.transitionDelay = `${i * 0.6}s`;
+    const inner = make("g", { transform: `translate(${50 + i * (TILE_W + 18)} ${TILE_Y})` }, g);
+    make("rect", { class: "tile-bg", x: 0, y: 0, width: TILE_W, height: TILE_H, rx: 20 }, inner);
     draw(inner);
-    const cap = make("text", { class: "card-cap", x: 74, y: 182 }, inner);
-    cap.textContent = caption;
-    return g;
   }
-  function text(parent, cls, x, y, t) {
-    const n = make("text", { class: cls, x, y }, parent);
-    n.textContent = t;
-    return n;
-  }
+  tile(0, (g) => { const t = make("text", { class: "digit", x: 75, y: 148 }, g); t.textContent = "6"; });
+  tile(1, (g) => {
+    make("rect", { class: "die", x: 20, y: 40, width: 110, height: 110, rx: 18 }, g);
+    for (const px of [48, 102]) for (const py of [66, 95, 124]) make("circle", { class: "pip", cx: px, cy: py, r: 10 }, g);
+  });
+  tile(2, (g) => { for (let k = 0; k < 6; k++) make("circle", { class: "pip", cx: 22 + k * 21.2, cy: 95, r: 9 }, g); });
+  tile(3, (g) => { hand(g, 5, 4, 26, 0.72); hand(g, 1, 76, 26, 0.72); });
 
-  const cards6 = $("#cards6"), cards7 = $("#cards7");
-  const ROW6 = 440, ROW7 = 670;
-  card(cards6, 0, ROW6, "le chiffre", (g) => text(g, "digit", 74, 136, "6"));
-  card(cards6, 1, ROW6, "le mot", (g) => text(g, "word", 74, 108, "six"));
-  card(cards6, 2, ROW6, "le dé", (g) => die(g, 22, 26, 104, 6));
-  card(cards6, 3, ROW6, "les doigts", (g) => { hand(g, 5, 2, 18, 0.7); hand(g, 1, 74, 18, 0.7); });
-
-  card(cards7, 0, ROW7, "le chiffre", (g) => text(g, "digit", 74, 136, "7"));
-  card(cards7, 1, ROW7, "le mot", (g) => text(g, "word", 74, 108, "sept"));
-  card(cards7, 2, ROW7, "les dés", (g) => { die(g, 8, 56, 66, 6); die(g, 84, 61, 56, 1); });
-  card(cards7, 3, ROW7, "les doigts", (g) => { hand(g, 5, 2, 18, 0.7); hand(g, 2, 74, 18, 0.7); });
-
-  // 5e carte : 6 et encore 1
-  card(cards7, 4, ROW7, "6 et encore 1", (g) => {
-    make("rect", { class: "carton", x: 8, y: 58, width: 90, height: 64, rx: 12, "stroke-width": 2 }, g);
-    for (let r = 0; r < 2; r++) for (let c = 0; c < 3; c++) miniCube(g, 26 + c * 27, 76 + r * 28, 20);
-    miniCube(g, 122, 90, 20);
+  const slotsG = $("#slots");
+  SLOTS.forEach((s, i) => {
+    const r = make("rect", { class: "slot", x: s.x, y: s.y, width: SLOT_W, height: SLOT_H, rx: 20 }, slotsG);
+    r.style.stroke = `var(${COLORS[i]})`;
   });
 
-  /* ---------- étapes ---------- */
-  let step = 1;
-  const hint = $("#hint");
-  const HINTS = {
-    1: "Entoure la boîte à œufs.",
-    2: "Prends chaque cube et pose-le sur un point.",
-    3: "Écris le 7 : relie les cubes avec le doigt ou la souris.",
-  };
-  function setHint(t) { hint.textContent = t; }
+  const chalksG = $("#chalks");
+  const chalkEls = CHALKS.map((c, i) => {
+    const g = make("g", { class: "chalk" }, chalksG);
+    g.dataset.i = i;
+    make("rect", { x: c.x - 44, y: 800, width: 88, height: 30, rx: 12, style: `fill: var(${COLORS[i]}); stroke: rgba(0,0,0,.25); stroke-width: 3` }, g);
+    make("rect", { x: c.x - 54, y: 790, width: 108, height: 54, style: "fill: transparent" }, g); // zone de toucher
+    make("path", { class: "chalk-star", d: "M0 -16 L5 -5 L16 -4 L8 4 L10 15 L0 9 L-10 15 L-8 4 L-16 -4 L-5 -5 Z", transform: `translate(${c.x} 866)`, style: `fill: var(${COLORS[i]}); stroke: rgba(0,0,0,.3); stroke-width: 2` }, g);
+    return g;
+  });
 
-  function goStep(n) {
-    step = n;
-    document.body.classList.toggle("step2", n === 2);
-    document.body.classList.toggle("step3", n === 3);
-    document.querySelectorAll(".step").forEach((b) => {
-      if (Number(b.dataset.step) === n) b.setAttribute("aria-current", "step");
-      else b.removeAttribute("aria-current");
+  /* ---------- état ---------- */
+  let phase, cubes, pdots, inkGroups, current, done, evalTimer, wiggleTimer, busy, dotsBefore;
+  const cubesG = $("#cubes"), pdotsG = $("#pdots"), inksG = $("#inks"), loopLayer = $("#loopLayer");
+
+  function placeEl(o, x, y) { o.x = x; o.y = y; o.el.style.transform = `translate(${x}px, ${y}px)`; }
+
+  function init() {
+    phase = "fill"; current = 0; done = [false, false, false]; busy = false; dotsBefore = 0;
+    clearTimeout(evalTimer); clearTimeout(wiggleTimer);
+    cubesG.replaceChildren(); pdotsG.replaceChildren(); inksG.replaceChildren(); loopLayer.replaceChildren();
+    document.querySelectorAll(".tile").forEach((t) => t.classList.remove("on"));
+    $("#slate").classList.remove("on", "writing");
+    svg.classList.remove("chalks-on");
+    $("#seven").style.opacity = 0; $("#seven").classList.remove("full");
+    arcEls.forEach((a) => a.classList.remove("on"));
+    chalkEls.forEach((c) => c.classList.remove("active", "done"));
+
+    cubes = SCATTER.map((s) => {
+      const g = make("g", { class: "cube" }, cubesG);
+      const inner = make("g", { class: "cube-inner" }, g);
+      make("rect", { class: "cube-body", x: -40, y: -40, width: 80, height: 80, rx: 12 }, inner);
+      make("rect", { class: "cube-top", x: -30, y: -32, width: 60, height: 15, rx: 7 }, inner);
+      make("circle", { class: "cube-stud", cx: 0, cy: 6, r: 13 }, inner);
+      inner.style.transform = `rotate(${s.r}deg)`;
+      const c = { el: g, inner, x: 0, y: 0, cup: null };
+      g._obj = c;
+      placeEl(c, s.x, s.y);
+      return c;
     });
-    document.querySelectorAll("[data-for]").forEach((b) => {
-      b.hidden = !b.dataset.for.split(" ").includes(String(n));
+
+    pdots = WORDS.map((_, i) => {
+      const g = make("g", { class: "pdot" }, pdotsG);
+      make("circle", { r: 16 }, g);
+      const home = { x: 1250 + (i % 4) * 70, y: 600 + Math.floor(i / 4) * 70 };
+      const d = { el: g, home, x: 0, y: 0, angle: null };
+      g._obj = d;
+      placeEl(d, home.x, home.y);
+      return d;
     });
-    setHint(HINTS[n]);
-    svg.classList.toggle("show-dots", n >= 2);
-    if (n >= 2) fadeLoop();
-    if (n !== 3) { stopTrace(); }
+
+    inkGroups = COLORS.map((col) => {
+      const g = make("g", { class: "ink-g" }, inksG);
+      g.style.stroke = `var(${col})`;
+      return g;
+    });
   }
 
-  /* ---------- étape 1 : entourer la boîte ---------- */
-  let shown6 = false;
-  function show6() {
-    if (shown6) return;
-    shown6 = true;
-    cards6.querySelectorAll(".card").forEach((c) => c.classList.add("on"));
-    say("six");
-    setHint("La boîte, c'est 6. Et le cube qui est dehors ?");
+  /* ---------- étape 1 : remplir la boîte ---------- */
+  function filled() { return cubes.filter((c) => c.cup !== null).length; }
+  function nearestFreeCup(c) {
+    let best = -1, bestD = 95;
+    CUPS.forEach((p, i) => {
+      if (cubes.some((o) => o !== c && o.cup === i)) return;
+      const d = Math.hypot(p.x - c.x, p.y - c.y);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    return best;
   }
-  function pointInPoly(p, poly) {
+
+  /* ---------- entourer ---------- */
+  function inPoly(p, poly) {
     let inside = false;
     for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
       const a = poly[i], b = poly[j];
@@ -422,125 +370,222 @@ body {
     }
     return inside;
   }
-  function encloses(points) {
-    if (points.length < 12) return false;
-    const corners = [{ x: 130, y: 130 }, { x: 590, y: 130 }, { x: 130, y: 350 }, { x: 590, y: 350 }];
-    if (!pointInPoly({ x: 360, y: 240 }, points)) return false;
-    return corners.filter((c) => pointInPoly(c, points)).length >= 3;
+  function enclosesBox(pts) {
+    if (pts.length < 12) return false;
+    const m = 30;
+    const corners = [
+      { x: BOX.x + m, y: BOX.y + m }, { x: BOX.x + BOX.w - m, y: BOX.y + m },
+      { x: BOX.x + m, y: BOX.y + BOX.h - m }, { x: BOX.x + BOX.w - m, y: BOX.y + BOX.h - m },
+    ];
+    return inPoly({ x: BOX.x + BOX.w / 2, y: BOX.y + BOX.h / 2 }, pts) && corners.filter((c) => inPoly(c, pts)).length >= 3;
   }
-  let loopEl = null;
-  function fadeLoop() {
-    if (!loopEl) return;
-    const l = loopEl; loopEl = null;
-    l.classList.add("fade");
-    setTimeout(() => l.remove(), 700);
+  function fadeLoop(el, delay = 0) {
+    setTimeout(() => { el.classList.add("fade"); setTimeout(() => el.remove(), 700); }, delay);
   }
 
-  /* ---------- étape 2 : placer les cubes ---------- */
-  let placedBefore = 0, autoNext = null;
-  function placedCount() { return cubes.filter((c) => c.dot !== null).length; }
-  function updatePlaced() {
-    const n = placedCount();
-    // le 7 apparaît très légèrement, un peu plus à chaque cube posé
-    $("#ghost").style.opacity = n === 0 ? 0 : (0.03 + n * 0.028).toFixed(3);
-    if (n > placedBefore) say(WORDS[n - 1]);
-    placedBefore = n;
-    clearTimeout(autoNext);
-    if (n === 7 && step === 2) {
-      setHint("Sept cubes ! 6 et encore 1.");
-      autoNext = setTimeout(() => { if (placedCount() === 7 && step === 2) goStep(3); }, 2200);
-    } else if (step === 2 && n > 0) {
-      setHint(`${HINTS[2]}`);
-    }
+  function showSix() {
+    phase = "six";
+    document.querySelectorAll(".tile").forEach((t) => t.classList.add("on"));
+    say("six");
+    // puis le cube resté dehors se met à gigoter
+    wiggleTimer = setTimeout(() => {
+      cubes.filter((c) => c.cup === null).forEach((c) => c.el.classList.add("wiggle"));
+    }, 3400);
   }
-  function nearestFreeDot(c) {
-    let best = -1, bestD = 110;
-    DOTS.forEach((d, i) => {
-      if (cubes.some((o) => o !== c && o.dot === i)) return;
-      const dist = Math.hypot(d.x - c.x, d.y - c.y);
+
+  function showSlate() {
+    phase = "slate";
+    clearTimeout(wiggleTimer);
+    cubes.forEach((c) => c.el.classList.remove("wiggle"));
+    $("#slate").classList.add("on");
+  }
+
+  /* ---------- étape 2 : les points dans les angles ---------- */
+  function nearestFreeAngle(d) {
+    let best = -1, bestD = 60;
+    ANGLES.forEach((a, i) => {
+      if (pdots.some((o) => o !== d && o.angle === i)) return;
+      const dist = Math.hypot(a.t.x - d.x, a.t.y - d.y);
       if (dist < bestD) { bestD = dist; best = i; }
     });
     return best;
   }
-
-  /* ---------- étape 3 : le geste du 7 ---------- */
-  let withBar = false, traceId = 0, autoTrace = null;
-  const m1 = $("#m1"), m2 = $("#m2"), m3 = $("#m3");
-  const tags = ["#tagStart", "#tag1", "#tagCorner", "#tag2", "#tag3", "#wordSept"].map($);
-  function resetPath(p) {
-    p.style.transition = "none";
-    p.style.strokeDashoffset = 1;
-    p.getBoundingClientRect();
-  }
-  function drawPath(p, ms) {
-    p.style.transition = `stroke-dashoffset ${reduceMotion ? 0 : ms}ms ease-in-out`;
-    p.style.strokeDashoffset = 0;
-  }
-  function stopTrace() {
-    traceId++;
-    clearTimeout(autoTrace);
-    [m1, m2, m3].forEach(resetPath);
-    tags.forEach((t) => t.classList.remove("on"));
-  }
-  async function playTrace() {
-    stopTrace();
-    const id = traceId;
-    const alive = () => id === traceId;
-    $("#tagStart").classList.add("on");
-    say("Je pars en haut, à gauche.");
-    await sleep(1400); if (!alive()) return;
-    $("#tag1").classList.add("on");
-    say("Je trace un trait vers la droite.");
-    drawPath(m1, 1600);
-    await sleep(1900); if (!alive()) return;
-    $("#tagCorner").classList.add("on");
-    say("Je m'arrête.");
-    await sleep(1300); if (!alive()) return;
-    $("#tag2").classList.add("on");
-    say("Et je descends en biais.");
-    drawPath(m2, 1900);
-    await sleep(2300); if (!alive()) return;
-    if (withBar) {
-      $("#tag3").classList.add("on");
-      say("Je fais la petite barre.");
-      drawPath(m3, 900);
-      await sleep(1400); if (!alive()) return;
+  function updateDots() {
+    const n = pdots.filter((d) => d.angle !== null).length;
+    arcEls.forEach((a, i) => a.classList.toggle("on", pdots.some((d) => d.angle === i)));
+    const seven = $("#seven");
+    // plus il y a de points, plus le 7 apparaît
+    seven.style.opacity = n === 0 ? 0 : n === 7 ? 1 : (0.06 + n * 0.1).toFixed(2);
+    if (n > dotsBefore) say(WORDS[n - 1]);
+    dotsBefore = n;
+    if (n === 7 && phase === "slate") {
+      seven.classList.add("full");
+      phase = "write";
+      setTimeout(() => {
+        $("#slate").classList.add("writing");
+        svg.classList.add("chalks-on");
+        selectChalk(0);
+      }, 1200);
     }
-    $("#wordSept").classList.add("on");
-    say("Ça fait sept !");
-    setHint("Ça fait bien 7 : sept.");
-    await sleep(900); if (!alive()) return;
-    cards7.querySelectorAll(".card").forEach((c) => c.classList.add("on"));
+  }
+
+  /* ---------- étape 3 : écrire le 7 ---------- */
+  function selectChalk(i) {
+    current = i;
+    chalkEls.forEach((c, k) => c.classList.toggle("active", k === i));
+  }
+  function nextChalk() {
+    const k = done.findIndex((d) => !d);
+    if (k >= 0) selectChalk(k); else chalkEls.forEach((c) => c.classList.remove("active"));
+  }
+
+  function distSeg(p, a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)));
+    return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+  }
+  function inkPoints(g) {
+    const pts = [];
+    g.querySelectorAll("path").forEach((p) => pts.push(...p._pts));
+    return pts;
+  }
+  // Reconnaissance tolérante : le tracé de l'enfant est ramené à la taille du modèle,
+  // puis on vérifie que la barre du haut et la descente sont là, sans trait en trop.
+  function looksLikeSeven(pts) {
+    if (pts.length < 10) return false;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    pts.forEach((p) => { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); });
+    const w = x1 - x0, h = y1 - y0;
+    if (h < 120 || w / h < 0.28 || w / h > 1.4) return false;
+    const np = pts.map((p) => ({ x: (p.x - x0) / w, y: (p.y - y0) / h }));
+    const nm = (p) => ({ x: (p.x - MODEL_BOX.x) / MODEL_BOX.w, y: (p.y - MODEL_BOX.y) / MODEL_BOX.h });
+    const req = SEGS_REQUIRED.map(([a, b]) => [nm(a), nm(b)]);
+    const all = SEGS_ALLOWED.map(([a, b]) => [nm(a), nm(b)]);
+    const TOL = 0.17;
+    let covered = 0, total = 0;
+    req.forEach(([a, b]) => {
+      for (let t = 0; t <= 1.0001; t += 0.05) {
+        const s = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+        total++;
+        if (np.some((p) => Math.hypot(p.x - s.x, p.y - s.y) < TOL)) covered++;
+      }
+    });
+    const precise = np.filter((p) => all.some(([a, b]) => distSeg(p, a, b) < TOL)).length;
+    return covered / total >= 0.8 && precise / np.length >= 0.82;
+  }
+
+  function evaluate() {
+    if (phase !== "write" || busy || done[current]) return;
+    if (looksLikeSeven(inkPoints(inkGroups[current]))) bravo();
+  }
+
+  function bravo() {
+    if (busy || done[current]) return;
+    busy = true;
+    const i = current;
+    const g = inkGroups[i];
+    let center = { x: 1200, y: 400 };
+    const hasInk = g.childNodes.length > 0;
+    if (hasInk) { const b = g.getBBox(); center = { x: b.x + b.width / 2, y: b.y + b.height / 2 }; }
+    const last = done.filter(Boolean).length === 2;
+    say(last ? "Bravo ! Bravo à tous !" : "Bravo !");
+    starPop(center);
+    confetti(center, css(COLORS[i]), last ? 1.6 : 1);
+    done[i] = true;
+    chalkEls[i].classList.add("done");
+    setTimeout(() => {
+      if (hasInk) {
+        // le 7 de l'enfant va se ranger dans sa case, à gauche
+        const b = g.getBBox();
+        const s = Math.min((SLOT_W - 50) / b.width, (SLOT_H - 50) / b.height, 1);
+        const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+        const tx = SLOTS[i].x + SLOT_W / 2 - s * cx, ty = SLOTS[i].y + SLOT_H / 2 - s * cy;
+        g.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+      }
+      busy = false;
+      nextChalk();
+      if (done.every(Boolean)) setTimeout(() => confetti({ x: 800, y: 250 }, null, 3), 900);
+    }, 1900);
+  }
+
+  function starPop(p) {
+    $("#bigStarG").setAttribute("transform", `translate(${p.x} ${p.y})`);
+    const s = $("#bigStar");
+    s.classList.remove("pop");
+    void s.getBoundingClientRect();
+    s.classList.add("pop");
+  }
+
+  /* ---------- confettis ---------- */
+  const cv = $("#confetti"), ctx = cv.getContext("2d");
+  let parts = [], raf = null;
+  function confetti(p, color, power) {
+    const r = svg.getBoundingClientRect();
+    const k = Math.min(r.width / 1600, r.height / 900);
+    const ox = r.left + (r.width - 1600 * k) / 2, oy = r.top + (r.height - 900 * k) / 2;
+    const sx = ox + p.x * k, sy = oy + p.y * k;
+    const palette = [css("--c1"), css("--c2"), css("--c3"), css("--cube"), css("--loop"), "#ffffff"];
+    const n = Math.round((reduceMotion ? 40 : 160) * power);
+    for (let j = 0; j < n; j++) {
+      const a = Math.random() * Math.PI * 2, v = (4 + Math.random() * 10) * Math.sqrt(power);
+      parts.push({
+        x: sx, y: sy, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 7,
+        w: 8 + Math.random() * 8, h: 5 + Math.random() * 6, rot: Math.random() * 6, vr: (Math.random() - .5) * .4,
+        c: color && Math.random() < .5 ? color : palette[j % palette.length], life: 0,
+      });
+    }
+    if (!raf) raf = requestAnimationFrame(tick);
+  }
+  function tick() {
+    cv.width = innerWidth * devicePixelRatio; cv.height = innerHeight * devicePixelRatio;
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    parts.forEach((q) => {
+      q.vy += 0.32; q.vx *= 0.99; q.x += q.vx; q.y += q.vy; q.rot += q.vr; q.life++;
+      ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.rot);
+      ctx.fillStyle = q.c; ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h * Math.abs(Math.cos(q.life / 6)) + 1);
+      ctx.restore();
+    });
+    parts = parts.filter((q) => q.y < innerHeight + 40 && q.life < 400);
+    if (parts.length) raf = requestAnimationFrame(tick);
+    else { ctx.clearRect(0, 0, cv.width, cv.height); raf = null; }
   }
 
   /* ---------- souris / doigt ---------- */
-  const inkLayer = $("#inkLayer");
   function toSvg(e) {
     const pt = svg.createSVGPoint();
     pt.x = e.clientX; pt.y = e.clientY;
     return pt.matrixTransform(svg.getScreenCTM().inverse());
   }
-  let mode = null, stroke = null, drag = null;
+  const onBoard = (p) => p.x > BOARD.x && p.x < BOARD.x + BOARD.w && p.y > BOARD.y && p.y < BOARD.y + BOARD.h;
+  let mode = null, drag = null, stroke = null;
 
   svg.addEventListener("pointerdown", (e) => {
     const p = toSvg(e);
-    if (step === 2) {
-      const g = e.target.closest(".cube");
-      if (!g) return;
-      const c = g._cube;
-      cubesG.appendChild(g);
-      g.classList.add("dragging");
-      c.dot = null;
-      drag = { c, dx: p.x - c.x, dy: p.y - c.y };
+    const chalk = e.target.closest(".chalk");
+    const pdot = e.target.closest(".pdot");
+    const cube = e.target.closest(".cube");
+    if (chalk && phase === "write") { selectChalk(Number(chalk.dataset.i)); return; }
+
+    if ((pdot && phase === "slate") || (cube && (phase === "fill" || phase === "six"))) {
+      const obj = (pdot || cube)._obj;
+      obj.el.parentNode.appendChild(obj.el);
+      obj.el.classList.add("dragging");
+      if (cube) { obj.cup = null; obj.inner.style.transform = "rotate(0deg)"; obj.el.classList.remove("wiggle"); }
+      else { obj.angle = null; obj.el.classList.remove("set"); }
+      drag = { obj, dx: p.x - obj.x, dy: p.y - obj.y, kind: pdot ? "dot" : "cube" };
       mode = "drag";
-    } else {
-      if (step === 3) { stopTrace(); }
-      const cls = step === 1 ? "loop" : "ink";
-      if (step === 1) { if (loopEl) loopEl.remove(); }
-      stroke = { pts: [{ x: p.x, y: p.y }], el: make("path", { class: cls, d: `M${p.x} ${p.y}` }, inkLayer) };
-      if (step === 1) loopEl = stroke.el;
+    } else if (phase === "write" && onBoard(p) && !busy && !done[current]) {
+      clearTimeout(evalTimer);
+      const path = make("path", { class: "ink", d: `M${p.x} ${p.y}` }, inkGroups[current]);
+      path._pts = [{ x: p.x, y: p.y }];
+      stroke = { el: path, pts: path._pts, kind: "ink" };
       mode = "draw";
-    }
+    } else if (phase === "fill" || phase === "six") {
+      const path = make("path", { class: "loop", d: `M${p.x} ${p.y}` }, loopLayer);
+      stroke = { el: path, pts: [{ x: p.x, y: p.y }], kind: "loop" };
+      mode = "draw";
+    } else return;
+
     svg.setPointerCapture(e.pointerId);
     e.preventDefault();
   });
@@ -549,8 +594,8 @@ body {
     if (!mode) return;
     const p = toSvg(e);
     if (mode === "drag") {
-      place(drag.c, p.x - drag.dx, p.y - drag.dy);
-    } else if (mode === "draw") {
+      placeEl(drag.obj, p.x - drag.dx, p.y - drag.dy);
+    } else {
       const last = stroke.pts[stroke.pts.length - 1];
       if (Math.hypot(p.x - last.x, p.y - last.y) < 3) return;
       stroke.pts.push({ x: p.x, y: p.y });
@@ -560,28 +605,38 @@ body {
 
   function endPointer() {
     if (mode === "drag") {
-      const c = drag.c;
-      c.el.classList.remove("dragging");
-      const i = nearestFreeDot(c);
-      if (i >= 0) { c.dot = i; place(c, DOTS[i].x, DOTS[i].y); }
-      else place(c, c.home.x, c.home.y);
+      const o = drag.obj;
+      o.el.classList.remove("dragging");
+      if (drag.kind === "cube") {
+        const before = filled();
+        const i = nearestFreeCup(o);
+        if (i >= 0) { o.cup = i; placeEl(o, CUPS[i].x, CUPS[i].y); }
+        const n = filled();
+        if (n > before) say(WORDS[n - 1]);
+        if (phase === "six" && o.cup === null && n === 6) setTimeout(() => o.el.classList.add("wiggle"), 600);
+      } else {
+        const i = nearestFreeAngle(o);
+        if (i >= 0) { o.angle = i; o.el.classList.add("set"); placeEl(o, ANGLES[i].t.x, ANGLES[i].t.y); }
+        else placeEl(o, o.home.x, o.home.y);
+        updateDots();
+      }
       drag = null;
-      updatePlaced();
     } else if (mode === "draw") {
-      if (step === 1) {
-        const el = stroke.el;
-        if (encloses(stroke.pts)) {
+      if (stroke.kind === "loop") {
+        const el = stroke.el, pts = stroke.pts;
+        const box = enclosesBox(pts);
+        const loose = cubes.filter((c) => c.cup === null);
+        if (phase === "fill" && box && filled() === 6) {
           el.setAttribute("d", el.getAttribute("d") + " Z");
-          el.classList.add("ok");
-          show6();
-        } else {
-          setHint("Fais bien tout le tour de la boîte.");
-          el.classList.add("fade");
-          setTimeout(() => { el.remove(); if (loopEl === el) loopEl = null; }, 700);
-        }
-      } else if (step === 3) {
-        clearTimeout(autoTrace);
-        autoTrace = setTimeout(playTrace, 1500);
+          showSix();
+          fadeLoop(el, 2500);
+        } else if (phase === "six" && box && filled() === 6 && loose.length && loose.every((c) => inPoly(c, pts))) {
+          el.setAttribute("d", el.getAttribute("d") + " Z");
+          showSlate();
+          fadeLoop(el, 1500);
+        } else fadeLoop(el, 200);
+      } else {
+        evalTimer = setTimeout(evaluate, 1200);
       }
       stroke = null;
     }
@@ -590,47 +645,27 @@ body {
   svg.addEventListener("pointerup", endPointer);
   svg.addEventListener("pointercancel", endPointer);
 
-  /* ---------- boutons ---------- */
-  document.querySelectorAll(".step").forEach((b) => b.addEventListener("click", () => goStep(Number(b.dataset.step))));
-  $("#btnShow6").addEventListener("click", show6);
-  $("#btnNext").addEventListener("click", () => goStep(Math.min(3, step + 1)));
-  $("#btnReplay").addEventListener("click", playTrace);
-  $("#btnClear").addEventListener("click", () => {
-    stopTrace();
-    inkLayer.querySelectorAll(".ink").forEach((n) => n.remove());
-    setHint(HINTS[3]);
-  });
-  $("#btnBar").addEventListener("click", (e) => {
-    withBar = !withBar;
-    e.currentTarget.setAttribute("aria-pressed", String(withBar));
-  });
+  /* ---------- outils ---------- */
   $("#btnSound").addEventListener("click", (e) => {
     soundOn = !soundOn;
     e.currentTarget.setAttribute("aria-pressed", String(soundOn));
-    e.currentTarget.textContent = soundOn ? "Son" : "Son coupé";
     if (!soundOn && "speechSynthesis" in window) speechSynthesis.cancel();
   });
+  $("#btnErase").addEventListener("click", () => {
+    if (phase !== "write" || busy || done[current]) return;
+    clearTimeout(evalTimer);
+    inkGroups[current].replaceChildren();
+  });
+  $("#btnBravo").addEventListener("click", () => { if (phase === "write") bravo(); });
   $("#btnFull").addEventListener("click", () => {
-    const d = document;
     try {
-      if (d.fullscreenElement) d.exitFullscreen();
-      else d.documentElement.requestFullscreen().catch(() => {});
-    } catch (e) { /* plein écran indisponible */ }
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(() => {});
+    } catch (e) { /* indisponible */ }
   });
-  $("#btnReset").addEventListener("click", () => {
-    stopTrace();
-    clearTimeout(autoNext);
-    inkLayer.replaceChildren();
-    loopEl = null;
-    shown6 = false;
-    document.querySelectorAll(".card").forEach((c) => c.classList.remove("on"));
-    cubes.forEach((c) => { c.dot = null; place(c, c.home.x, c.home.y); });
-    placedBefore = 0;
-    $("#ghost").style.opacity = 0;
-    goStep(1);
-  });
+  $("#btnReset").addEventListener("click", init);
 
-  goStep(1);
+  init();
 })();
 </script>
 </body>
