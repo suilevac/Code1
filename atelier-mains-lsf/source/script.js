@@ -522,13 +522,19 @@ const GRAB={doigt:[{mcp:1},{mcp:.85,pip:1},{mcp:.85,pip:1,dip:.7}],pouce:[{av:1}
 const LOCKJ={doigt:[['mcp','ab'],['pip'],['dip']],pouce:[['av','rap','mcp'],['ip']]};
 const locked=(k,n)=>LOCKJ[typ(k)].some((g,gi)=>g.includes(n)&&S.locks[k][gi]);
 let drag=null;
-function grabAxes(p,s,shift){
-  const k=s.k,t=typ(k),axes=[],j=main.joints[k];
+// glisser le long du doigt = plier ; glisser de côté = écarter / serrer contre les voisins (depuis n'importe quelle phalange)
+// Alt + glisser : les quatre doigts ensemble (plier, écarter en éventail ou serrer)
+const FAN={index:1,majeur:.15,annulaire:-.6,auriculaire:-1.2};
+function grabAxes(p,s,shift,group){
+  const k=s.k,t=typ(k),axes=[],j=main.joints[k];group=group&&k!=='pouce';
   let set=GRAB[t][s.g];
   if(shift){set={};LOCKJ[t][s.g].forEach(n=>{if(n!=='ab'&&n!=='rap')set[n]=1})}
   const js=Object.keys(set).filter(n=>shift||!locked(k,n));
-  if(js.length){const st=js.map(n=>p.f[k][n]);axes.push({flex:true,set:c=>js.forEach((n,i)=>p.f[k][n]=st[i]+c*set[n])})}
-  if(s.g===0&&!S.locks[k][0]){const n=t==='pouce'?'rap':'ab',st=p.f[k][n];axes.push({set:c=>p.f[k][n]=st+c})}
+  const ks=group?FING.filter(f=>f===k||!S.locks[f].some(Boolean)):[k];
+  if(js.length){const st=ks.map(f=>js.map(n=>p.f[f][n]));axes.push({flex:true,set:c=>ks.forEach((f,fi)=>js.forEach((n,i)=>p.f[f][n]=st[fi][i]+c*set[n]))})}
+  if(!shift&&!S.locks[k][0]){const n=t==='pouce'?'rap':'ab';
+    if(group){const st=ks.map(f=>p.f[f].ab),sg=Math.sign(FAN[k])||1;axes.push({set:c=>ks.forEach((f,fi)=>p.f[f].ab=st[fi]+c*FAN[f]*sg)})}
+    else{const st=p.f[k][n];axes.push({set:c=>p.f[k][n]=st+c})}}
   const end=()=>wp(j[s.g+1]||j.tip),base=wp(j[0]);
   const snap=clone(p.f);
   axes.forEach(a=>{p.f=clone(snap);applyPose(main,p);const w0=end(),e0=scr(w0);a.set(3);applyPose(main,p);const w1=end(),e1=scr(w1);p.f=clone(snap);applyPose(main,p);
@@ -540,7 +546,7 @@ function grabAxes(p,s,shift){
 stage.addEventListener('pointerdown',e=>{
   if(e.target!==cv||e.button===2||playing)return;const s=pick(e);if(!s)return;
   e.stopPropagation();e.preventDefault();const p=editable();
-  drag={s,x0:e.clientX,y0:e.clientY,start:clone(p),shift:e.shiftKey,ok:clone(p.f)};if(s.k!==null)drag.axes=grabAxes(p,s,e.shiftKey);
+  drag={s,x0:e.clientX,y0:e.clientY,start:clone(p),shift:e.shiftKey,ok:clone(p.f)};if(s.k!==null)drag.axes=grabAxes(p,s,e.shiftKey,e.altKey);drag.group=e.altKey;
   controls.enabled=false;cv.style.cursor='grabbing';
 },true);
 let pending=null;
@@ -559,7 +565,7 @@ function onDrag(e){
     if(A.length===1){const d=A[0].dir,l=d.lengthSq();A[0].set(l>.01?(d.x*dx+d.y*dy)/l:0)}
     else if(A.length===2){const a=A[0].dir,b=A[1].dir,lam=.02,aa=a.dot(a)+lam,bb=b.dot(b)+lam,ab=a.dot(b),am=a.x*dx+a.y*dy,bm=b.x*dx+b.y*dy,det=aa*bb-ab*ab;
       A[0].set((bb*am-ab*bm)/det);A[1].set((aa*bm-ab*am)/det)}
-    constrain(p,drag.s.k);
+    constrain(p,drag.group?null:drag.s.k);
     p.f=solve(drag.ok,p.f);drag.ok=clone(p.f);
   }
   syncSliders();render3D();showTip(e,label(drag.s));
@@ -671,7 +677,7 @@ function cropAlpha(src){const c=document.createElement('canvas');c.width=src.wid
   if(x1<0)return c;const pad=Math.round(c.width*.02);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(c.width,x1+pad);y1=Math.min(c.height,y1+pad);
   const o=document.createElement('canvas');o.width=x1-x0;o.height=y1-y0;o.getContext('2d').drawImage(c,x0,y0,o.width,o.height,0,0,o.width,o.height);return o}
 
-window.__atelier={setPron:v=>{PRON=v;main.skin.key=''},S,refresh,main,camera,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll};
+window.__atelier={setPron:v=>{PRON=v;main.skin.key=''},S,refresh,main,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll};
 refresh();
 })();
 </script>

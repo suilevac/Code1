@@ -431,6 +431,16 @@ mesh8 = {'uv': base64.b64encode(np.round(UV8 * 4).astype(np.int16).tobytes()).de
          'chain': {k: [list(map(float, p)) for p in chain8[k]] for k in chain8}, 'jz': jointZ}
 print('peau v8 : sommets', nV, 'triangles', len(ff))
 
+# ongles : sur une vraie main, l'ongle est bordé de peau (replis latéraux) et ne touche pas la tranche du doigt.
+# Dans le dessin dos il touche le contour : en 3D, la tranche le coupait net (« ongle fendu »). On le termine avant la tranche.
+nailm = (DA[..., :3].mean(-1) > .55) & mask
+halo = ndimage.binary_dilation(nailm, iterations=2) & mask
+skin_ok = mask & ~halo
+_, (sy_, sx_) = ndimage.distance_transform_edt(~skin_ok, return_indices=True)
+skinfill = DA[sy_, sx_, :3]
+keep = np.clip((np.where(M8, d8, 0) - 11) / 3, 0, 1)[..., None]          # 0 près de la tranche, 1 à l'intérieur
+DA[..., :3] = np.where(halo[..., None], skinfill * (1 - keep) + DA[..., :3] * keep, DA[..., :3])
+
 def png_b64(arr):
     img = Image.fromarray((np.clip(arr, 0, 1) * 255).round().astype(np.uint8), 'RGBA')
     b = io.BytesIO(); img.save(b, 'PNG', optimize=True); return 'data:image/png;base64,' + base64.b64encode(b.getvalue()).decode()
