@@ -194,6 +194,10 @@ const NT=MINDEX.count/3,MIDF=new Float32Array(9*NT);
 for(let t=0;t<NT;t++){const a=MPRT[MINDEX.array[3*t]],b=MPRT[MINDEX.array[3*t+1]],c=MPRT[MINDEX.array[3*t+2]],pp=(a===b||a===c)?a:(b===c?b:Math.min(a,b,c));
   for(let j=0;j<3;j++){MIDF[9*t+3*j]=pp/8;MIDF[9*t+3*j+1]=pp===1?0:1}}
 const MIDFA=new THREE.BufferAttribute(MIDF,3);
+// racines des doigts et du pouce sans « col » (gorge + bourrelet du volume du dessin) : déplacement en z, appliqué
+// progressivement dès que la pose quitte celle du dessin (le dessin au repos reste exact au pixel près)
+const MDZ=new Float32Array(MN);if(MS.dz){const d=b64arr(MS.dz,Int16Array);for(let i=0;i<MN;i++)MDZ[i]=d[i]/MS.q/SC}
+let MRNZC=null;const rootBlend=f=>{const d0=PRESETS['Dessin'].f;let m=0;for(const k in d0)for(const a in d0[k])m=Math.max(m,Math.abs((f[k][a]||0)-d0[k][a]));return smooth(0,12,m)};
 let MRNZ=null;const SKIN_ID=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
 
 /* ======================================================================
@@ -202,7 +206,24 @@ let MRNZ=null;const SKIN_ID=new THREE.MeshBasicMaterial({vertexColors:true,side:
 const scene=new THREE.Scene();
 const ID={paume:1,pouce:2,index:3,majeur:4,annulaire:5,auriculaire:6};
 const idMats={};for(const k in ID)idMats[k]=new THREE.MeshBasicMaterial({color:new THREE.Color(ID[k]/8,k==='paume'?0:1,0),side:THREE.DoubleSide});
-const hullMatProto=()=>new THREE.MeshBasicMaterial({color:0x111111,side:THREE.BackSide,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:4});
+/* coque du contour. Hors pose du dessin (main entière seulement), elle s'efface là où elle ne fait que ressortir d'un pli
+   (fente noire en dents de scie) : fragment de coque à moins de « push » devant la peau qu'il recouvre (profondeur lue dans
+   la passe identité), loin de la silhouette (pas de fond à moins d'une épaisseur de trait), et quand la peau
+   recouverte est la même partie ou la paume sous un doigt (racine). Le vrai contour garde tout son poids : silhouette,
+   partie qui passe devant une autre (pouce sur la paume ou l'éminence, doigt sur doigt, pouce et doigt). */
+const HULL_VS=`attribute float part;varying float vP;varying float vZ;void main(){vP=part;vec4 mv=modelViewMatrix*vec4(position,1.);vZ=-mv.z;gl_Position=projectionMatrix*mv;}`;
+const HULL_FS=`uniform float opacity;uniform float push;uniform float rw;uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 res;uniform float cn;uniform float cf;varying float vP;varying float vZ;
+  float L(vec2 uv){float z=texture2D(tDepth,uv).r*2.-1.;return 2.*cn*cf/(cf+cn-z*(cf-cn));}
+  void main(){if(push>0.){vec2 uv=gl_FragCoord.xy/res;vec4 c=texture2D(tId,uv);
+    if(c.a>.5){float ds=L(uv),pb=floor(c.r*8.+.5),ph=floor(vP+.5);
+      bool real=pb!=ph&&!((pb<1.5||ph<1.5)&&pb!=2.&&ph!=2.);
+      if(!real&&ds-vZ<push){float R=rw/ds;bool edge=false;
+        for(int i=0;i<8;i++){float a=float(i)*.7853982;if(texture2D(tId,uv+vec2(cos(a),sin(a))*R/res).a<.5){edge=true;break;}}
+        if(!edge)discard;}}}
+    gl_FragColor=vec4(.067,.067,.067,opacity);}`;
+const hullMatProto=()=>new THREE.ShaderMaterial({uniforms:{opacity:{value:1},push:{value:0},rw:{value:1},tId:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2(1,1)},cn:{value:.5},cf:{value:500}},
+  vertexShader:HULL_VS,fragmentShader:HULL_FS,side:THREE.BackSide,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:4});
+const HPUSH=1.8;   // recul de la coque (× épaisseur du contour)
 function makeHand(skeletonOnly){
   const root=new THREE.Group(),mats=[],chainMats={},hullMat=hullMatProto(),meshes=[];mats.push(hullMat);
   const addSkin=(geos,key)=>{const f=skinMat(false),b=skinMat(true);mats.push(f,b);chainMats[key]=[f,b];if(key==='paume')[f,b].forEach(m=>m.side=THREE.DoubleSide);
@@ -213,12 +234,15 @@ function makeHand(skeletonOnly){
     const f=skinMat(false);mats.push(f);skinMats=[f];
     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));g.setAttribute('uv',MUVA);
     g.setAttribute('part',MPARTA);g.setAttribute('color',MIDC);g.setIndex(MINDEX);
-    g.computeVertexNormals();if(!MRNZ){MRNZ=new Float32Array(MN);const nn=g.attributes.normal.array;for(let i=0;i<MN;i++)MRNZ[i]=nn[3*i+2]}g.setAttribute('rnz',new THREE.BufferAttribute(MRNZ,1));
-    const hg=new THREE.BufferGeometry();hg.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));hg.setIndex(MINDEX);
+    g.computeVertexNormals();if(!MRNZ){MRNZ=new Float32Array(MN);const nn=g.attributes.normal.array;for(let i=0;i<MN;i++)MRNZ[i]=nn[3*i+2];
+      const gc=new THREE.BufferGeometry(),pc=MREST.slice();for(let i=0;i<MN;i++)pc[3*i+2]+=MDZ[i];gc.setAttribute('position',new THREE.BufferAttribute(pc,3));gc.setIndex(MINDEX);
+      gc.computeVertexNormals();MRNZC=new Float32Array(MN);const nc=gc.attributes.normal.array;for(let i=0;i<MN;i++)MRNZC[i]=nc[3*i+2]}
+    g.setAttribute('rnz',new THREE.BufferAttribute(MRNZ.slice(),1));
+    const hg=new THREE.BufferGeometry();hg.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));hg.setAttribute('part',MPARTA);hg.setIndex(MINDEX);
     const me=new THREE.Mesh(g,f),mh=new THREE.Mesh(hg,hullMat);me.frustumCulled=mh.frustumCulled=false;
     me.userData={hull:false,idMat:SKIN_ID};mh.userData={hull:true};root.add(me,mh);meshes.push(me,mh);
     const idg=new THREE.BufferGeometry();idg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9*NT),3));idg.setAttribute('color',MIDFA);
-    const idm=new THREE.Mesh(idg,SKIN_ID);idm.visible=false;idm.frustumCulled=false;root.add(idm);skin={g,hg,idg,idm,key:''};
+    const idm=new THREE.Mesh(idg,SKIN_ID);idm.visible=false;idm.frustumCulled=false;root.add(idm);skin={g,hg,idg,idm,key:'',hm:hullMat,gR:0};
   }
   const joints={};
   ALL.forEach(k=>{
@@ -354,20 +378,24 @@ function arcApply(S,tau,h,p){ // p : [x,y,z] modifié sur place
   p[0]=C.x+ox+r[0];p[1]=C.y+oy+r[1];p[2]=C.z+oz+r[2];
 }
 function dqApply(b,s,p){ // base du pouce : mélange (paume, métacarpien) par quaternions duaux, part s du métacarpien
-  if(s<=0)return;const R0=s*b.r[0],R1=s*b.r[1],R2=s*b.r[2],R3=1-s+s*b.r[3],n=Math.hypot(R0,R1,R2,R3);
+  // signes (essai C) : le métacarpien est ramené dans l'hémisphère de l'identité (boneDQ1 : w ≥ 0), donc aligné sur l'os
+  // principal du sommet quel qu'il soit : le mélange prend toujours le court chemin (pas de peau retournée)
+  if(s<=0)return;if(b.r[3]<0)b={r:b.r.map(x=>-x),d:b.d.map(x=>-x)};const R0=s*b.r[0],R1=s*b.r[1],R2=s*b.r[2],R3=1-s+s*b.r[3],n=Math.hypot(R0,R1,R2,R3);
   const x=R0/n,y=R1/n,z=R2/n,w=R3/n,dx=s*b.d[0]/n,dy=s*b.d[1]/n,dz=s*b.d[2]/n,dw=s*b.d[3]/n;
   const tx=2*(-dw*x+dx*w-dy*z+dz*y),ty=2*(-dw*y+dx*z+dy*w-dz*x),tz=2*(-dw*z-dx*y+dy*x+dz*w),px=p[0],py=p[1],pz=p[2];
   const ix=w*px+y*pz-z*py,iy=w*py+z*px-x*pz,iz=w*pz+x*py-y*px,iw=-x*px-y*py-z*pz;
   p[0]=ix*w+iw*-x+iy*-z-iz*-y+tx;p[1]=iy*w+iw*-y+iz*-x-ix*-z+ty;p[2]=iz*w+iw*-z+ix*-y-iy*-x+tz;
 }
-function skinMesh(h,key){
+function skinMesh(h,key,f){
   const S_=h.skin;if(S_.key===key)return;S_.key=key;
+  const gR=f?rootBlend(f):0;
+  if(gR!==S_.gR){S_.gR=gR;const rz=S_.g.attributes.rnz;for(let i=0;i<MN;i++)rz.array[i]=MRNZ[i]+(MRNZC[i]-MRNZ[i])*gR;rz.needsUpdate=true}
   _inv.copy(h.root.matrixWorld).invert();
   const ST={};CHN.forEach(k=>ST[k]=ARCJ[k].map((J,j)=>arcState(J,h.joints[k][j].quaternion)));
   const BC=boneDQ1(h,h.joints.cmc,CMC),pa=S_.g.attributes.position.array,p=[0,0,0],K=1/65535;
-  pa.set(MREST);
+  pa.set(MREST);if(gR)for(let i=0;i<MN;i++)pa[3*i+2]+=gR*MDZ[i];   // racines sans col (voir MDZ)
   for(let i=0;i<MN;i++){const c1=ACH[2*i];if(!c1)continue;
-    const o=3*i,c2=ACH[2*i+1],x0=MREST[o],y0=MREST[o+1],z0=MREST[o+2];let dx=0,dy=0,dz=0;
+    const o=3*i,c2=ACH[2*i+1],x0=MREST[o],y0=MREST[o+1],z0=pa[o+2];let dx=0,dy=0,dz=0;
     for(let c=0;c<2;c++){const ch=c?c2:c1;if(!ch)continue;const S=ST[CHN[ch-1]],sh=ASH[2*i+c]*K;p[0]=x0;p[1]=y0;p[2]=z0;
       if(c===0){const ta=ATA[2*i]*K,tb=ATA[2*i+1]*K;
         if(ch===1){arcApply(S[1],tb,AH1[o+1],p);arcApply(S[0],ta,AH1[o],p);dqApply(BC,sh,p)}
@@ -385,7 +413,7 @@ function applyPose(h,p,light){
   setJoints(h,p);
   if(light){h.root.updateMatrixWorld(true);return}
   h.root.quaternion.fromArray(p.q);h.root.position.fromArray(p.pos);h.root.scale.x=S.gauche?-1:1;h.root.updateMatrixWorld(true);
-  skinMesh(h,JSON.stringify(p.f));
+  skinMesh(h,JSON.stringify(p.f),p.f);
 }
 function setLook(h,op){h.mats.forEach(m=>{if(m.uniforms)m.uniforms.opacity.value=op;else m.opacity=op;m.transparent=op<1;m.depthWrite=op>=1})}
 function lerpF(a,b,t){const o=clone(a);for(const k in o)for(const j in o[k])o[k][j]=a[k][j]+(b[k][j]-a[k][j])*t;return o}
@@ -509,7 +537,9 @@ function renderAll(){
   renderer.setRenderTarget(idRT);renderer.setClearColor(0,0);renderer.clear();renderer.render(scene,camera);renderer.setRenderTarget(null);
   main.skin.idm.visible=false;hidden.forEach(o=>o.visible=true);
   renderer.setClearColor(cc,ca);
-  // 2. image normale, 3. traits intérieurs par-dessus
+  // 2. image normale (coque de la main entière : voir hullMatProto), 3. traits intérieurs par-dessus
+  const hu=main.skin.hm.uniforms;hu.push.value=HPUSH*main.skin.gR*HULL/SC;hu.tId.value=idRT.texture;hu.tDepth.value=idRT.depthTexture;
+  hu.res.value.set(size.x,size.y);hu.cn.value=camera.near;hu.cf.value=camera.far;hu.rw.value=1.5*HULL/SC*size.y/(2*Math.tan(camera.fov*Math.PI/360));
   renderer.render(scene,camera);
   edgeMat.uniforms.tId.value=idRT.texture;edgeMat.uniforms.tDepth.value=idRT.depthTexture;edgeMat.uniforms.texel.value.set(1/size.x,1/size.y);
   edgeMat.uniforms.rad.value=1.6*renderer.getPixelRatio();edgeMat.uniforms.cn.value=camera.near;edgeMat.uniforms.cf.value=camera.far;
@@ -722,7 +752,7 @@ function cropAlpha(src){const c=document.createElement('canvas');c.width=src.wid
   if(x1<0)return c;const pad=Math.round(c.width*.02);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(c.width,x1+pad);y1=Math.min(c.height,y1+pad);
   const o=document.createElement('canvas');o.width=x1-x0;o.height=y1-y0;o.getContext('2d').drawImage(c,x0,y0,o.width,o.height,0,0,o.width,o.height);return o}
 
-window.__atelier={setPron:v=>{PRON=v;main.skin.key=''},S,refresh,main,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll};
+window.__atelier={renderer,setPron:v=>{PRON=v;main.skin.key=''},S,refresh,main,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll};
 refresh();
 })();
 </script>

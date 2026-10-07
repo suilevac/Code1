@@ -492,6 +492,43 @@ mesh8 = {'uv': base64.b64encode(np.round(UV8 * 4).astype(np.int16).tobytes()).de
          'nFront': nFront, 'bi': base64.b64encode(order.astype(np.uint8).tobytes()).decode(), 'bw': base64.b64encode(w8.astype(np.uint8).tobytes()).decode(),
          'part': base64.b64encode(part8.tobytes()).decode(), 'bones': BONES,
          'chain': {k: [list(map(float, p)) for p in chain8[k]] for k in chain8}, 'jz': jointZ, 'arc': arc8}
+# --- racine des doigts sans « col » (essai A) : le volume ci-dessus a, à la racine de chaque doigt et du pouce, une gorge
+# (la nappe de la paume s'arrondit à zéro au bord du doigt) puis un bourrelet (la demi-largeur locale y vaut celle de
+# la paume). Profil corrigé : épaisseur du doigt plafonnée à sa vraie demi-largeur, paume qui la rejoint sans gorge.
+# Exporté comme déplacement en z (dz) appliqué dès que la main quitte la pose du dessin (au repos : dessin exact).
+own8 = owner.astype(str); locC = loc.copy()
+def hw_from(k, s, base):
+    out = np.full(len(s), segw0(k) if k != 'pouce' else float(wT)); S0 = base
+    for g in segs[k]:
+        ts = np.array(g['ts']); w = (np.array(g['wl']) + np.array(g['wr'])) / 2
+        m = (s >= S0) & (s <= S0 + ts[-1]); out[m] = np.interp(s[m] - S0, ts, w); S0 += g['len'] if not g['tip'] else ts[-1]
+    return out
+for k in FINGS + ['pouce']:
+    yy, xx = np.nonzero(np.char.startswith(own8, k + '.') & M8)
+    s_, _ = polyproj(np.stack([xx, yy], 1).astype(float), chain8[k])
+    hw = hw_from(k, s_, DEEP8[k] if k != 'pouce' else csT[1])
+    locC[yy, xx] = np.minimum(loc[yy, xx], 1.06 * hw + 1)
+locC = np.maximum(loc - ndimage.gaussian_filter(loc - locC, 3) * (M8 & finger), 2)   # adoucit la retouche sans toucher au reste
+fFc = DF8 * locC * circ8(d8 / locC); fBc = (DB8 - (DB8 - DBT8) * tipf) * locC * circ8(d8 / locC)
+_, (fy, fx) = ndimage.distance_transform_edt(~finger, return_indices=True)
+hfPc = np.minimum((52 * (1 - wr_) + 88 * wr_ + 18 * gauss(675, 650, 75) + 10 * gauss(365, 640, 60) - 12 * gauss(500, 560, 85)) * circ8(d8 / Rr), fFc[fy, fx] + .55 * dist_cut)
+hbPc = np.minimum((46 * (1 - wr_) + 84 * wr_ + 8 * gauss(500, 420, 140)) * circ8(d8 / Rr), fBc[fy, fx] + .55 * dist_cut)
+front8c = np.where(M8, wfin * fFc + (1 - wfin) * hfPc, front8); back8c = np.where(M8, wfin * fBc + (1 - wfin) * hbPc, back8)
+# seulement autour des racines (doigts et pouce) : ailleurs le volume du dessin ne change pas
+near_root = np.clip(1 - (dist_cut - 30) / 30, 0, 1)
+# l'intervalle [-arrière, avant] du dessin est envoyé sur celui du profil corrigé (interpolation bilinéaire à la position
+# exacte du sommet), puis le déplacement est lissé sur le maillage (pas de bruit sur les flancs raides de l'ancienne gorge)
+smp = lambda A: ndimage.map_coordinates(A, [V8[:, 1], V8[:, 0]], order=1, mode='nearest')
+fv, bv, fc, bc = smp(front8), smp(back8), smp(front8c), smp(back8c)
+zz = V8[:, 2]; ok8 = (fv + bv > 4) & (fc + bc > 4)
+DZ8 = np.where(ok8, -bc + (zz + bv) * (fc + bc) / np.maximum(fv + bv, 1e-3) - zz, 0) * smp(near_root)
+# pouce : côté dos seulement (jointure de la MCP sans cran). Côté paume, combler la gorge entre le pouce et l'éminence
+# effaçait l'écart de profondeur qui fait le contour du pouce posé devant la paume (trait effiloché)
+nearT = np.clip(1 - (ndimage.distance_transform_edt(~np.char.startswith(own8, 'pouce.')) - 30) / 30, 0, 1)
+DZ8 *= 1 - smp(nearT) * sstep(-8, 8, zz - (fv - bv) / 2)
+for _ in range(12): DZ8 = .5 * DZ8 + .5 * (Ln @ DZ8)
+mesh8['dz'] = base64.b64encode(np.round(DZ8 * 4).astype(np.int16).tobytes()).decode()
+print('racines : |dz| max %.1f, sommets %d' % (np.abs(DZ8).max(), int((np.abs(DZ8) > .5).sum())))
 print('peau v8 : sommets', nV, 'triangles', len(ff))
 
 # ongles : sur une vraie main, l'ongle est bordé de peau (replis latéraux) et ne touche pas la tranche du doigt.
