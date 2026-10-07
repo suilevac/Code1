@@ -318,18 +318,63 @@ function boneDQ1(h,g,J){
   if(q.w<0){q.x=-q.x;q.y=-q.y;q.z=-q.z;q.w=-q.w}
   return {r:[q.x,q.y,q.z,q.w],d:[.5*(t.x*q.w+t.y*q.z-t.z*q.y),.5*(-t.x*q.z+t.y*q.w+t.z*q.x),.5*(t.x*q.y-t.y*q.x+t.z*q.w),-.5*(t.x*q.x+t.y*q.y+t.z*q.z)]};
 }
+/* ---------- déformeur en arc aux articulations charnières (MCP, IPP, IPD ; MCP et IP du pouce) ----------
+   Dans la zone d'une articulation, la section d'abscisse tau (0 = début de zone, 1 = fin) tourne de tau·θ autour
+   d'un centre Q(tau) qui glisse : chaque fibre de peau devient un arc de cercle (rayon jamais négatif côté paume :
+   pas de repli, pas de fente noire, pas de creux), et en fin de zone la section rejoint exactement l'os distal
+   (Q = centre de l'articulation). Q - C = h·[(tau-1)·u + (tau·g(tau·θ) - g(θ))·f], g(x) = 2/x - cot(x/2),
+   u = axe du doigt, f = côté de la flexion, h = demi-largeur de zone (grande côté paume, petite côté dos).
+   Chaque chaîne (pouce, doigt) ajoute son déplacement ; la base du pouce (trapézo-métacarpienne) reste en quaternions duaux. */
+const ARC=MS.arc,ACH=b64arr(ARC.c,Uint8Array),AHM=b64arr(ARC.hm,Uint8Array),ASH=b64arr(ARC.s,Uint16Array),ATA=b64arr(ARC.t,Uint16Array),CHN=['pouce',...FING];
+const ARCJ={};CHN.forEach(k=>ARCJ[k]=ARC.joints[k].map((p,j)=>{
+  const C=k==='pouce'?toM(HD.chains.pouce[j][0],HD.chains.pouce[j][1],HD.mesh.jz.pouce[j+1]):(j===0?MCPJ(k):toM(HD.chains[k][j][0],HD.chains[k][j][1],HD.mesh.jz[k][j]));
+  return {C,u:new THREE.Vector3(...p.u),f0:new THREE.Vector3(...p.f),rp:p.rp/SC,rd:p.rd/SC,hp:p.hp/SC,hd:p.hd/SC,kf:p.kf}}));
+// demi-largeur de zone de chaque sommet (selon sa profondeur côté paume / côté dos) : chaîne principale (3 art.), MCP de la 2e
+const AH1=new Float32Array(3*MN),AH2=new Float32Array(MN);
+{const hOf=(J,o)=>{const d=(MREST[o]-J.C.x)*J.f0.x+(MREST[o+1]-J.C.y)*J.f0.y+(MREST[o+2]-J.C.z)*J.f0.z;return Math.max(J.hd+(J.hp-J.hd)*smooth(-J.rd,J.rp,d),J.kf*d)};
+  for(let i=0;i<MN;i++){const c1=ACH[2*i],c2=ACH[2*i+1];
+    if(c1)ARCJ[CHN[c1-1]].forEach((J,j)=>AH1[3*i+j]=hOf(J,3*i));if(c1>1)AH1[3*i]=AHM[2*i]/2/SC;if(c2>1)AH2[i]=AHM[2*i+1]/2/SC}}
+const gArc=x=>Math.abs(x)<1e-3?x/6+x*x*x/360:2/x-1/Math.tan(x/2);
+function arcState(J,q){ // décomposition « pivot + torsion » autour de l'axe u du doigt
+  const u=J.u,tw=q.x*u.x+q.y*u.y+q.z*u.z,tn=Math.hypot(tw,q.w)||1;
+  const twq=new THREE.Quaternion(u.x*tw/tn,u.y*tw/tn,u.z*tw/tn,q.w/tn),sw=q.clone().multiply(twq.clone().conjugate());
+  if(sw.w<0){sw.x=-sw.x;sw.y=-sw.y;sw.z=-sw.z;sw.w=-sw.w}
+  const vs=Math.hypot(sw.x,sw.y,sw.z),th=2*Math.atan2(vs,sw.w),n=vs>1e-9?new THREE.Vector3(sw.x/vs,sw.y/vs,sw.z/vs):new THREE.Vector3(0,0,1);
+  return {C:J.C,u,n,f:n.clone().cross(u),th,al:2*Math.atan2(tw,q.w),gth:gArc(th),q:q.clone()};
+}
+function rotAx(n,a,v){const c=Math.cos(a),s=Math.sin(a),d=(n.x*v[0]+n.y*v[1]+n.z*v[2])*(1-c),cx=n.y*v[2]-n.z*v[1],cy=n.z*v[0]-n.x*v[2],cz=n.x*v[1]-n.y*v[0];
+  v[0]=v[0]*c+cx*s+n.x*d;v[1]=v[1]*c+cy*s+n.y*d;v[2]=v[2]*c+cz*s+n.z*d}
+function arcApply(S,tau,h,p){ // p : [x,y,z] modifié sur place
+  if(tau<=0)return;const C=S.C,r=[p[0]-C.x,p[1]-C.y,p[2]-C.z];
+  if(tau>=1){const q=S.q,x=q.x,y=q.y,z=q.z,w=q.w,ix=w*r[0]+y*r[2]-z*r[1],iy=w*r[1]+z*r[0]-x*r[2],iz=w*r[2]+x*r[1]-y*r[0],iw=-x*r[0]-y*r[1]-z*r[2];
+    p[0]=C.x+ix*w-iw*x-iy*z+iz*y;p[1]=C.y+iy*w-iw*y-iz*x+ix*z;p[2]=C.z+iz*w-iw*z-ix*y+iy*x;return}
+  if(Math.abs(S.al)>1e-6)rotAx(S.u,S.al*tau,r);
+  const ph=S.th*tau,F=tau*gArc(ph)-S.gth,a=h*(tau-1),b=h*F,u=S.u,f=S.f;
+  const ox=a*u.x+b*f.x,oy=a*u.y+b*f.y,oz=a*u.z+b*f.z;r[0]-=ox;r[1]-=oy;r[2]-=oz;rotAx(S.n,ph,r);
+  p[0]=C.x+ox+r[0];p[1]=C.y+oy+r[1];p[2]=C.z+oz+r[2];
+}
+function dqApply(b,s,p){ // base du pouce : mélange (paume, métacarpien) par quaternions duaux, part s du métacarpien
+  if(s<=0)return;const R0=s*b.r[0],R1=s*b.r[1],R2=s*b.r[2],R3=1-s+s*b.r[3],n=Math.hypot(R0,R1,R2,R3);
+  const x=R0/n,y=R1/n,z=R2/n,w=R3/n,dx=s*b.d[0]/n,dy=s*b.d[1]/n,dz=s*b.d[2]/n,dw=s*b.d[3]/n;
+  const tx=2*(-dw*x+dx*w-dy*z+dz*y),ty=2*(-dw*y+dx*z+dy*w-dz*x),tz=2*(-dw*z-dx*y+dy*x+dz*w),px=p[0],py=p[1],pz=p[2];
+  const ix=w*px+y*pz-z*py,iy=w*py+z*px-x*pz,iz=w*pz+x*py-y*px,iw=-x*px-y*py-z*pz;
+  p[0]=ix*w+iw*-x+iy*-z-iz*-y+tx;p[1]=iy*w+iw*-y+iz*-x-ix*-z+ty;p[2]=iz*w+iw*-z+ix*-y-iy*-x+tz;
+}
 function skinMesh(h,key){
   const S_=h.skin;if(S_.key===key)return;S_.key=key;
   _inv.copy(h.root.matrixWorld).invert();
-  const B=MS.bones.map(n=>{if(n==='paume')return DQ_ID;if(n==='pouce.cmc')return boneDQ1(h,h.joints.cmc,CMC);const [k,i]=n.split('.');return boneDQ1(h,h.joints[k][+i],h.joints[k].J[+i])});
-  const pa=S_.g.attributes.position.array,R=[0,0,0,0],Dd=[0,0,0,0];
-  for(let i=0;i<MN;i++){R[0]=R[1]=R[2]=R[3]=Dd[0]=Dd[1]=Dd[2]=Dd[3]=0;
-    for(let j=0;j<4;j++){const w=MBW[4*i+j];if(!w)continue;const q=B[MBI[4*i+j]],ww=w/255;for(let c=0;c<4;c++){R[c]+=ww*q.r[c];Dd[c]+=ww*q.d[c]}}
-    const n=Math.hypot(R[0],R[1],R[2],R[3]),x=R[0]/n,y=R[1]/n,z=R[2]/n,w=R[3]/n,dx=Dd[0]/n,dy=Dd[1]/n,dz=Dd[2]/n,dw=Dd[3]/n;
-    const tx=2*(-dw*x+dx*w-dy*z+dz*y),ty=2*(-dw*y+dx*z+dy*w-dz*x),tz=2*(-dw*z-dx*y+dy*x+dz*w);
-    const o=3*i,px=MREST[o],py=MREST[o+1],pz=MREST[o+2];
-    const ix=w*px+y*pz-z*py,iy=w*py+z*px-x*pz,iz=w*pz+x*py-y*px,iw=-x*px-y*py-z*pz;
-    pa[o]=ix*w+iw*-x+iy*-z-iz*-y+tx;pa[o+1]=iy*w+iw*-y+iz*-x-ix*-z+ty;pa[o+2]=iz*w+iw*-z+ix*-y-iy*-x+tz}
+  const ST={};CHN.forEach(k=>ST[k]=ARCJ[k].map((J,j)=>arcState(J,h.joints[k][j].quaternion)));
+  const BC=boneDQ1(h,h.joints.cmc,CMC),pa=S_.g.attributes.position.array,p=[0,0,0],K=1/65535;
+  pa.set(MREST);
+  for(let i=0;i<MN;i++){const c1=ACH[2*i];if(!c1)continue;
+    const o=3*i,c2=ACH[2*i+1],x0=MREST[o],y0=MREST[o+1],z0=MREST[o+2];let dx=0,dy=0,dz=0;
+    for(let c=0;c<2;c++){const ch=c?c2:c1;if(!ch)continue;const S=ST[CHN[ch-1]],sh=ASH[2*i+c]*K;p[0]=x0;p[1]=y0;p[2]=z0;
+      if(c===0){const ta=ATA[2*i]*K,tb=ATA[2*i+1]*K;
+        if(ch===1){arcApply(S[1],tb,AH1[o+1],p);arcApply(S[0],ta,AH1[o],p);dqApply(BC,sh,p)}
+        else{arcApply(S[2],tb,AH1[o+2],p);arcApply(S[1],ta,AH1[o+1],p);arcApply(S[0],sh,AH1[o],p)}}
+      else if(ch===1)dqApply(BC,sh,p);else arcApply(S[0],sh,AH2[i],p);
+      dx+=p[0]-x0;dy+=p[1]-y0;dz+=p[2]-z0}
+    pa[o]=x0+dx;pa[o+1]=y0+dy;pa[o+2]=z0+dz}
   S_.g.attributes.position.needsUpdate=true;S_.g.computeVertexNormals();
   const nn=S_.g.attributes.normal.array,hp=S_.hg.attributes.position.array,e=HULL/SC;for(let i=0;i<3*MN;i++)hp[i]=pa[i]+nn[i]*e;
   S_.hg.attributes.position.needsUpdate=true;

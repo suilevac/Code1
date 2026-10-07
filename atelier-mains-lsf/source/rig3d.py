@@ -378,15 +378,15 @@ def half_width_at(k, s):
         ts = np.array(g['ts']); w = (np.array(g['wl']) + np.array(g['wr'])) / 2
         m = (s >= S0) & (s <= S0 + ts[-1]); out[m] = np.interp(s[m] - S0, ts, w); S0 += g['len'] if not g['tip'] else ts[-1]
     return np.maximum(out, 6)
-raw = {}; sK = {}
+raw = {}; sK = {}; lat8 = {}
 for k in FINGS:
     s, l = polyproj(P2, chain8[k]); w = half_width_at(k, s); sK[k] = s
     # palmure : elle reste surtout avec la paume (sinon, doigt plié, elle rentre dans le doigt voisin)
     r_ = np.where(l <= w + 2, 1.0, np.exp(-((l - w - 2) / 11.0) ** 2))
     own_other = np.array([o != '' and not o.startswith(k + '.') for o in vown])
     own_self = np.char.startswith(vown, k + '.')
-    r_ = np.where(own_other, 0, np.where(own_self, 1, r_))
-    raw[k] = r_ * sstep(-.55 * 2 * segw0(k) / 2 * 2, .55 * 2 * segw0(k), s - 0)   # transition à la tête du métacarpien
+    r_ = np.where(own_other, 0, np.where(own_self, 1, r_)); lat8[k] = r_
+    raw[k] =r_ * sstep(-.55 * 2 * segw0(k) / 2 * 2, .55 * 2 * segw0(k), s - 0)   # transition à la tête du métacarpien
 tot = sum(raw.values()); scale = np.where(tot > 1, 1 / np.maximum(tot, 1e-9), 1)
 for k in FINGS:
     c = raw[k] * scale; s = sK[k]; cs = cum(chain8[k]); w0 = segw0(k)
@@ -412,6 +412,69 @@ cT = np.minimum(cT, 1 - np.minimum(Wb[:, 4:].sum(1), 1))
 tM = sstep(csT[1] - 40, csT[1] + 40, sT); tI = sstep(csT[2] - 32, csT[2] + 32, sT)
 Wb[:, 1] = cT * (1 - tM); Wb[:, 2] = cT * tM * (1 - tI); Wb[:, 3] = cT * tM * tI
 Wb[:, 0] = np.clip(1 - Wb[:, 1:].sum(1), 0, 1)
+
+# ---------- déformeur en arc (articulations charnières : MCP, IPP, IPD des doigts ; MCP, IP du pouce) ----------
+# Dans la zone d'une articulation, chaque section du doigt tourne d'une fraction tau de l'angle, autour d'un centre
+# qui glisse : la peau suit un arc de cercle (rayon intérieur jamais négatif), et aux bords de la zone elle rejoint
+# exactement l'os rigide (tau = 0 : os proximal, tau = 1 : os distal). Demi-largeur h de la zone : grande côté paume
+# (pli sans repli : h >= r.tan(angle max / 2)), petite côté dos (jointure nette, pas de « tuyau »).
+X8 = np.stack([V8[:, 0], -V8[:, 1], V8[:, 2]], 1)        # repère 3D du moteur (y en haut), en pixels
+nz = lambda v: np.asarray(v, float) / np.linalg.norm(v)
+Zj = np.array([0., 0., 1.])
+def segu(k, i): u = segs[k][i]['u']; return nz([u[0], -u[1], 0.])
+def arcj(C, z, u, f0, tmax, mask, w, dr=.45):
+    C = np.array([C[0], -C[1], z]); lat = np.cross(u, f0); rel = X8 - C
+    t, d = rel @ u, rel @ f0
+    near = mask & (np.abs(t) < 10) & (np.abs(rel @ lat) < w)
+    rp, rd = float(np.percentile(d[near], 98)), float(np.percentile(-d[near], 98))
+    kf = 1.15 * np.tan(np.radians(tmax) / 2); hp = max(kf * rp, .8 * rp); hd = max(dr * hp, .35 * rp)
+    # une fibre plus épaisse que rp (pulpe, coussinet de la paume) a sa propre zone, assez large pour ne jamais se replier
+    h = np.maximum(hd + (hp - hd) * sstep(-rd, rp, d), kf * d)
+    return {'u': u.tolist(), 'f': f0.tolist(), 'rp': rp, 'rd': rd, 'hp': hp, 'hd': hd, 'kf': kf}, t, h
+lin8 = lambda t, h: np.clip((t + h) / (2 * h), 0, 1)
+ARC = {}; TAU = {}; HM = {}
+for k in FINGS:
+    ch = chain8[k]; own = np.char.startswith(vown, k + '.'); w0 = segw0(k); u0, u1, u2 = segu(k, 0), segu(k, 1), segu(k, 2)
+    J0, t0, h0 = arcj(ch[0], jointZ[k][0], u0, Zj, 90, np.ones(nV, bool), .6 * w0)
+    J1, t1, h1 = arcj(ch[1], jointZ[k][1], nz(u0 + u1), Zj, 105, own, .6 * w0)
+    J2, t2, h2 = arcj(ch[2], jointZ[k][2], nz(u1 + u2), Zj, 80, own, .6 * w0)
+    # palmure (mince, entre deux doigts) : même zone devant et derrière, sinon la nappe se déchire en pliant
+    #   (le plancher anti-repli des fibres épaisses, au-delà de hp, est gardé)
+    h0 = np.maximum((J0['hp'] + J0['hd']) / 2 * (1 - lat8[k] ** 2) + h0 * lat8[k] ** 2, np.where(h0 > J0['hp'], h0, 0))
+    ARC[k] = [J0, J1, J2]; TAU[k] = (lat8[k] * lin8(t0, h0), lin8(t1, h1), lin8(t2, h2)); HM[k] = h0
+# pouce : axes de flexion obliques (comme tAxis dans script.js : lat·sin β + Z·cos β), flexion vers f = n × u
+def tflex(u, beta): lat = np.cross(u, Zj); n = nz(lat * np.sin(np.radians(beta)) + Zj * np.cos(np.radians(beta))); return nz(np.cross(n, u))
+chT = chain8['pouce']; ownT = np.char.startswith(vown, 'pouce.'); uT0, uT1 = segu('pouce', 0), segu('pouce', 1)
+uM = nz([chT[1][0] - chT[0][0], -(chT[1][1] - chT[0][1]), 0])
+JM, tM_, hM_ = arcj(chT[1], jointZ['pouce'][1], nz(uM + uT0), tflex(uT0, 45), 55, ownT, 22, .8)   # MCP du pouce : articulation large, dos arrondi
+JI, tI_, hI_ = arcj(chT[2], jointZ['pouce'][2], nz(uT0 + uT1), tflex(uT1, 55), 80, ownT, 22, .6)
+tM_, tI_ = lin8(tM_, hM_), lin8(tI_, hI_)
+ARC['pouce'] = [JM, JI]
+# part de chaque chaîne dans le sommet (base du doigt : rampe linéaire, avec la retombée latérale des palmures)
+SH = np.stack([TAU[k][0] for k in FINGS], 1)
+# palmures : la part de chaque doigt y est lissée sur la peau (les doigts restent fixes), sinon elle passe de 0,3 à 0,7
+# en quelques pixels à la limite entre deux doigts et la palmure se plisse en pliant la base
+freeP = (vown == '')[:, None]
+for _ in range(25): SH = np.where(freeP, Ln @ SH, SH)
+tl = SH.sum(1, keepdims=True); SH = np.where(tl > 1, SH / np.maximum(tl, 1e-9), SH)
+shT = np.minimum(cT, 1 - np.minimum(SH.sum(1), 1))
+SH = np.concatenate([shT[:, None], SH], 1)                 # colonnes : pouce, index, majeur, annulaire, auriculaire
+ordc = np.argsort(-SH, 1)[:, :2]; shc = np.take_along_axis(SH, ordc, 1)
+c1 = np.where(shc[:, 0] > 1e-4, ordc[:, 0] + 1, 0); c2 = np.where(shc[:, 1] > 1e-4, ordc[:, 1] + 1, 0)
+# articulations internes de la chaîne principale (IPP / IPD, ou MCP / IP du pouce), seulement là où la chaîne domine
+ta = np.zeros(nV); tb = np.zeros(nV)
+for ci, k in enumerate(['pouce'] + FINGS):
+    m = c1 == ci + 1
+    if k == 'pouce': a_, b_ = tM_, tI_; g_ = sstep(.5, .95, shc[:, 0])
+    else: a_, b_ = TAU[k][1], TAU[k][2]; g_ = sstep(.85, 1., shc[:, 0])
+    ta[m] = (a_ * g_)[m]; tb[m] = (b_ * g_)[m]
+print('arc :', {k: [(round(j['hp']), round(j['hd']), round(j['rp']), round(j['rd'])) for j in ARC[k]] for k in ARC},
+      'sommets en zone', int(((ta > 0) & (ta < 1)).sum() + ((tb > 0) & (tb < 1)).sum()))
+q16 = lambda a: base64.b64encode(np.round(np.clip(a, 0, 1) * 65535).astype(np.uint16).tobytes()).decode()
+arc8 = {'joints': ARC, 'c': base64.b64encode(np.stack([c1, c2], 1).astype(np.uint8).tobytes()).decode(),
+        's': q16(shc), 't': q16(np.stack([ta, tb], 1)),
+        # demi-largeur de zone de la base du doigt (MCP) des deux chaînes, en demi-pixels
+        'hm': base64.b64encode(np.clip(np.round(np.stack([np.choose(np.clip(c, 2, 5) - 2, [HM[k] for k in FINGS]) for c in (c1, c2)], 1) * 2), 0, 255).astype(np.uint8).tobytes()).decode()}
 # 4 influences au plus par sommet
 order = np.argsort(-Wb, 1)[:, :4]; wt = np.take_along_axis(Wb, order, 1); wt = wt / np.maximum(wt.sum(1, keepdims=True), 1e-9)
 w8 = np.round(wt * 255).astype(np.int32); w8[:, 0] += 255 - w8.sum(1)
@@ -428,7 +491,7 @@ mesh8 = {'uv': base64.b64encode(np.round(UV8 * 4).astype(np.int16).tobytes()).de
          'idx': base64.b64encode(ff.astype(np.uint16 if nV < 65536 else np.uint32).tobytes()).decode(), 'i32': nV >= 65536,
          'nFront': nFront, 'bi': base64.b64encode(order.astype(np.uint8).tobytes()).decode(), 'bw': base64.b64encode(w8.astype(np.uint8).tobytes()).decode(),
          'part': base64.b64encode(part8.tobytes()).decode(), 'bones': BONES,
-         'chain': {k: [list(map(float, p)) for p in chain8[k]] for k in chain8}, 'jz': jointZ}
+         'chain': {k: [list(map(float, p)) for p in chain8[k]] for k in chain8}, 'jz': jointZ, 'arc': arc8}
 print('peau v8 : sommets', nV, 'triangles', len(ff))
 
 # ongles : sur une vraie main, l'ongle est bordé de peau (replis latéraux) et ne touche pas la tranche du doigt.
