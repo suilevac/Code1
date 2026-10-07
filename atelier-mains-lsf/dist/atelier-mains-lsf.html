@@ -423,21 +423,20 @@ const scene=new THREE.Scene();
 const ID={paume:1,pouce:2,index:3,majeur:4,annulaire:5,auriculaire:6};
 const idMats={};for(const k in ID)idMats[k]=new THREE.MeshBasicMaterial({color:new THREE.Color(ID[k]/8,k==='paume'?0:1,0),side:THREE.DoubleSide});
 /* coque du contour. Hors pose du dessin (main entière seulement), elle s'efface là où elle ne fait que ressortir d'un pli
-   (fente noire en dents de scie) : fragment de coque à moins de « push » devant la peau qu'il recouvre (profondeur lue dans
-   la passe identité), loin de la silhouette (pas de fond à moins d'une épaisseur de trait), et quand la peau
-   recouverte est la même partie ou la paume sous un doigt (racine). Le vrai contour garde tout son poids : silhouette,
-   partie qui passe devant une autre (pouce sur la paume ou l'éminence, doigt sur doigt, pouce et doigt). */
+   (fente noire en dents de scie, « confettis ») : fragment de coque à moins de « push » devant la peau qu'il recouvre
+   (profondeur lue dans la passe identité), quand la peau recouverte est la même partie, la paume sous un doigt (racine)
+   ou le pouce et la paume (pli de l'éminence, pli de la MCP du pouce). Le vrai contour garde tout son poids : silhouette
+   (pas de peau derrière), doigt sur doigt, pouce et doigt, et pouce posé devant la paume, toujours loin devant elle
+   (écart ≥ 2 push mesuré dans pouce_ip80_cote) ; pas d'exception près du fond (elle laissait des éclats à l'embouchure des plis). */
 const HULL_VS=`attribute float part;varying float vP;varying float vZ;void main(){vP=part;vec4 mv=modelViewMatrix*vec4(position,1.);vZ=-mv.z;gl_Position=projectionMatrix*mv;}`;
-const HULL_FS=`uniform float opacity;uniform float push;uniform float rw;uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 res;uniform float cn;uniform float cf;varying float vP;varying float vZ;
+const HULL_FS=`uniform float opacity;uniform float push;uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 res;uniform float cn;uniform float cf;varying float vP;varying float vZ;
   float L(vec2 uv){float z=texture2D(tDepth,uv).r*2.-1.;return 2.*cn*cf/(cf+cn-z*(cf-cn));}
   void main(){if(push>0.){vec2 uv=gl_FragCoord.xy/res;vec4 c=texture2D(tId,uv);
-    if(c.a>.5){float ds=L(uv),pb=floor(c.r*8.+.5),ph=floor(vP+.5);
-      bool real=pb!=ph&&!((pb<1.5||ph<1.5)&&pb!=2.&&ph!=2.);
-      if(!real&&ds-vZ<push){float R=rw/ds;bool edge=false;
-        for(int i=0;i<8;i++){float a=float(i)*.7853982;if(texture2D(tId,uv+vec2(cos(a),sin(a))*R/res).a<.5){edge=true;break;}}
-        if(!edge)discard;}}}
+    if(c.a>.5){float pb=floor(c.r*8.+.5),ph=floor(vP+.5);
+      bool real=pb!=ph&&pb>1.5&&ph>1.5;   // doigt sur doigt, pouce et doigt
+      if(!real&&L(uv)-vZ<push)discard;}}
     gl_FragColor=vec4(.067,.067,.067,opacity);}`;
-const hullMatProto=()=>new THREE.ShaderMaterial({uniforms:{opacity:{value:1},push:{value:0},rw:{value:1},tId:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2(1,1)},cn:{value:.5},cf:{value:500}},
+const hullMatProto=()=>new THREE.ShaderMaterial({uniforms:{opacity:{value:1},push:{value:0},tId:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2(1,1)},cn:{value:.5},cf:{value:500}},
   vertexShader:HULL_VS,fragmentShader:HULL_FS,side:THREE.BackSide,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:4});
 const HPUSH=1.8;   // recul de la coque (× épaisseur du contour)
 function makeHand(skeletonOnly){
@@ -755,7 +754,7 @@ function renderAll(){
   renderer.setClearColor(cc,ca);
   // 2. image normale (coque de la main entière : voir hullMatProto), 3. traits intérieurs par-dessus
   const hu=main.skin.hm.uniforms;hu.push.value=HPUSH*main.skin.gR*HULL/SC;hu.tId.value=idRT.texture;hu.tDepth.value=idRT.depthTexture;
-  hu.res.value.set(size.x,size.y);hu.cn.value=camera.near;hu.cf.value=camera.far;hu.rw.value=1.5*HULL/SC*size.y/(2*Math.tan(camera.fov*Math.PI/360));
+  hu.res.value.set(size.x,size.y);hu.cn.value=camera.near;hu.cf.value=camera.far;
   renderer.render(scene,camera);
   edgeMat.uniforms.tId.value=idRT.texture;edgeMat.uniforms.tDepth.value=idRT.depthTexture;edgeMat.uniforms.texel.value.set(1/size.x,1/size.y);
   edgeMat.uniforms.rad.value=1.6*renderer.getPixelRatio();edgeMat.uniforms.cn.value=camera.near;edgeMat.uniforms.cf.value=camera.far;
