@@ -137,7 +137,7 @@ function tubeGeo(k,side){
       const v=toM(px,py,dep);pos.push(v.x,v.y,v.z);
       // la couleur vient de l'endroit exact du dessin (projection), y compris au bout du doigt : aucun étirement
       // sur les flancs du doigt, la couleur est prise un peu en retrait du bord dessiné (pas de traînées sur la tranche)
-      const ut=r.t<0?Math.min(14,r.tEnd||14):(r.tip?Math.min(r.t,r.tEnd-(side<0?(k==='pouce'?24:13):9)):r.t),ul=lat*(.82+.18*Math.abs(c)),qx=r.a[0]+r.u[0]*ut+r.n[0]*ul,qy=r.a[1]+r.u[1]*ut+r.n[1]*ul;
+      const ut=r.t<0?Math.min(14,r.tEnd||14):(r.tip?Math.min(r.t,r.tEnd-(side<0?13:9)):r.t),ul=lat*(.82+.18*Math.abs(c)),qx=r.a[0]+r.u[0]*ut+r.n[0]*ul,qy=r.a[1]+r.u[1]*ut+r.n[1]*ul;
       uv.push(qx/HD.W,1-qy/HD.H);axis.push(toM(r.a[0]+r.u[0]*r.t,r.a[1]+r.u[1]*r.t,0));ringOf.push(ri);
     }});
   for(let r=0;r<rings.length-1;r++)for(let j=0;j<M;j++){const p0=r*(M+1)+j,p1=p0+1,q0=p0+M+1,q1=q0+1;idx.push(p0,q0,p1,p1,q0,q1)}

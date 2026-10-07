@@ -112,16 +112,26 @@ def bilinear(img, x, y):
     x = np.clip(x, 0, img.shape[1] - 1.001); y = np.clip(y, 0, img.shape[0] - 1.001)
     x0, y0 = np.floor(x).astype(int), np.floor(y).astype(int); fx, fy = (x - x0)[..., None], (y - y0)[..., None]
     return img[y0, x0] * (1 - fx) * (1 - fy) + img[y0, x0 + 1] * fx * (1 - fy) + img[y0 + 1, x0] * (1 - fx) * fy + img[y0 + 1, x0 + 1] * fx * fy
-DA = bilinear(Dd, mx, my)                      # dessin dos, dans le repère du dessin paume
-# là où le dos recalé tombe hors de sa silhouette (léger décalage entre les deux dessins), on prolonge la peau voisine
 # le trait de contour du dessin dos peut tomber à l'intérieur de la silhouette paume (les deux dessins n'ont pas exactement la même forme) :
 # on le repère dans le dessin dos lui-même, puis on le transporte
 dmask = Dd[..., 3] > 0.5
 ddist = ndimage.distance_transform_edt(dmask); ddark = Dd[..., :3].mean(-1) < 0.3
-dband = dmask & (ddist <= 13) & ddark
 dband_wide = dmask & (ddist <= 34) & ddark
+# trait de contour (≈ 7 px d'épaisseur) effacé dans le dessin dos AVANT recalage, halo anti-crénelé compris : sinon le
+# remplissage par le plus proche voisin recopie ce halo gris (et, là où l'ongle touche le contour, alterne ongle/peau/gris)
+# → stries radiales. Les bouts des traits d'ongle qui rejoignent le contour (≤ 13 px du bord) partent aussi, sinon ils
+# s'étirent en taches noires sur le flanc du doigt ; halo d'1 px seulement pour garder le mince coin de peau à côté.
+dstroke = dmask & (ddist <= 8) & ddark
+dline = dmask & (ddist <= 13) & ddark
+dhalo = (ndimage.binary_dilation(dstroke, iterations=2) & dmask & (ddist <= 10)) | (ndimage.binary_dilation(dline, iterations=1) & dmask & (ddist <= 14))
+dgood = dmask & ~dhalo
+_, (hy_, hx_) = ndimage.distance_transform_edt(~dgood, return_indices=True)
+Dc = Dd.copy(); Dc[dhalo, :3] = Dd[hy_[dhalo], hx_[dhalo], :3]
+DA = bilinear(Dc, mx, my)                      # dessin dos, dans le repère du dessin paume
+# là où le dos recalé tombe hors de sa silhouette (léger décalage entre les deux dessins), on prolonge la peau voisine
 bx_ = np.clip(np.round(mx).astype(int), 0, Dd.shape[1] - 1); by_ = np.clip(np.round(my).astype(int), 0, Dd.shape[0] - 1)
-bad = mask & ((DA[..., 3] < 0.5) | dband[by_, bx_])
+DM = bilinear(dmask[..., None].astype(float), mx, my)[..., 0]   # silhouette dos transportée (< 1 : pixel mêlé au fond hors silhouette)
+bad = mask & (DM < 0.98)
 _PENDING_PALM_BAND = dband_wide[by_, bx_]
 okd = mask & ~bad
 if bad.any():
@@ -141,7 +151,7 @@ def strip_outline(img):
     out = img.copy(); out[band, :3] = img[iy2[band], ix2[band], :3]
     return out
 P_tex = strip_outline(P)
-DA = strip_outline(DA)
+# (DA : contour déjà retiré dans le dessin dos, avant recalage)
 
 # --- découpe : à qui appartient chaque pixel du dessin paume ?
 owner = np.full((H, W), '', dtype=object); best = np.full((H, W), 1e9)
