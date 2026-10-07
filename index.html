@@ -105,7 +105,20 @@ body { background: var(--bg); overflow: hidden; }
 .pdot { cursor: grab; transition: transform .3s cubic-bezier(.3,1.4,.5,1); }
 .pdot.dragging { transition: none; cursor: grabbing; }
 .pdot circle { fill: var(--chalk); }
-.writing .pdot { pointer-events: none; }
+.writing .pdot, .pdot.locked { pointer-events: none; }
+.pdot.locked circle { fill: var(--angle); }
+.corner { fill: none; stroke: var(--chalk); stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transition: opacity .8s; }
+.corner.on { opacity: .9; }
+.arc { fill: none; stroke: var(--angle); stroke-width: 8; stroke-linecap: round; opacity: 0; transition: opacity .4s; }
+.arc.on { opacity: 1; }
+.arc.on.flash { animation: flash 1.2s ease-out; }
+@keyframes flash { 0%, 60% { stroke-width: 16; } 100% { stroke-width: 8; } }
+.target { opacity: 0; transition: opacity .4s; pointer-events: none; }
+.target.on { opacity: 1; }
+.target-dot { fill: none; stroke: var(--angle); stroke-width: 5; stroke-dasharray: 7 7; }
+.target-core { fill: var(--angle); }
+.target-pulse { fill: none; stroke: var(--angle); stroke-width: 4; transform-box: fill-box; transform-origin: center; animation: tpulse 1.4s ease-out infinite; }
+@keyframes tpulse { from { transform: scale(.7); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
 
 .chalk { cursor: pointer; opacity: 0; transition: opacity .5s, transform .35s cubic-bezier(.3,1.5,.5,1); }
 .chalks-on .chalk { opacity: 1; }
@@ -194,6 +207,9 @@ body { background: var(--bg); overflow: hidden; }
         <path class="seven" d="M1145 140 L1000 620"/>
         <path class="seven" d="M1000 380 H1145"/>
       </g>
+      <g id="corners"></g>
+      <g id="arcs"></g>
+      <g id="target" class="target"><circle class="target-pulse" r="22"/><circle class="target-dot" r="24"/><circle class="target-core" r="6"/></g>
       <g id="pdots"></g>
       <g id="inks"></g>
       <g id="chalks"></g>
@@ -323,7 +339,41 @@ body { background: var(--bg); overflow: hidden; }
   const MODEL_BOX = { x: 900, y: 140, w: 275, h: 480 };
   const BOARD = { x: 852, y: 58, w: 696, h: 716 };
   // visibilité du 7 selon le nombre de points posés : très léger, puis bien visible sur les derniers
-  const SEVEN_OPACITY = [0.07, 0.08, 0.09, 0.11, 0.14, 0.3, 0.6, 1];
+  // le 7 entier reste invisible, puis apparaît très légèrement vers le 5e et le 6e jeton
+  const SEVEN_OPACITY = [0, 0, 0, 0, 0, 0.08, 0.18, 1];
+  // Les 7 angles du 7 barré, dans l'ordre où on pose les jetons.
+  const norm = (x, y) => { const l = Math.hypot(x, y); return { x: x / l, y: y / l }; };
+  const A = { x: 900, y: 140 }, X = { x: 1072.5, y: 380 };
+  const DOWN = norm(C.x - B.x, C.y - B.y), UP = { x: -DOWN.x, y: -DOWN.y };
+  const L = { x: -1, y: 0 }, R = { x: 1, y: 0 }, D = { x: 0, y: 1 };
+  const ANGLES = [
+    { v: A, u1: R, u2: D, l1: 80, l2: 60 },
+    { v: B, u1: L, u2: DOWN, l1: 80, l2: 80 },
+    { v: B, u1: R, u2: DOWN, l1: 30, l2: 80 },
+    { v: X, u1: L, u2: UP, l1: 72, l2: 80 },
+    { v: X, u1: R, u2: UP, l1: 72, l2: 80 },
+    { v: X, u1: R, u2: DOWN, l1: 72, l2: 80 },
+    { v: X, u1: L, u2: DOWN, l1: 72, l2: 80 },
+  ].map((a) => {
+    const b = norm(a.u1.x + a.u2.x, a.u1.y + a.u2.y);
+    return { ...a, t: { x: a.v.x + b.x * 46, y: a.v.y + b.y * 46 } };
+  });
+  const cornerEls = ANGLES.map((a) => make("path", {
+    class: "corner",
+    d: `M${a.v.x + a.u1.x * a.l1} ${a.v.y + a.u1.y * a.l1} L${a.v.x} ${a.v.y} L${a.v.x + a.u2.x * a.l2} ${a.v.y + a.u2.y * a.l2}`,
+  }, $("#corners")));
+  const arcEls = ANGLES.map((a) => {
+    const r = 30, cross = a.u1.x * a.u2.y - a.u1.y * a.u2.x;
+    return make("path", { class: "arc", d: `M${a.v.x + a.u1.x * r} ${a.v.y + a.u1.y * r} A${r} ${r} 0 0 ${cross > 0 ? 1 : 0} ${a.v.x + a.u2.x * r} ${a.v.y + a.u2.y * r}` }, $("#arcs"));
+  });
+  let nextAngle = 0;
+  function showTarget() {
+    const t = $("#target");
+    if (nextAngle >= ANGLES.length) { t.classList.remove("on"); return; }
+    const p = ANGLES[nextAngle].t;
+    t.setAttribute("transform", `translate(${p.x} ${p.y})`);
+    t.classList.add("on");
+  }
 
   const COLORS = ["--c1", "--c2", "--c3"];
   const CHALKS = [{ x: 1250 }, { x: 1360 }, { x: 1470 }];
@@ -389,6 +439,10 @@ body { background: var(--bg); overflow: hidden; }
     $("#slate").classList.remove("on", "writing");
     svg.classList.remove("chalks-on");
     $("#seven").style.opacity = 0; $("#seven").classList.remove("full");
+    nextAngle = 0;
+    cornerEls.forEach((c) => c.classList.remove("on"));
+    arcEls.forEach((a) => a.classList.remove("on", "flash"));
+    $("#target").classList.remove("on");
     chalkEls.forEach((c) => c.classList.remove("active", "done"));
 
     cubes = SCATTER.map((s) => makeCube(cubesG, s.x, s.y, s.r));
@@ -475,6 +529,7 @@ body { background: var(--bg); overflow: hidden; }
     cubes.forEach((c) => c.el.classList.remove("wiggle"));
     $("#slate").classList.add("on");
     $("#seven").style.opacity = SEVEN_OPACITY[0];
+    later(showTarget, 900);
   }
 
   /* ---------- étape 2 : les points sur l'ardoise ---------- */
@@ -755,8 +810,17 @@ body { background: var(--bg); overflow: hidden; }
           if (labelsAllOn()) { say("six"); later(startWiggle, 1500); }
         }
       } else {
-        if (inside(o, BOARD, -10)) o.placed = true;
-        else placeEl(o, o.home.x, o.home.y);
+        // le jeton doit aller sur le point qui clignote ; posé, il révèle son angle en jaune
+        const a = ANGLES[nextAngle];
+        if (a && Math.hypot(o.x - a.t.x, o.y - a.t.y) < 90) {
+          o.placed = true;
+          o.el.classList.add("locked");
+          placeEl(o, a.t.x, a.t.y);
+          cornerEls[nextAngle].classList.add("on");
+          arcEls[nextAngle].classList.add("on", "flash");
+          nextAngle++;
+          showTarget();
+        } else placeEl(o, o.home.x, o.home.y);
         updateDots();
       }
       drag = null;
