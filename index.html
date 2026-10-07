@@ -19,12 +19,15 @@
   --carton: #cdb28a;
   --carton-dark: #a98a5f;
   --carton-in: #dcc6a3;
+  --carton-side: #b8976a;
+  --cup-deep: #9a7b52;
   --loop: #ec7a2a;
   --wood: #b07a45;
   --wood-dark: #7c522b;
   --slate: #2f4a3f;
   --chalk: #f4f4ec;
   --angle: #ffd84a;
+  --no: #e0393e;
   --c1: #ffd23f;           /* craie jaune */
   --c2: #ff7eb6;           /* craie rose */
   --c3: #5cc8ff;           /* craie bleue */
@@ -51,18 +54,21 @@ body { background: var(--bg); overflow: hidden; }
 .icon[aria-pressed="false"] .on-only { display: none; }
 .icon[aria-pressed="true"] .off-only { display: none; }
 
-/* SVG */
-.carton { fill: var(--carton); stroke: var(--carton-dark); stroke-width: 4; }
-.carton-in { fill: var(--carton-in); }
-.cup { fill: var(--carton); stroke: var(--carton-dark); stroke-width: 3; }
-.ridge { fill: var(--carton-dark); opacity: .5; }
+/* boîte à œufs en 3D */
+.box-top { fill: var(--carton-in); stroke: var(--carton-dark); stroke-width: 4; stroke-linejoin: round; }
+.box-front { fill: var(--carton-side); stroke: var(--carton-dark); stroke-width: 4; stroke-linejoin: round; }
+.box-divider { stroke: var(--carton-dark); stroke-width: 4; }
+.cup { fill: url(#cupGrad); stroke: var(--carton-dark); stroke-width: 3; }
+.label-slot { fill: #ffffff; fill-opacity: .18; stroke: #ffffff; stroke-opacity: .55; stroke-width: 3; stroke-dasharray: 8 8; }
 
 .cube { cursor: grab; transition: transform .35s cubic-bezier(.3,1.4,.5,1); }
 .cube.dragging { cursor: grabbing; transition: none; }
 .cube-inner { transition: transform .3s; }
 .cube-body { fill: var(--cube); stroke: var(--cube-dark); stroke-width: 4; }
 .cube-top { fill: #ffffff; opacity: .28; }
-.cube-stud { fill: var(--cube-dark); opacity: .35; }
+.cube-num { fill: #ffffff; font: 700 46px var(--font-digit); text-anchor: middle; }
+.cube-num.pop { animation: numpop .5s cubic-bezier(.3,1.6,.5,1); transform-box: fill-box; transform-origin: center; }
+@keyframes numpop { from { transform: scale(0); } to { transform: scale(1); } }
 .cube.dragging .cube-body { filter: drop-shadow(0 10px 8px rgba(0,0,0,.25)); }
 .wiggle .cube-inner { animation: wiggle .7s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 90%; }
 @keyframes wiggle {
@@ -75,11 +81,17 @@ body { background: var(--bg); overflow: hidden; }
 .loop { fill: none; stroke: var(--loop); stroke-width: 10; stroke-linecap: round; stroke-linejoin: round; transition: opacity .6s; }
 .loop.fade { opacity: 0; }
 
-.tile { opacity: 0; transform: translateY(20px) scale(.8); transform-box: fill-box; transform-origin: center; transition: opacity .5s, transform .5s cubic-bezier(.3,1.5,.5,1); }
-.tile.on { opacity: 1; transform: none; }
-.tile-bg { fill: var(--tile); stroke: var(--tile-line); stroke-width: 3; }
-.digit { fill: var(--ink); font: 700 150px var(--font-digit); text-anchor: middle; }
-.die { fill: #ffffff; stroke: var(--ink); stroke-width: 4; }
+/* étiquettes */
+.label { cursor: grab; transition: transform .4s cubic-bezier(.3,1.3,.5,1); }
+.label.dragging { cursor: grabbing; transition: none; }
+.label.dragging .label-bg { filter: drop-shadow(0 10px 8px rgba(0,0,0,.25)); }
+.label-pop { opacity: 0; transform: scale(.4); transform-box: fill-box; transform-origin: center; transition: opacity .5s, transform .5s cubic-bezier(.3,1.5,.5,1); }
+.label.on .label-pop { opacity: 1; transform: none; }
+.label.shake .label-pop { animation: shake .45s; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-14px); } 75% { transform: translateX(14px); } }
+.label-bg { fill: var(--tile); stroke: var(--tile-line); stroke-width: 3; }
+.digit { fill: var(--ink); font: 700 96px var(--font-digit); text-anchor: middle; }
+.die { fill: #ffffff; stroke: var(--ink); stroke-width: 3.5; }
 .pip { fill: var(--ink); }
 .skin { fill: var(--skin); stroke: var(--skin-dark); stroke-width: 3; }
 
@@ -88,14 +100,11 @@ body { background: var(--bg); overflow: hidden; }
 .frame { fill: var(--wood); stroke: var(--wood-dark); stroke-width: 4; }
 .board { fill: var(--slate); }
 .seven { fill: none; stroke: var(--chalk); stroke-width: 26; stroke-linecap: round; stroke-linejoin: round; }
-#seven { opacity: 0; transition: opacity .8s; }
+#seven { opacity: 0; transition: opacity 1s; }
 #seven.full { filter: drop-shadow(0 0 10px rgba(255,255,255,.45)); }
-.arc { fill: none; stroke: var(--angle); stroke-width: 7; stroke-linecap: round; opacity: 0; transition: opacity .4s; }
-.arc.on { opacity: 1; }
 .pdot { cursor: grab; transition: transform .3s cubic-bezier(.3,1.4,.5,1); }
 .pdot.dragging { transition: none; cursor: grabbing; }
 .pdot circle { fill: var(--chalk); }
-.pdot.set circle { fill: var(--angle); }
 .writing .pdot { pointer-events: none; }
 
 .chalk { cursor: pointer; opacity: 0; transition: opacity .5s, transform .35s cubic-bezier(.3,1.5,.5,1); }
@@ -108,6 +117,12 @@ body { background: var(--bg); overflow: hidden; }
 
 .slot { fill: #ffffff; fill-opacity: .5; stroke-width: 4; stroke-dasharray: 10 10; opacity: 0; transition: opacity .6s; }
 .chalks-on .slot { opacity: 1; }
+
+.scene { transition: opacity .9s; }
+.scene.gone { opacity: 0; pointer-events: none; }
+.box-hidden { opacity: 0; transform: translateY(30px); pointer-events: none; }
+.box-g { transition: opacity .9s, transform .9s cubic-bezier(.3,1.3,.5,1); }
+
 .big-star { fill: var(--angle); stroke: #c79a00; stroke-width: 6; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .big-star.pop { animation: pop 1.6s ease-out; }
 @keyframes pop {
@@ -116,9 +131,19 @@ body { background: var(--bg); overflow: hidden; }
   75% { opacity: 1; transform: scale(1) rotate(0); }
   100% { opacity: 0; transform: scale(1.3); }
 }
+.cross circle { fill: #ffffff; stroke: var(--no); stroke-width: 8; }
+.cross path { stroke: var(--no); stroke-width: 14; stroke-linecap: round; fill: none; }
+.cross { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.cross.pop { animation: crosspop 1.1s ease-out; }
+@keyframes crosspop {
+  0% { opacity: 0; transform: scale(.3); }
+  20% { opacity: 1; transform: scale(1.1); }
+  70% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .cube, .tile, #slate, .pdot, .chalk, .ink-g { transition: none; }
+  .cube, .label, .label-pop, #slate, .pdot, .chalk, .ink-g, .box-g, .scene { transition: none; }
   .wiggle .cube-inner { animation-duration: 1.6s; }
 }
 </style>
@@ -135,6 +160,9 @@ body { background: var(--bg); overflow: hidden; }
   <button class="icon" id="btnBravo" aria-label="Bravo pour la craie en cours" title="Bravo pour la craie en cours">
     <svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg>
   </button>
+  <button class="icon" id="btnFinale" aria-label="Aller au jeu des boîtes" title="Aller au jeu des boîtes">
+    <svg viewBox="0 0 24 24"><path d="M5 12h12M13 7l5 5-5 5"/></svg>
+  </button>
   <button class="icon" id="btnFull" aria-label="Plein écran" title="Plein écran">
     <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
   </button>
@@ -144,34 +172,41 @@ body { background: var(--bg); overflow: hidden; }
 </div>
 
 <svg id="stage" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Boîte à œufs, cubes et ardoise pour découvrir le nombre sept">
+  <defs>
+    <radialGradient id="cupGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" style="stop-color: var(--cup-deep)"/>
+      <stop offset="100%" style="stop-color: var(--carton)"/>
+    </radialGradient>
+  </defs>
   <rect x="-2000" y="-2000" width="5600" height="4900" style="fill: var(--bg)"/>
 
-  <g id="tiles"></g>
-
-  <g id="box">
-    <rect class="carton" x="120" y="300" width="500" height="280" rx="32"/>
-    <rect class="carton-in" x="136" y="316" width="468" height="248" rx="24"/>
-    <g id="cups"></g>
-  </g>
-
-  <g id="slots"></g>
-  <g id="cubes"></g>
-
-  <g id="slate">
-    <rect class="frame" x="830" y="36" width="740" height="760" rx="22"/>
-    <rect class="board" x="852" y="58" width="696" height="716" rx="10"/>
-    <g id="seven">
-      <path class="seven" d="M900 140 V200"/>
-      <path class="seven" d="M900 140 H1175"/>
-      <path class="seven" d="M1145 140 L1000 620"/>
-      <path class="seven" d="M1000 380 H1145"/>
+  <g id="scene1" class="scene">
+    <g id="box1"></g>
+    <g id="slots"></g>
+    <g id="cubes"></g>
+    <g id="labels1"></g>
+    <g id="slate">
+      <rect class="frame" x="830" y="36" width="740" height="760" rx="22"/>
+      <rect class="board" x="852" y="58" width="696" height="716" rx="10"/>
+      <g id="seven">
+        <path class="seven" d="M900 140 V200"/>
+        <path class="seven" d="M900 140 H1175"/>
+        <path class="seven" d="M1145 140 L1000 620"/>
+        <path class="seven" d="M1000 380 H1145"/>
+      </g>
+      <g id="pdots"></g>
+      <g id="inks"></g>
+      <g id="chalks"></g>
     </g>
-    <g id="arcs"></g>
-    <g id="pdots"></g>
-    <g id="inks"></g>
-    <g id="chalks"></g>
   </g>
 
+  <g id="finale" class="scene gone">
+    <g id="box7" class="box-g"></g>
+    <g id="box6" class="box-g box-hidden"></g>
+    <g id="labelsF"></g>
+  </g>
+
+  <g id="crossG"><g id="cross" class="cross"><circle r="46"/><path d="M-22 -22 L22 22 M22 -22 L-22 22"/></g></g>
   <g id="bigStarG"><path id="bigStar" class="big-star" d="M0 -90 L26 -30 L90 -26 L40 14 L56 78 L0 44 L-56 78 L-40 14 L-90 -26 L-26 -30 Z"/></g>
   <g id="loopLayer"></g>
 </svg>
@@ -184,6 +219,7 @@ body { background: var(--bg); overflow: hidden; }
   const svg = $("#stage");
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const WORDS = ["un", "deux", "trois", "quatre", "cinq", "six", "sept"];
+  const KINDS = ["chiffre", "de", "points", "mains"];
   const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
   function make(tag, attrs = {}, parent) {
@@ -192,7 +228,7 @@ body { background: var(--bg); overflow: hidden; }
     if (parent) parent.appendChild(n);
     return n;
   }
-  const norm = (x, y) => { const l = Math.hypot(x, y); return { x: x / l, y: y / l }; };
+  const inside = (p, b, m = 0) => p.x > b.x - m && p.x < b.x + b.w + m && p.y > b.y - m && p.y < b.y + b.h + m;
 
   /* ---------- voix ---------- */
   let soundOn = true;
@@ -208,55 +244,33 @@ body { background: var(--bg); overflow: hidden; }
     } catch (e) { /* pas de voix */ }
   }
 
-  /* ---------- géométrie ---------- */
-  const BOX = { x: 120, y: 300, w: 500, h: 280 };
-  const CUPS = [];
-  for (const y of [372, 508]) for (const x of [205, 370, 535]) CUPS.push({ x, y });
-  const SCATTER = [
-    { x: 150, y: 700, r: -18 }, { x: 310, y: 800, r: 24 }, { x: 460, y: 690, r: -8 },
-    { x: 620, y: 790, r: 32 }, { x: 735, y: 650, r: -26 }, { x: 740, y: 430, r: 14 }, { x: 770, y: 250, r: 20 },
-  ];
-
-  // Le 7 de l'ardoise : petite attaque à gauche, barre du haut, descente, barre du milieu.
-  const A = { x: 900, y: 140 }, B = { x: 1145, y: 140 }, C = { x: 1000, y: 620 }, X = { x: 1072.5, y: 380 };
-  const DOWN = norm(C.x - B.x, C.y - B.y), UP = { x: -DOWN.x, y: -DOWN.y };
-  const L = { x: -1, y: 0 }, R = { x: 1, y: 0 }, D = { x: 0, y: 1 };
-  const ANGLES = [
-    { v: A, u1: R, u2: D },
-    { v: B, u1: L, u2: DOWN },
-    { v: B, u1: R, u2: DOWN },
-    { v: X, u1: L, u2: UP },
-    { v: X, u1: R, u2: UP },
-    { v: X, u1: R, u2: DOWN },
-    { v: X, u1: L, u2: DOWN },
-  ].map((a) => {
-    const b = norm(a.u1.x + a.u2.x, a.u1.y + a.u2.y);
-    return { ...a, t: { x: a.v.x + b.x * 46, y: a.v.y + b.y * 46 } };
-  });
-  const SEGS_REQUIRED = [[{ x: 900, y: 140 }, { x: 1175, y: 140 }], [B, C]];
-  const SEGS_ALLOWED = SEGS_REQUIRED.concat([[{ x: 900, y: 140 }, { x: 900, y: 200 }], [{ x: 1000, y: 380 }, { x: 1145, y: 380 }]]);
-  const MODEL_BOX = { x: 900, y: 140, w: 275, h: 480 };
-  const BOARD = { x: 852, y: 58, w: 696, h: 716 };
-
-  const COLORS = ["--c1", "--c2", "--c3"];
-  const CHALKS = [{ x: 1250 }, { x: 1360 }, { x: 1470 }];
-  const SLOTS = [{ x: 90, y: 640 }, { x: 330, y: 640 }, { x: 570, y: 640 }];
-  const SLOT_W = 200, SLOT_H = 230;
-
-  /* ---------- décor statique ---------- */
-  const cupsG = $("#cups");
-  CUPS.forEach((c) => make("ellipse", { class: "cup", cx: c.x, cy: c.y + 6, rx: 70, ry: 58 }, cupsG));
-  [[288, 440], [452, 440]].forEach(([x, y]) => make("circle", { class: "ridge", cx: x, cy: y, r: 11 }, cupsG));
-
-  function arcPath(a, r) {
-    const p1 = { x: a.v.x + a.u1.x * r, y: a.v.y + a.u1.y * r };
-    const p2 = { x: a.v.x + a.u2.x * r, y: a.v.y + a.u2.y * r };
-    const cross = a.u1.x * a.u2.y - a.u1.y * a.u2.x;
-    return `M${p1.x} ${p1.y} A${r} ${r} 0 0 ${cross > 0 ? 1 : 0} ${p2.x} ${p2.y}`;
+  /* ---------- boîte à œufs en 3D ---------- */
+  const TOP_H = 250, FRONT_H = 130, MAIN_W = 500, EXTRA_W = 170;
+  function buildBox(parent, x, y, extra) {
+    parent.replaceChildren();
+    const W = MAIN_W + (extra ? EXTRA_W : 0);
+    make("path", { class: "box-front", d: `M${x} ${y + TOP_H} H${x + W} V${y + TOP_H + FRONT_H - 20} Q${x + W} ${y + TOP_H + FRONT_H} ${x + W - 20} ${y + TOP_H + FRONT_H} H${x + 20} Q${x} ${y + TOP_H + FRONT_H} ${x} ${y + TOP_H + FRONT_H - 20} Z` }, parent);
+    make("path", { class: "box-top", d: `M${x + 24} ${y} H${x + W - 24} L${x + W} ${y + TOP_H} H${x} Z` }, parent);
+    const cups = [];
+    [[75, 58, 42], [182, 68, 50]].forEach(([dy, rx, ry]) => {
+      [95, 250, 405].forEach((dx) => cups.push({ x: x + dx, y: y + dy, rx, ry }));
+    });
+    if (extra) {
+      make("line", { class: "box-divider", x1: x + MAIN_W, y1: y + 4, x2: x + MAIN_W + 8, y2: y + TOP_H }, parent);
+      cups.push({ x: x + MAIN_W + EXTRA_W / 2, y: y + 128, rx: 64, ry: 48 });
+    }
+    cups.forEach((c) => make("ellipse", { class: "cup", cx: c.x, cy: c.y + 4, rx: c.rx, ry: c.ry }, parent));
+    const slots = [];
+    const off = (W - 480) / 2;
+    for (let k = 0; k < 4; k++) {
+      const s = { x: x + off + 60 + k * 120, y: y + TOP_H + FRONT_H / 2 };
+      make("rect", { class: "label-slot", x: s.x - 56, y: s.y - 56, width: 112, height: 112, rx: 16 }, parent);
+      slots.push(s);
+    }
+    return { cups: cups.map((c) => ({ x: c.x, y: c.y - 8 })), slots, bounds: { x, y, w: W, h: TOP_H + FRONT_H } };
   }
-  const arcEls = ANGLES.map((a) => make("path", { class: "arc", d: arcPath(a, 30) }, $("#arcs")));
 
-  // représentations du 6
+  /* ---------- dessins ---------- */
   function hand(parent, count, tx, ty, s) {
     const g = make("g", { transform: `translate(${tx} ${ty}) scale(${s})` }, parent);
     const fingers = [{ x: 20, top: 18 }, { x: 37, top: 8 }, { x: 54, top: 16 }, { x: 70, top: 32 }];
@@ -269,22 +283,52 @@ body { background: var(--bg); overflow: hidden; }
     make("rect", { class: "skin", x: 16, y: 74, width: 72, height: 68, rx: 22 }, g);
     if (!thumbUp) make("rect", { class: "skin", x: 24, y: 96, width: 44, height: 16, rx: 8 }, g);
   }
-  const tilesG = $("#tiles");
-  const TILE_W = 150, TILE_H = 190, TILE_Y = 60;
-  function tile(i, draw) {
-    const g = make("g", { class: "tile" }, tilesG);
-    g.style.transitionDelay = `${i * 0.6}s`;
-    const inner = make("g", { transform: `translate(${50 + i * (TILE_W + 18)} ${TILE_Y})` }, g);
-    make("rect", { class: "tile-bg", x: 0, y: 0, width: TILE_W, height: TILE_H, rx: 20 }, inner);
-    draw(inner);
+  function die(parent, x, y, size, n) {
+    make("rect", { class: "die", x, y, width: size, height: size, rx: size * 0.17 }, parent);
+    const a = size * 0.27, b = size * 0.5, c = size * 0.73, r = size * 0.09;
+    const P = n === 1 ? [[b, b]] : [[a, a], [c, a], [a, b], [c, b], [a, c], [c, c]];
+    P.forEach(([px, py]) => make("circle", { class: "pip", cx: x + px, cy: y + py, r }, parent));
   }
-  tile(0, (g) => { const t = make("text", { class: "digit", x: 75, y: 148 }, g); t.textContent = "6"; });
-  tile(1, (g) => {
-    make("rect", { class: "die", x: 20, y: 40, width: 110, height: 110, rx: 18 }, g);
-    for (const px of [48, 102]) for (const py of [66, 95, 124]) make("circle", { class: "pip", cx: px, cy: py, r: 10 }, g);
-  });
-  tile(2, (g) => { for (let k = 0; k < 6; k++) make("circle", { class: "pip", cx: 22 + k * 21.2, cy: 95, r: 9 }, g); });
-  tile(3, (g) => { hand(g, 5, 4, 26, 0.72); hand(g, 1, 76, 26, 0.72); });
+  function drawLabel(g, n, kind) {
+    make("rect", { class: "label-bg", x: -54, y: -54, width: 108, height: 108, rx: 16 }, g);
+    if (kind === "chiffre") {
+      const t = make("text", { class: "digit", x: 0, y: 34 }, g);
+      t.textContent = String(n);
+    } else if (kind === "de") {
+      if (n === 6) die(g, -38, -38, 76, 6);
+      else { die(g, -48, -26, 52, 6); die(g, 12, -16, 36, 1); }
+    } else if (kind === "points") {
+      const rows = n === 6 ? [3, 3] : [4, 3];
+      rows.forEach((count, r) => {
+        for (let k = 0; k < count; k++) make("circle", { class: "pip", cx: (k - (count - 1) / 2) * 23, cy: r === 0 ? -14 : 14, r: 8.5 }, g);
+      });
+    } else {
+      hand(g, 5, -52, -40, 0.52);
+      hand(g, n - 5, 0, -40, 0.52);
+    }
+  }
+
+  /* ---------- géométrie de la scène 1 ---------- */
+  const SCATTER = [
+    { x: 160, y: 700, r: -18 }, { x: 320, y: 805, r: 24 }, { x: 470, y: 700, r: -8 },
+    { x: 630, y: 805, r: 32 }, { x: 740, y: 660, r: -26 }, { x: 745, y: 420, r: 14 }, { x: 760, y: 200, r: 20 },
+  ];
+  const LABEL1_HOME = [180, 310, 440, 570].map((x) => ({ x, y: 112 }));
+  const box1 = buildBox($("#box1"), 120, 220, false);
+
+  // Le 7 de l'ardoise (le modèle, très pâle au départ)
+  const B = { x: 1145, y: 140 }, C = { x: 1000, y: 620 };
+  const SEGS_REQUIRED = [[{ x: 900, y: 140 }, { x: 1175, y: 140 }], [B, C]];
+  const SEGS_ALLOWED = SEGS_REQUIRED.concat([[{ x: 900, y: 140 }, { x: 900, y: 200 }], [{ x: 1000, y: 380 }, { x: 1145, y: 380 }]]);
+  const MODEL_BOX = { x: 900, y: 140, w: 275, h: 480 };
+  const BOARD = { x: 852, y: 58, w: 696, h: 716 };
+  // visibilité du 7 selon le nombre de points posés : très léger, puis bien visible sur les derniers
+  const SEVEN_OPACITY = [0.07, 0.08, 0.09, 0.11, 0.14, 0.3, 0.6, 1];
+
+  const COLORS = ["--c1", "--c2", "--c3"];
+  const CHALKS = [{ x: 1250 }, { x: 1360 }, { x: 1470 }];
+  const SLOTS = [{ x: 90, y: 640 }, { x: 330, y: 640 }, { x: 570, y: 640 }];
+  const SLOT_W = 200, SLOT_H = 230;
 
   const slotsG = $("#slots");
   SLOTS.forEach((s, i) => {
@@ -303,40 +347,59 @@ body { background: var(--bg); overflow: hidden; }
   });
 
   /* ---------- état ---------- */
-  let phase, cubes, pdots, inkGroups, current, done, evalTimer, wiggleTimer, busy, dotsBefore;
-  const cubesG = $("#cubes"), pdotsG = $("#pdots"), inksG = $("#inks"), loopLayer = $("#loopLayer");
+  let phase, cubes, labels1, pdots, inkGroups, current, done, evalTimer, busy, dotsBefore, orderCounter;
+  let finale = null;
+  const timers = [];
+  const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+  const cubesG = $("#cubes"), labels1G = $("#labels1"), pdotsG = $("#pdots"), inksG = $("#inks"), loopLayer = $("#loopLayer");
 
   function placeEl(o, x, y) { o.x = x; o.y = y; o.el.style.transform = `translate(${x}px, ${y}px)`; }
 
+  function makeCube(parent, x, y, rot) {
+    const g = make("g", { class: "cube" }, parent);
+    const inner = make("g", { class: "cube-inner" }, g);
+    make("rect", { class: "cube-body", x: -40, y: -40, width: 80, height: 80, rx: 12 }, inner);
+    make("rect", { class: "cube-top", x: -30, y: -32, width: 60, height: 15, rx: 7 }, inner);
+    const num = make("text", { class: "cube-num", x: 0, y: 24 }, inner);
+    inner.style.transform = `rotate(${rot}deg)`;
+    const c = { el: g, inner, num, x: 0, y: 0, cup: null, order: null };
+    g._obj = c;
+    placeEl(c, x, y);
+    return c;
+  }
+  function makeLabel(parent, n, kind, home) {
+    const g = make("g", { class: "label" }, parent);
+    const pop = make("g", { class: "label-pop" }, g);
+    drawLabel(pop, n, kind);
+    const l = { el: g, n, kind, home, x: 0, y: 0, slot: null, locked: false };
+    g._obj = l;
+    placeEl(l, home.x, home.y);
+    return l;
+  }
+
   function init() {
-    phase = "fill"; current = 0; done = [false, false, false]; busy = false; dotsBefore = 0;
-    clearTimeout(evalTimer); clearTimeout(wiggleTimer);
-    cubesG.replaceChildren(); pdotsG.replaceChildren(); inksG.replaceChildren(); loopLayer.replaceChildren();
-    document.querySelectorAll(".tile").forEach((t) => t.classList.remove("on"));
+    timers.forEach(clearTimeout); timers.length = 0;
+    phase = "fill"; current = 0; done = [false, false, false]; busy = false; dotsBefore = 0; orderCounter = 0;
+    clearTimeout(evalTimer);
+    [cubesG, labels1G, pdotsG, inksG, loopLayer, $("#labelsF"), $("#box7"), $("#box6")].forEach((g) => g.replaceChildren());
+    $("#scene1").classList.remove("gone");
+    $("#finale").classList.add("gone");
+    $("#box6").classList.add("box-hidden");
+    finale = null;
     $("#slate").classList.remove("on", "writing");
     svg.classList.remove("chalks-on");
     $("#seven").style.opacity = 0; $("#seven").classList.remove("full");
-    arcEls.forEach((a) => a.classList.remove("on"));
     chalkEls.forEach((c) => c.classList.remove("active", "done"));
 
-    cubes = SCATTER.map((s) => {
-      const g = make("g", { class: "cube" }, cubesG);
-      const inner = make("g", { class: "cube-inner" }, g);
-      make("rect", { class: "cube-body", x: -40, y: -40, width: 80, height: 80, rx: 12 }, inner);
-      make("rect", { class: "cube-top", x: -30, y: -32, width: 60, height: 15, rx: 7 }, inner);
-      make("circle", { class: "cube-stud", cx: 0, cy: 6, r: 13 }, inner);
-      inner.style.transform = `rotate(${s.r}deg)`;
-      const c = { el: g, inner, x: 0, y: 0, cup: null };
-      g._obj = c;
-      placeEl(c, s.x, s.y);
-      return c;
-    });
+    cubes = SCATTER.map((s) => makeCube(cubesG, s.x, s.y, s.r));
+    labels1 = KINDS.map((k, i) => makeLabel(labels1G, 6, k, LABEL1_HOME[i]));
+    labels1.forEach((l) => { l.el.style.display = "none"; });
 
     pdots = WORDS.map((_, i) => {
       const g = make("g", { class: "pdot" }, pdotsG);
       make("circle", { r: 16 }, g);
-      const home = { x: 1250 + (i % 4) * 70, y: 600 + Math.floor(i / 4) * 70 };
-      const d = { el: g, home, x: 0, y: 0, angle: null };
+      const home = { x: 1250 + (i % 4) * 70, y: 640 + Math.floor(i / 4) * 64 };
+      const d = { el: g, home, x: 0, y: 0, placed: false };
       g._obj = d;
       placeEl(d, home.x, home.y);
       return d;
@@ -349,35 +412,50 @@ body { background: var(--bg); overflow: hidden; }
     });
   }
 
-  /* ---------- étape 1 : remplir la boîte ---------- */
+  /* ---------- étape 1 : remplir la boîte, un numéro par cube ---------- */
   function filled() { return cubes.filter((c) => c.cup !== null).length; }
-  function nearestFreeCup(c) {
-    let best = -1, bestD = 95;
-    CUPS.forEach((p, i) => {
-      if (cubes.some((o) => o !== c && o.cup === i)) return;
-      const d = Math.hypot(p.x - c.x, p.y - c.y);
+  function nearestFree(list, obj, taken, maxD) {
+    let best = -1, bestD = maxD;
+    list.forEach((p, i) => {
+      if (taken(i)) return;
+      const d = Math.hypot(p.x - obj.x, p.y - obj.y);
       if (d < bestD) { bestD = d; best = i; }
     });
     return best;
   }
+  function renumber() {
+    const placed = cubes.filter((c) => c.cup !== null).sort((a, b) => a.order - b.order);
+    cubes.forEach((c) => {
+      const rank = c.cup === null ? "" : String(placed.indexOf(c) + 1);
+      if (c.num.textContent !== rank) {
+        c.num.textContent = rank;
+        c.num.classList.remove("pop"); void c.num.getBoundingClientRect(); c.num.classList.add("pop");
+      }
+    });
+  }
+  const labelsAllOn = () => labels1.every((l) => l.slot !== null);
+  function startWiggle() {
+    if (phase !== "six" || !labelsAllOn()) return;
+    cubes.filter((c) => c.cup === null).forEach((c) => c.el.classList.add("wiggle"));
+  }
 
   /* ---------- entourer ---------- */
   function inPoly(p, poly) {
-    let inside = false;
+    let ins = false;
     for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
       const a = poly[i], b = poly[j];
-      if ((a.y > p.y) !== (b.y > p.y) && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+      if ((a.y > p.y) !== (b.y > p.y) && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) ins = !ins;
     }
-    return inside;
+    return ins;
   }
   function enclosesBox(pts) {
     if (pts.length < 12) return false;
-    const m = 30;
+    const b = box1.bounds, m = 30;
     const corners = [
-      { x: BOX.x + m, y: BOX.y + m }, { x: BOX.x + BOX.w - m, y: BOX.y + m },
-      { x: BOX.x + m, y: BOX.y + BOX.h - m }, { x: BOX.x + BOX.w - m, y: BOX.y + BOX.h - m },
+      { x: b.x + m, y: b.y + m }, { x: b.x + b.w - m, y: b.y + m },
+      { x: b.x + m, y: b.y + b.h - m }, { x: b.x + b.w - m, y: b.y + b.h - m },
     ];
-    return inPoly({ x: BOX.x + BOX.w / 2, y: BOX.y + BOX.h / 2 }, pts) && corners.filter((c) => inPoly(c, pts)).length >= 3;
+    return inPoly({ x: b.x + b.w / 2, y: b.y + b.h / 2 }, pts) && corners.filter((c) => inPoly(c, pts)).length >= 3;
   }
   function fadeLoop(el, delay = 0) {
     setTimeout(() => { el.classList.add("fade"); setTimeout(() => el.remove(), 700); }, delay);
@@ -385,43 +463,31 @@ body { background: var(--bg); overflow: hidden; }
 
   function showSix() {
     phase = "six";
-    document.querySelectorAll(".tile").forEach((t) => t.classList.add("on"));
     say("six");
-    // puis le cube resté dehors se met à gigoter
-    wiggleTimer = setTimeout(() => {
-      cubes.filter((c) => c.cup === null).forEach((c) => c.el.classList.add("wiggle"));
-    }, 3400);
+    labels1.forEach((l, i) => {
+      l.el.style.display = "";
+      later(() => l.el.classList.add("on"), 200 + i * 500);
+    });
   }
 
   function showSlate() {
     phase = "slate";
-    clearTimeout(wiggleTimer);
     cubes.forEach((c) => c.el.classList.remove("wiggle"));
     $("#slate").classList.add("on");
+    $("#seven").style.opacity = SEVEN_OPACITY[0];
   }
 
-  /* ---------- étape 2 : les points dans les angles ---------- */
-  function nearestFreeAngle(d) {
-    let best = -1, bestD = 60;
-    ANGLES.forEach((a, i) => {
-      if (pdots.some((o) => o !== d && o.angle === i)) return;
-      const dist = Math.hypot(a.t.x - d.x, a.t.y - d.y);
-      if (dist < bestD) { bestD = dist; best = i; }
-    });
-    return best;
-  }
+  /* ---------- étape 2 : les points sur l'ardoise ---------- */
   function updateDots() {
-    const n = pdots.filter((d) => d.angle !== null).length;
-    arcEls.forEach((a, i) => a.classList.toggle("on", pdots.some((d) => d.angle === i)));
+    const n = pdots.filter((d) => d.placed).length;
     const seven = $("#seven");
-    // plus il y a de points, plus le 7 apparaît
-    seven.style.opacity = n === 0 ? 0 : n === 7 ? 1 : (0.06 + n * 0.1).toFixed(2);
+    seven.style.opacity = SEVEN_OPACITY[n];
     if (n > dotsBefore) say(WORDS[n - 1]);
     dotsBefore = n;
     if (n === 7 && phase === "slate") {
       seven.classList.add("full");
       phase = "write";
-      setTimeout(() => {
+      later(() => {
         $("#slate").classList.add("writing");
         svg.classList.add("chalks-on");
         selectChalk(0);
@@ -438,7 +504,6 @@ body { background: var(--bg); overflow: hidden; }
     const k = done.findIndex((d) => !d);
     if (k >= 0) selectChalk(k); else chalkEls.forEach((c) => c.classList.remove("active"));
   }
-
   function distSeg(p, a, b) {
     const dx = b.x - a.x, dy = b.y - a.y;
     const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / (dx * dx + dy * dy)));
@@ -473,12 +538,10 @@ body { background: var(--bg); overflow: hidden; }
     const precise = np.filter((p) => all.some(([a, b]) => distSeg(p, a, b) < TOL)).length;
     return covered / total >= 0.8 && precise / np.length >= 0.82;
   }
-
   function evaluate() {
     if (phase !== "write" || busy || done[current]) return;
     if (looksLikeSeven(inkPoints(inkGroups[current]))) bravo();
   }
-
   function bravo() {
     if (busy || done[current]) return;
     busy = true;
@@ -493,30 +556,90 @@ body { background: var(--bg); overflow: hidden; }
     confetti(center, css(COLORS[i]), last ? 1.6 : 1);
     done[i] = true;
     chalkEls[i].classList.add("done");
-    setTimeout(() => {
+    later(() => {
       if (hasInk) {
         // le 7 de l'enfant va se ranger dans sa case, à gauche
         const b = g.getBBox();
         const s = Math.min((SLOT_W - 50) / b.width, (SLOT_H - 50) / b.height, 1);
         const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
-        const tx = SLOTS[i].x + SLOT_W / 2 - s * cx, ty = SLOTS[i].y + SLOT_H / 2 - s * cy;
-        g.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+        g.style.transform = `translate(${SLOTS[i].x + SLOT_W / 2 - s * cx}px, ${SLOTS[i].y + SLOT_H / 2 - s * cy}px) scale(${s})`;
       }
       busy = false;
       nextChalk();
-      if (done.every(Boolean)) setTimeout(() => confetti({ x: 800, y: 250 }, null, 3), 900);
+      if (done.every(Boolean)) {
+        later(() => confetti({ x: 800, y: 250 }, null, 3), 900);
+        later(startFinale, 5500);
+      }
     }, 1900);
   }
 
+  /* ---------- jeu final : ranger les écritures dans la bonne boîte ---------- */
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  }
+  function startFinale() {
+    if (finale) return;
+    phase = "finale";
+    clearTimeout(evalTimer);
+    $("#scene1").classList.add("gone");
+    const b7 = buildBox($("#box7"), 70, 80, true);
+    const b6 = buildBox($("#box6"), 980, 80, false);
+    b7.n = 7; b6.n = 6; b7.el = $("#box7"); b6.el = $("#box6");
+    b7.cups.forEach((c) => makeCube(b7.el, c.x, c.y, 0).el.style.pointerEvents = "none");
+    b6.cups.forEach((c) => makeCube(b6.el, c.x, c.y, 0).el.style.pointerEvents = "none");
+    b7.filled = []; b6.filled = [];
+    const pool = shuffle([6, 7].flatMap((n) => KINDS.map((k) => ({ n, k }))));
+    const start = (1600 - (8 * 108 + 7 * 40)) / 2 + 54;
+    const labels = pool.map((p, i) => makeLabel($("#labelsF"), p.n, p.k, { x: start + i * 148, y: 650 }));
+    finale = { boxes: [b7, b6], target: 7, labels };
+    later(() => {
+      $("#finale").classList.remove("gone");
+      labels.forEach((l, i) => later(() => l.el.classList.add("on"), 300 + i * 120));
+    }, 700);
+  }
+  function dropFinaleLabel(l) {
+    const visible = finale.boxes.filter((b) => !b.el.classList.contains("box-hidden"));
+    const hit = visible.find((b) => inside(l, b.bounds, 30));
+    if (!hit) { placeEl(l, l.home.x, l.home.y); return; }
+    if (hit.n === l.n && hit.filled.length < 4 && hit.n === finale.target) {
+      const s = hit.slots[hit.filled.length];
+      hit.filled.push(l);
+      l.locked = true;
+      l.el.style.cursor = "default";
+      placeEl(l, s.x, s.y);
+      say(WORDS[l.n - 1]);
+      if (hit.filled.length === 4) {
+        const c = { x: hit.bounds.x + hit.bounds.w / 2, y: hit.bounds.y + 150 };
+        if (finale.target === 7) {
+          finale.target = 6;
+          later(() => { say("Bravo, c'est sept !"); confetti(c, css("--c1"), 1); }, 500);
+          later(() => $("#box6").classList.remove("box-hidden"), 2200);
+        } else {
+          finale.target = 0;
+          later(() => { say("Bravo ! Six et sept !"); starPop({ x: 800, y: 300 }); confetti({ x: 800, y: 300 }, null, 3); }, 500);
+        }
+      }
+    } else {
+      // mauvaise boîte : une croix, et l'étiquette retourne à sa place
+      crossPop({ x: l.x, y: l.y });
+      say("Non");
+      l.el.classList.add("shake");
+      setTimeout(() => { l.el.classList.remove("shake"); placeEl(l, l.home.x, l.home.y); }, 500);
+    }
+  }
+
+  /* ---------- effets ---------- */
   function starPop(p) {
     $("#bigStarG").setAttribute("transform", `translate(${p.x} ${p.y})`);
     const s = $("#bigStar");
-    s.classList.remove("pop");
-    void s.getBoundingClientRect();
-    s.classList.add("pop");
+    s.classList.remove("pop"); void s.getBoundingClientRect(); s.classList.add("pop");
   }
-
-  /* ---------- confettis ---------- */
+  function crossPop(p) {
+    $("#crossG").setAttribute("transform", `translate(${p.x} ${p.y})`);
+    const s = $("#cross");
+    s.classList.remove("pop"); void s.getBoundingClientRect(); s.classList.add("pop");
+  }
   const cv = $("#confetti"), ctx = cv.getContext("2d");
   let parts = [], raf = null;
   function confetti(p, color, power) {
@@ -556,25 +679,33 @@ body { background: var(--bg); overflow: hidden; }
     pt.x = e.clientX; pt.y = e.clientY;
     return pt.matrixTransform(svg.getScreenCTM().inverse());
   }
-  const onBoard = (p) => p.x > BOARD.x && p.x < BOARD.x + BOARD.w && p.y > BOARD.y && p.y < BOARD.y + BOARD.h;
   let mode = null, drag = null, stroke = null;
 
   svg.addEventListener("pointerdown", (e) => {
     const p = toSvg(e);
     const chalk = e.target.closest(".chalk");
+    const label = e.target.closest(".label");
     const pdot = e.target.closest(".pdot");
     const cube = e.target.closest(".cube");
     if (chalk && phase === "write") { selectChalk(Number(chalk.dataset.i)); return; }
 
-    if ((pdot && phase === "slate") || (cube && (phase === "fill" || phase === "six"))) {
-      const obj = (pdot || cube)._obj;
+    let obj = null, kind = null;
+    if (label && !label._obj.locked && (phase === "six" || phase === "finale")) { obj = label._obj; kind = "label"; }
+    else if (pdot && phase === "slate") { obj = pdot._obj; kind = "dot"; }
+    else if (cube && (phase === "fill" || phase === "six")) { obj = cube._obj; kind = "cube"; }
+
+    if (obj) {
       obj.el.parentNode.appendChild(obj.el);
       obj.el.classList.add("dragging");
-      if (cube) { obj.cup = null; obj.inner.style.transform = "rotate(0deg)"; obj.el.classList.remove("wiggle"); }
-      else { obj.angle = null; obj.el.classList.remove("set"); }
-      drag = { obj, dx: p.x - obj.x, dy: p.y - obj.y, kind: pdot ? "dot" : "cube" };
+      if (kind === "cube") {
+        obj.cup = null; obj.order = null; obj.inner.style.transform = "rotate(0deg)"; obj.el.classList.remove("wiggle");
+        renumber();
+      }
+      if (kind === "label") obj.slot = null;
+      if (kind === "dot") obj.placed = false;
+      drag = { obj, kind, dx: p.x - obj.x, dy: p.y - obj.y };
       mode = "drag";
-    } else if (phase === "write" && onBoard(p) && !busy && !done[current]) {
+    } else if (phase === "write" && inside(p, BOARD) && !busy && !done[current]) {
       clearTimeout(evalTimer);
       const path = make("path", { class: "ink", d: `M${p.x} ${p.y}` }, inkGroups[current]);
       path._pts = [{ x: p.x, y: p.y }];
@@ -609,14 +740,22 @@ body { background: var(--bg); overflow: hidden; }
       o.el.classList.remove("dragging");
       if (drag.kind === "cube") {
         const before = filled();
-        const i = nearestFreeCup(o);
-        if (i >= 0) { o.cup = i; placeEl(o, CUPS[i].x, CUPS[i].y); }
+        const i = nearestFree(box1.cups, o, (k) => cubes.some((c) => c !== o && c.cup === k), 95);
+        if (i >= 0) { o.cup = i; o.order = ++orderCounter; placeEl(o, box1.cups[i].x, box1.cups[i].y); }
+        renumber();
         const n = filled();
         if (n > before) say(WORDS[n - 1]);
-        if (phase === "six" && o.cup === null && n === 6) setTimeout(() => o.el.classList.add("wiggle"), 600);
+        if (o.cup === null) setTimeout(startWiggle, 600);
+      } else if (drag.kind === "label") {
+        if (phase === "finale") dropFinaleLabel(o);
+        else {
+          const i = inside(o, box1.bounds, 20) ? nearestFree(box1.slots, o, (k) => labels1.some((l) => l !== o && l.slot === k), 400) : -1;
+          if (i >= 0) { o.slot = i; placeEl(o, box1.slots[i].x, box1.slots[i].y); }
+          else placeEl(o, o.home.x, o.home.y);
+          if (labelsAllOn()) { say("six"); later(startWiggle, 1500); }
+        }
       } else {
-        const i = nearestFreeAngle(o);
-        if (i >= 0) { o.angle = i; o.el.classList.add("set"); placeEl(o, ANGLES[i].t.x, ANGLES[i].t.y); }
+        if (inside(o, BOARD, -10)) o.placed = true;
         else placeEl(o, o.home.x, o.home.y);
         updateDots();
       }
@@ -657,6 +796,7 @@ body { background: var(--bg); overflow: hidden; }
     inkGroups[current].replaceChildren();
   });
   $("#btnBravo").addEventListener("click", () => { if (phase === "write") bravo(); });
+  $("#btnFinale").addEventListener("click", startFinale);
   $("#btnFull").addEventListener("click", () => {
     try {
       if (document.fullscreenElement) document.exitFullscreen();
