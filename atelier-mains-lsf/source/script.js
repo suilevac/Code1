@@ -39,7 +39,7 @@ const LIMF={mcp:[-20,90],pip:[0,105],dip:[-10,80]};
 const LIMT={av:[0,45],rap:[-20,40],mcp:[-10,55],ip:[-20,80]};
 const ENSLAVE=[['index','majeur',90],['majeur','annulaire',85],['annulaire','auriculaire',75]];
 const CMC_IMG=[652,748],MCP_T=HD.chains.pouce[0];
-const CMC=toM(CMC_IMG[0],CMC_IMG[1],0);
+const CMC=toM(CMC_IMG[0],CMC_IMG[1],HD.mesh.jz.pouce[0]);
 const UM=toM(MCP_T[0],MCP_T[1],0).sub(CMC).normalize(),LATM=UM.clone().cross(Z).normalize();
 const convOf=(k,v)=>CONV[k]*clamp((Math.max(0,v.mcp)+.6*Math.max(0,v.pip))/150,0,1);
 
@@ -90,11 +90,11 @@ const editable=()=>S.mode==='pose'?S.pose:(S.target==='debut'?S.debut:S.fin);
 function tex(src){return new Promise(r=>{const t=new THREE.TextureLoader().load(src,()=>r(t));t.anisotropy=4})}
 const [TF,TB]=await Promise.all([tex(HD.texFront),tex(HD.texBack)]);
 const LIGHT=new THREE.Vector3(-.45,.55,1).normalize();
-const VS=`varying vec2 vUv;varying vec3 vN;void main(){vUv=uv;vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
-const FS=`uniform sampler2D colTex;uniform sampler2D alphaTex;uniform float opacity;uniform float hl;uniform vec3 L;varying vec2 vUv;varying vec3 vN;
-void main(){if(texture2D(alphaTex,vUv).a<.35){gl_FragColor=vec4(.067,.067,.067,opacity);return;}vec3 c=texture2D(colTex,vUv).rgb;
-float s=clamp(.8+.26*max(dot(normalize(vN),L),0.),0.,1.);c*=s;c=mix(c,vec3(1.,.78,.1),hl*.4);gl_FragColor=vec4(c,opacity);}`;
-const skinMat=back=>new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},alphaTex:{value:TF},opacity:{value:1},hl:{value:0},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS});
+const VS=`attribute float part;attribute float rnz;uniform float hlPart;varying float vH;varying float vS;varying vec2 vUv;varying vec3 vN;void main(){vH=abs(part-hlPart)<.5?1.:0.;vS=smoothstep(-.3,.3,rnz);vUv=uv;vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
+const FS=`uniform sampler2D colTex;uniform sampler2D colTex2;uniform sampler2D alphaTex;uniform float opacity;uniform float hl;uniform vec3 L;varying float vH;varying float vS;varying vec2 vUv;varying vec3 vN;
+void main(){if(texture2D(alphaTex,vUv).a<.35){gl_FragColor=vec4(.067,.067,.067,opacity);return;}vec3 c=mix(texture2D(colTex2,vUv).rgb,texture2D(colTex,vUv).rgb,vS);
+float s=clamp(.8+.26*max(dot(normalize(vN),L),0.),0.,1.);c*=s;c=mix(c,vec3(1.,.78,.1),hl*vH*.4);gl_FragColor=vec4(c,opacity);}`;
+const skinMat=back=>new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},colTex2:{value:TB},alphaTex:{value:TF},opacity:{value:1},hl:{value:0},hlPart:{value:-10},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS});
 const HULL=HD.outw+.6;
 
 function orient(geo,inside){
@@ -174,8 +174,27 @@ const SEGW={};ALL.forEach(k=>SEGW[k]=HD.segs[k].map(sg=>{const w=sg.ts.map((_,i)
 // la vraie articulation de la base (tête du métacarpien) n'est pas au pli de la racine du doigt visible sur le dessin,
 // mais ≈ 1,5 cm plus bas, sous le pli distal de la paume : le doigt pivote de là (sinon 1re phalange trop courte,
 // les deux autres trop longues : le bout plonge dans la paume au lieu de s'y poser). Le dessin au repos ne change pas.
-const DEEP={};ALL.forEach(k=>DEEP[k]=k==='pouce'?0:.8*2*SEGW[k][0]);
-const MCPJ=k=>{const c=HD.chains[k][0],u=HD.segs[k][0].u,d=DEEP[k]*SC;return toM(c[0]-u[0]*d,c[1]-u[1]*d,0)};
+const DEEP={};ALL.forEach(k=>DEEP[k]=k==='pouce'?0:Math.hypot(HD.chains[k][0][0]-HD.mesh.chain[k][0][0],HD.chains[k][0][1]-HD.mesh.chain[k][0][1])/SC);
+const MCPJ=k=>{const c=HD.mesh.chain[k][0];return toM(c[0],c[1],HD.mesh.jz[k][0])};
+
+/* ======================================================================
+   Peau v8 : UN maillage fermé pour toute la main (paume, doigts, pouce), sans raccord.
+   Chaque sommet suit jusqu'à 4 os (paume, métacarpien du pouce, phalanges) avec des poids lisses ;
+   le mélange se fait par quaternions duaux : la peau plie sans se pincer ni gonfler.
+   ====================================================================== */
+const MS=HD.mesh,MN=MS.n;
+const MXYZ=b64arr(MS.xyz,Int16Array),MUVQ=b64arr(MS.uv,Int16Array),MBI=b64arr(MS.bi,Uint8Array),MBW=b64arr(MS.bw,Uint8Array),MPRT=b64arr(MS.part,Uint8Array);
+const MREST=new Float32Array(3*MN),muv=new Float32Array(2*MN),mpart=new Float32Array(MN),midc=new Float32Array(3*MN);
+for(let i=0;i<MN;i++){const v=toM(MXYZ[3*i]/MS.q,MXYZ[3*i+1]/MS.q,MXYZ[3*i+2]/MS.q);MREST[3*i]=v.x;MREST[3*i+1]=v.y;MREST[3*i+2]=v.z;
+  muv[2*i]=MUVQ[2*i]/MS.q/HD.W;muv[2*i+1]=1-MUVQ[2*i+1]/MS.q/HD.H;mpart[i]=MPRT[i];midc[3*i]=MPRT[i]/8;midc[3*i+1]=MPRT[i]===1?0:1}
+const MUVA=new THREE.BufferAttribute(muv,2),MPARTA=new THREE.BufferAttribute(mpart,1),MIDC=new THREE.BufferAttribute(midc,3);
+const MINDEX=new THREE.BufferAttribute(MS.i32?b64arr(MS.idx,Uint32Array):b64arr(MS.idx,Uint16Array),1);
+// passe « identité » : une partie nette par triangle (pas de mélange de couleurs d'un sommet à l'autre)
+const NT=MINDEX.count/3,MIDF=new Float32Array(9*NT);
+for(let t=0;t<NT;t++){const a=MPRT[MINDEX.array[3*t]],b=MPRT[MINDEX.array[3*t+1]],c=MPRT[MINDEX.array[3*t+2]],pp=(a===b||a===c)?a:(b===c?b:Math.min(a,b,c));
+  for(let j=0;j<3;j++){MIDF[9*t+3*j]=pp/8;MIDF[9*t+3*j+1]=pp===1?0:1}}
+const MIDFA=new THREE.BufferAttribute(MIDF,3);
+let MRNZ=null;const SKIN_ID=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
 
 /* ======================================================================
    Une main = une hiérarchie d'articulations + des peaux
@@ -188,15 +207,22 @@ function makeHand(skeletonOnly){
   const root=new THREE.Group(),mats=[],chainMats={},hullMat=hullMatProto(),meshes=[];mats.push(hullMat);
   const addSkin=(geos,key)=>{const f=skinMat(false),b=skinMat(true);mats.push(f,b);chainMats[key]=[f,b];if(key==='paume')[f,b].forEach(m=>m.side=THREE.DoubleSide);
     [[geos[0],f,false],[geos[1],b,false],[geos[2],hullMat,true],[geos[3],hullMat,true]].forEach(([g,m,h])=>{const me=new THREE.Mesh(g,m);me.frustumCulled=false;me.userData={hull:h,idMat:idMats[key]};root.add(me);meshes.push(me)})};
-  let palm=null,tubes={};
+  let skin=null,skinMats=[];
   if(!skeletonOnly){
-    const pf=palmGeo(1),pb=palmGeo(-1);palm={pf,pb,hf:pf.clone(),hb:pb.clone(),key:''};addSkin([palm.pf,palm.pb,palm.hf,palm.hb],'paume');
-    ALL.forEach(k=>{const f=TUBE[k][0].clone(),b=TUBE[k][1].clone();[f,b].forEach((g,i)=>{g.userData=TUBE[k][i].userData});
-      tubes[k]={f,b,hf:f.clone(),hb:b.clone(),key:''};addSkin([tubes[k].f,tubes[k].b,tubes[k].hf,tubes[k].hb],k)});
+    // une seule matière : dessin paume devant, dessin dos derrière, fondus sur la tranche
+    const f=skinMat(false);mats.push(f);skinMats=[f];
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));g.setAttribute('uv',MUVA);
+    g.setAttribute('part',MPARTA);g.setAttribute('color',MIDC);g.setIndex(MINDEX);
+    g.computeVertexNormals();if(!MRNZ){MRNZ=new Float32Array(MN);const nn=g.attributes.normal.array;for(let i=0;i<MN;i++)MRNZ[i]=nn[3*i+2]}g.setAttribute('rnz',new THREE.BufferAttribute(MRNZ,1));
+    const hg=new THREE.BufferGeometry();hg.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));hg.setIndex(MINDEX);
+    const me=new THREE.Mesh(g,f),mh=new THREE.Mesh(hg,hullMat);me.frustumCulled=mh.frustumCulled=false;
+    me.userData={hull:false,idMat:SKIN_ID};mh.userData={hull:true};root.add(me,mh);meshes.push(me,mh);
+    const idg=new THREE.BufferGeometry();idg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9*NT),3));idg.setAttribute('color',MIDFA);
+    const idm=new THREE.Mesh(idg,SKIN_ID);idm.visible=false;idm.frustumCulled=false;root.add(idm);skin={g,hg,idg,idm,key:''};
   }
   const joints={};
   ALL.forEach(k=>{
-    const J=HD.chains[k].map(p=>toM(p[0],p[1],0));if(DEEP[k])J[0]=MCPJ(k);joints[k]=[];joints[k].J=J;
+    const off=k==='pouce'?1:0,J=HD.chains[k].map((p,i)=>toM(p[0],p[1],i<HD.segs[k].length?HD.mesh.jz[k][i+off]:0));if(DEEP[k])J[0]=MCPJ(k);joints[k]=[];joints[k].J=J;
     let parent=root,prev=new THREE.Vector3();
     if(k==='pouce'){const c=new THREE.Group();c.position.copy(CMC);root.add(c);joints.cmc=c;parent=c;prev=CMC.clone()}
     HD.segs[k].forEach((sg,i)=>{const g=new THREE.Group();g.position.copy(J[i].clone().sub(prev));parent.add(g);joints[k].push(g);parent=g;prev=J[i]});
@@ -204,7 +230,7 @@ function makeHand(skeletonOnly){
     const tip=new THREE.Object3D();tip.position.copy(toM(sg.a[0]+sg.u[0]*te*.9,sg.a[1]+sg.u[1]*te*.9,0).sub(prev));parent.add(tip);joints[k].tip=tip;
   });
   scene.add(root);
-  return {root,joints,mats,chainMats,palm,tubes,meshes};
+  return {root,joints,mats,chainMats,skin,skinMats,meshes};
 }
 const qa=(axis,deg)=>new THREE.Quaternion().setFromAxisAngle(axis,deg*D);
 // pouce : le dessin montre sa pulpe ; MCP et IP plient vers l'avant et un peu en travers de la paume
@@ -286,12 +312,35 @@ function skinPalm(h,p){
     hg.attributes.position.needsUpdate=true;
   });
 }
+function boneDQ1(h,g,J){
+  let q=new THREE.Quaternion(),t=new THREE.Vector3();
+  _m.multiplyMatrices(_inv,g.matrixWorld);_m.multiply(new THREE.Matrix4().makeTranslation(-J.x,-J.y,-J.z));_m.decompose(t,q,_s);
+  if(q.w<0){q.x=-q.x;q.y=-q.y;q.z=-q.z;q.w=-q.w}
+  return {r:[q.x,q.y,q.z,q.w],d:[.5*(t.x*q.w+t.y*q.z-t.z*q.y),.5*(-t.x*q.z+t.y*q.w+t.z*q.x),.5*(t.x*q.y-t.y*q.x+t.z*q.w),-.5*(t.x*q.x+t.y*q.y+t.z*q.z)]};
+}
+function skinMesh(h,key){
+  const S_=h.skin;if(S_.key===key)return;S_.key=key;
+  _inv.copy(h.root.matrixWorld).invert();
+  const B=MS.bones.map(n=>{if(n==='paume')return DQ_ID;if(n==='pouce.cmc')return boneDQ1(h,h.joints.cmc,CMC);const [k,i]=n.split('.');return boneDQ1(h,h.joints[k][+i],h.joints[k].J[+i])});
+  const pa=S_.g.attributes.position.array,R=[0,0,0,0],Dd=[0,0,0,0];
+  for(let i=0;i<MN;i++){R[0]=R[1]=R[2]=R[3]=Dd[0]=Dd[1]=Dd[2]=Dd[3]=0;
+    for(let j=0;j<4;j++){const w=MBW[4*i+j];if(!w)continue;const q=B[MBI[4*i+j]],ww=w/255;for(let c=0;c<4;c++){R[c]+=ww*q.r[c];Dd[c]+=ww*q.d[c]}}
+    const n=Math.hypot(R[0],R[1],R[2],R[3]),x=R[0]/n,y=R[1]/n,z=R[2]/n,w=R[3]/n,dx=Dd[0]/n,dy=Dd[1]/n,dz=Dd[2]/n,dw=Dd[3]/n;
+    const tx=2*(-dw*x+dx*w-dy*z+dz*y),ty=2*(-dw*y+dx*z+dy*w-dz*x),tz=2*(-dw*z-dx*y+dy*x+dz*w);
+    const o=3*i,px=MREST[o],py=MREST[o+1],pz=MREST[o+2];
+    const ix=w*px+y*pz-z*py,iy=w*py+z*px-x*pz,iz=w*pz+x*py-y*px,iw=-x*px-y*py-z*pz;
+    pa[o]=ix*w+iw*-x+iy*-z-iz*-y+tx;pa[o+1]=iy*w+iw*-y+iz*-x-ix*-z+ty;pa[o+2]=iz*w+iw*-z+ix*-y-iy*-x+tz}
+  S_.g.attributes.position.needsUpdate=true;S_.g.computeVertexNormals();
+  const nn=S_.g.attributes.normal.array,hp=S_.hg.attributes.position.array,e=HULL/SC;for(let i=0;i<3*MN;i++)hp[i]=pa[i]+nn[i]*e;
+  S_.hg.attributes.position.needsUpdate=true;
+  const ip=S_.idg.attributes.position.array,ix=MINDEX.array;for(let t=0;t<3*NT;t++){const v=3*ix[t];ip[3*t]=pa[v];ip[3*t+1]=pa[v+1];ip[3*t+2]=pa[v+2]}
+  S_.idg.attributes.position.needsUpdate=true;
+}
 function applyPose(h,p,light){
   setJoints(h,p);
   if(light){h.root.updateMatrixWorld(true);return}
   h.root.quaternion.fromArray(p.q);h.root.position.fromArray(p.pos);h.root.scale.x=S.gauche?-1:1;h.root.updateMatrixWorld(true);
-  skinPalm(h,p);
-  ALL.forEach(k=>skinTube(h,k,JSON.stringify(p.f[k])));
+  skinMesh(h,JSON.stringify(p.f));
 }
 function setLook(h,op){h.mats.forEach(m=>{if(m.uniforms)m.uniforms.opacity.value=op;else m.opacity=op;m.transparent=op<1;m.depthWrite=op>=1})}
 function lerpF(a,b,t){const o=clone(a);for(const k in o)for(const j in o[k])o[k][j]=a[k][j]+(b[k][j]-a[k][j])*t;return o}
@@ -410,10 +459,10 @@ function renderAll(){
   // 1. identités (main pleine seulement)
   const hidden=[];const hide=o=>{if(o.visible){o.visible=false;hidden.push(o)}};
   ghosts.forEach(g=>hide(g.root));hide(arrow);
-  main.meshes.forEach(m=>{if(m.userData.hull)hide(m);else{m.userData.mat=m.material;m.material=m.userData.idMat}});
+  main.meshes.forEach(hide);main.skin.idm.visible=true;
   const cc=renderer.getClearColor(new THREE.Color()),ca=renderer.getClearAlpha();
   renderer.setRenderTarget(idRT);renderer.setClearColor(0,0);renderer.clear();renderer.render(scene,camera);renderer.setRenderTarget(null);
-  main.meshes.forEach(m=>{if(!m.userData.hull)m.material=m.userData.mat});hidden.forEach(o=>o.visible=true);
+  main.skin.idm.visible=false;hidden.forEach(o=>o.visible=true);
   renderer.setClearColor(cc,ca);
   // 2. image normale, 3. traits intérieurs par-dessus
   renderer.render(scene,camera);
@@ -463,7 +512,7 @@ function pick(e){
 const label=s=>!s?'':s.k===null?'Main · tourner (Maj : déplacer)':`${NOMS[s.k]} · ${SEGN[typ(s.k)][s.g]}${S.locks[s.k][s.g]?' 🔒':''}`;
 let hovered=null;
 function setHL(s){const key=s?(s.k===null?'paume':s.k):null;if(key===hovered)return;
-  const set=(kk,v)=>{if(kk&&main.chainMats[kk])main.chainMats[kk].forEach(m=>m.uniforms.hl.value=v)};set(hovered,0);hovered=key;set(key,1)}
+  hovered=key;main.skinMats.forEach(m=>{m.uniforms.hl.value=key?1:0;m.uniforms.hlPart.value=key?ID[key]:-10})}
 
 /* ======================================================================
    Marionnette
@@ -622,7 +671,7 @@ function cropAlpha(src){const c=document.createElement('canvas');c.width=src.wid
   if(x1<0)return c;const pad=Math.round(c.width*.02);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(c.width,x1+pad);y1=Math.min(c.height,y1+pad);
   const o=document.createElement('canvas');o.width=x1-x0;o.height=y1-y0;o.getContext('2d').drawImage(c,x0,y0,o.width,o.height,0,0,o.width,o.height);return o}
 
-window.__atelier={setPron:v=>{PRON=v;main.palm.key='';ALL.forEach(k=>main.tubes[k].key='')},S,refresh,main,camera,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll};
+window.__atelier={setPron:v=>{PRON=v;main.skin.key=''},S,refresh,main,camera,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll};
 refresh();
 })();
 </script>

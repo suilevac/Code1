@@ -266,6 +266,163 @@ for k in ['index', 'majeur', 'annulaire', 'auriculaire']:
     FW.append(1 - x * x * (3 - 2 * x))
 FW = np.stack(FW, 1); tot = FW.sum(1, keepdims=True); FW = np.where(tot > 1, FW / np.maximum(tot, 1e-6), FW) * 0.85
 
+# =====================================================================================================
+# v8 : UNE peau fermée pour toute la main (paume + doigts + pouce), sans raccord.
+#  - volume : la silhouette intérieure exacte du dessin paume, gonflée en épaisseur. Doigts : coupe en ellipse
+#    (avant DF·r, arrière DB·r, r = demi-largeur locale) ; paume : nappes hf / hb ci-dessus ; fondu entre les deux.
+#  - surface fermée extraite par « marching cubes » (aucun trou, aucun boudin, triangles réguliers jusque sur la tranche)
+#  - poids de peau lisses vers un squelette anatomique : paume, métacarpien du pouce, 3 phalanges par doigt
+#    (la base du doigt pivote à la tête du métacarpien, DEEP sous le pli de la racine du doigt)
+# =====================================================================================================
+from skimage import measure
+DF8, DB8, DBT8 = .92, .70, .58
+FINGS = ['index', 'majeur', 'annulaire', 'auriculaire']
+M8 = INNER > .5
+d8 = ndimage.gaussian_filter(ndimage.distance_transform_edt(M8), 1.0)
+# demi-largeur locale r(x) = rayon de la plus grande boule inscrite qui contient x (plafonnée : seuls les doigts s'en servent)
+loc = np.zeros((H, W))
+for r_ in range(2, 61, 2):
+    cov = ndimage.distance_transform_edt(~(d8 >= r_)) <= r_
+    loc[cov & M8] = r_
+loc = np.maximum(loc, 2)
+circ8 = lambda u: np.sqrt(np.clip(1 - (1 - np.clip(u, 0, 1)) ** 2, 0, 1))
+# aplatissement du dos au bout des doigts (lit de l'ongle)
+tipf = np.zeros((H, W))
+for k, pts in CP.items():
+    pts = np.array(pts, float); a, b = pts[-2], pts[-1]; u = (b - a) / np.hypot(*(b - a))
+    t = ((XX - a[0]) * u[0] + (YY - a[1]) * u[1]) / np.hypot(*(b - a))
+    own = np.char.startswith(owner.astype(str), k + '.' + str(len(pts) - 2))
+    tipf = np.where(own, np.clip((t - .15) / .35, 0, 1), tipf)
+fF = DF8 * loc * circ8(d8 / loc)
+fB = (DB8 - (DB8 - DBT8) * tipf) * loc * circ8(d8 / loc)
+wfin = np.clip(ndimage.gaussian_filter(finger.astype(float), 6), 0, 1)
+# la nappe de la paume, mesurée sur la silhouette intérieure (pour rejoindre exactement la tranche)
+roundP = circ8(d8 / Rr) * circ8(dist_cut / 34.0)
+hfP = np.minimum((52 * (1 - wr_) + 88 * wr_ + 18 * gauss(675, 650, 75) + 10 * gauss(365, 640, 60) - 12 * gauss(500, 560, 85)) * roundP, 34 + .55 * dist_cut)
+hbP = np.minimum((46 * (1 - wr_) + 84 * wr_ + 8 * gauss(500, 420, 140)) * circ8(d8 / Rr) * (.75 + .25 * circ8(dist_cut / 34.0)), 24 + .55 * dist_cut)
+front8 = wfin * fF + (1 - wfin) * hfP
+back8 = wfin * fB + (1 - wfin) * hbP
+out8 = ndimage.distance_transform_edt(~M8)
+front8 = np.where(M8, front8, -out8); back8 = np.where(M8, back8, -out8)
+# poignet coupé net (le bas du dessin) : on ferme le volume par un fond plat
+STEP8 = 5
+bottom = np.nonzero(M8.any(1))[0].max()
+xs8, ys8 = np.arange(0, W, STEP8), np.arange(0, H, STEP8)
+zmin, zmax = -float(back8.max()) - 3 * STEP8, float(front8.max()) + 3 * STEP8
+zs8 = np.arange(zmin, zmax + STEP8, STEP8)
+Fq, Bq = front8[np.ix_(ys8, xs8)], back8[np.ix_(ys8, xs8)]
+vol = np.minimum(Fq[..., None] - zs8[None, None], zs8[None, None] + Bq[..., None])
+vol = np.minimum(vol, (bottom - 2 - ys8)[:, None, None].astype(float))          # fond au poignet
+vol = np.pad(vol, 1, constant_values=-50)
+vv, ff, _, _ = measure.marching_cubes(vol, 0.0)
+vv = vv - 1
+V8 = np.stack([xs8[0] + vv[:, 1] * STEP8, ys8[0] + vv[:, 0] * STEP8, zmin + vv[:, 2] * STEP8], 1)
+# lissage de Taubin léger (efface les facettes du maillage sans rétrécir)
+from scipy import sparse
+nV = len(V8)
+I = np.concatenate([ff[:, 0], ff[:, 1], ff[:, 2], ff[:, 1], ff[:, 2], ff[:, 0]]); Jn = np.concatenate([ff[:, 1], ff[:, 2], ff[:, 0], ff[:, 0], ff[:, 1], ff[:, 2]])
+A = sparse.csr_matrix((np.ones(len(I)), (I, Jn)), shape=(nV, nV)); A.data[:] = 1
+deg = np.asarray(A.sum(1)).ravel(); Ln = sparse.diags(1 / np.maximum(deg, 1)) @ A
+for _ in range(6):
+    V8 = V8 + .5 * (Ln @ V8 - V8); V8 = V8 - .53 * (Ln @ V8 - V8)
+# orientation des faces : normales vers l'extérieur
+fn = np.cross(V8[ff[:, 1]] - V8[ff[:, 0]], V8[ff[:, 2]] - V8[ff[:, 0]])
+top = np.argmax(V8[ff].mean(1)[:, 2])
+if fn[top, 2] < 0: ff = ff[:, [0, 2, 1]]; fn = -fn
+front_face = fn[:, 2] >= 0
+ff = np.concatenate([ff[front_face], ff[~front_face]]); nFront = int(front_face.sum())
+# l'image a y vers le bas, la 3D y vers le haut (miroir) : on inverse l'ordre des sommets pour garder les faces vers l'extérieur
+ff = ff[:, [0, 2, 1]]
+
+# ---------- squelette (pixels du dessin paume ; z = milieu de l'épaisseur) ----------
+def zmid(p):
+    x, y = int(round(p[0])), int(round(p[1])); return float((front8[y, x] - back8[y, x]) / 2)
+def segw0(k):
+    sg = segs[k][0]; w = [(a + b) / 2 for a, b in zip(sg['wl'], sg['wr']) if (a + b) / 2 > 4]; return float(np.mean(w))
+DEEP8 = {k: .5 * 2 * segw0(k) for k in FINGS}   # tête du métacarpien ≈ ½ largeur de doigt sous le pli de la racine
+CMC8 = np.array([652., 748.])
+chain8 = {}
+for k in FINGS:
+    p = np.array(CP[k], float); u = (p[1] - p[0]) / np.hypot(*(p[1] - p[0]))
+    chain8[k] = [p[0] - u * DEEP8[k], p[1], p[2], p[3]]
+chain8['pouce'] = [CMC8, np.array(CP['pouce'][0], float), np.array(CP['pouce'][1], float), np.array(CP['pouce'][2], float)]
+jointZ = {k: [zmid(q) for q in chain8[k][:3]] for k in chain8}
+
+def polyproj(P, pts):
+    """abscisse curviligne s (prolongée avant le 1er point) et distance latérale l de chaque point P à la polyligne"""
+    best_l = np.full(len(P), 1e9); best_s = np.zeros(len(P)); S0 = 0.
+    for i in range(len(pts) - 1):
+        a, b = pts[i], pts[i + 1]; L = np.hypot(*(b - a)); u = (b - a) / L
+        t = (P[:, 0] - a[0]) * u[0] + (P[:, 1] - a[1]) * u[1]
+        tc = t if i == 0 else np.maximum(t, 0)
+        tc = np.minimum(tc, L) if i < len(pts) - 2 else tc
+        q = a[None] + tc[:, None] * u[None]; l = np.hypot(P[:, 0] - q[:, 0], P[:, 1] - q[:, 1])
+        better = l < best_l - 1e-9; best_l[better] = l[better]; best_s[better] = S0 + tc[better]; S0 += L
+    return best_s, best_l
+def sstep(a, b, x): t = np.clip((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t)
+cum = lambda pts: np.concatenate([[0], np.cumsum([np.hypot(*(pts[i + 1] - pts[i])) for i in range(len(pts) - 1)])])
+
+P2 = V8[:, :2]
+# région de chaque sommet (pixel intérieur le plus proche)
+_, (iy8, ix8) = ndimage.distance_transform_edt(~M8, return_indices=True)
+vx = np.clip(np.round(P2[:, 0]).astype(int), 0, W - 1); vy = np.clip(np.round(P2[:, 1]).astype(int), 0, H - 1)
+vx, vy = ix8[vy, vx], iy8[vy, vx]
+vown = owner[vy, vx].astype(str)
+BONES = ['paume', 'pouce.cmc', 'pouce.0', 'pouce.1'] + [f'{k}.{i}' for k in FINGS for i in range(3)]
+Wb = np.zeros((nV, len(BONES)))
+# demi-largeur du doigt le long de son axe (pour savoir si un point de la paume est « sous » le doigt)
+def half_width_at(k, s):
+    sg = segs[k]; base = DEEP8[k]; out = np.full(len(s), segw0(k))
+    S0 = base
+    for g in sg:
+        ts = np.array(g['ts']); w = (np.array(g['wl']) + np.array(g['wr'])) / 2
+        m = (s >= S0) & (s <= S0 + ts[-1]); out[m] = np.interp(s[m] - S0, ts, w); S0 += g['len'] if not g['tip'] else ts[-1]
+    return np.maximum(out, 6)
+raw = {}; sK = {}
+for k in FINGS:
+    s, l = polyproj(P2, chain8[k]); w = half_width_at(k, s); sK[k] = s
+    r_ = np.where(l <= w + 2, 1.0, np.exp(-((l - w - 2) / 22.0) ** 2))
+    own_other = np.array([o != '' and not o.startswith(k + '.') for o in vown])
+    own_self = np.char.startswith(vown, k + '.')
+    r_ = np.where(own_other, 0, np.where(own_self, 1, r_))
+    raw[k] = r_ * sstep(-.55 * 2 * segw0(k) / 2 * 2, .55 * 2 * segw0(k), s - 0)   # transition à la tête du métacarpien
+tot = sum(raw.values()); scale = np.where(tot > 1, 1 / np.maximum(tot, 1e-9), 1)
+for k in FINGS:
+    c = raw[k] * scale; s = sK[k]; cs = cum(chain8[k]); w0 = segw0(k)
+    t1 = sstep(cs[1] - .4 * w0, cs[1] + .4 * w0, s); t2 = sstep(cs[2] - .35 * w0, cs[2] + .35 * w0, s)
+    b = BONES.index(k + '.0'); Wb[:, b] = c * (1 - t1); Wb[:, b + 1] = c * t1 * (1 - t2); Wb[:, b + 2] = c * t1 * t2
+# pouce : métacarpien (éminence thénar) puis 2 phalanges
+def thenarW8(x, y):
+    ax, ay = CP['pouce'][0][0] - CMC8[0], CP['pouce'][0][1] - CMC8[1]; L2 = ax * ax + ay * ay; L = np.sqrt(L2); dx, dy = x - CMC8[0], y - CMC8[1]
+    s = (dx * ax + dy * ay) / L2; nx, ny = -ay / L, ax / L
+    if nx * (500 - CMC8[0]) + ny * (560 - CMC8[1]) < 0: nx, ny = -nx, -ny
+    l = dx * nx + dy * ny
+    return sstep(-.12, .78, s) * np.where(l > 0, 1 - sstep(28, 135, l), 1) * (1 - sstep(1.15, 1.6, s) * sstep(10, 60, l))
+sT, lT = polyproj(P2, chain8['pouce']); csT = cum(chain8['pouce'])
+cT = np.where(np.char.startswith(vown, 'pouce.'), 1.0, thenarW8(P2[:, 0], P2[:, 1]))
+cT = np.minimum(cT, 1 - np.minimum(Wb[:, 4:].sum(1), 1))
+tM = sstep(csT[1] - 22, csT[1] + 22, sT); tI = sstep(csT[2] - 18, csT[2] + 18, sT)
+Wb[:, 1] = cT * (1 - tM); Wb[:, 2] = cT * tM * (1 - tI); Wb[:, 3] = cT * tM * tI
+Wb[:, 0] = np.clip(1 - Wb[:, 1:].sum(1), 0, 1)
+# 4 influences au plus par sommet
+order = np.argsort(-Wb, 1)[:, :4]; wt = np.take_along_axis(Wb, order, 1); wt = wt / np.maximum(wt.sum(1, keepdims=True), 1e-9)
+w8 = np.round(wt * 255).astype(np.int32); w8[:, 0] += 255 - w8.sum(1)
+# partie dominante (survol, traits intérieurs) : paume / pouce / doigt
+dom = np.argmax(Wb, 1)
+PART = {'paume': 1, 'pouce': 2, 'index': 3, 'majeur': 4, 'annulaire': 5, 'auriculaire': 6}
+# un doigt ne commence qu'à sa vraie racine (palmures et éminence = paume) : les traits intérieurs ne s'y dessinent pas
+part8 = np.array([PART[o.split('.')[0]] if o else 1 for o in vown], np.uint8)
+# couleur de la tranche prise un peu en retrait du bord dessiné (sinon le trait noir déborde sur le flanc)
+gy8, gx8 = np.gradient(ndimage.gaussian_filter(d8, 2.0))
+gn = np.hypot(gx8, gy8) + 1e-9; dv = d8[vy, vx]; push = np.clip(7 - dv, 0, 7)
+UV8 = np.stack([vx + gx8[vy, vx] / gn[vy, vx] * push, vy + gy8[vy, vx] / gn[vy, vx] * push], 1)
+mesh8 = {'uv': base64.b64encode(np.round(UV8 * 4).astype(np.int16).tobytes()).decode(), 'n': int(nV), 'xyz': base64.b64encode(np.round(V8 * 4).astype(np.int16).tobytes()).decode(), 'q': 4,
+         'idx': base64.b64encode(ff.astype(np.uint16 if nV < 65536 else np.uint32).tobytes()).decode(), 'i32': nV >= 65536,
+         'nFront': nFront, 'bi': base64.b64encode(order.astype(np.uint8).tobytes()).decode(), 'bw': base64.b64encode(w8.astype(np.uint8).tobytes()).decode(),
+         'part': base64.b64encode(part8.tobytes()).decode(), 'bones': BONES,
+         'chain': {k: [list(map(float, p)) for p in chain8[k]] for k in chain8}, 'jz': jointZ}
+print('peau v8 : sommets', nV, 'triangles', len(ff))
+
 def png_b64(arr):
     img = Image.fromarray((np.clip(arr, 0, 1) * 255).round().astype(np.uint8), 'RGBA')
     b = io.BytesIO(); img.save(b, 'PNG', optimize=True); return 'data:image/png;base64,' + base64.b64encode(b.getvalue()).decode()
@@ -273,6 +430,7 @@ b64 = lambda a: base64.b64encode(np.ascontiguousarray(a).tobytes()).decode()
 data = {'W': W, 'H': H, 'chains': CP, 'segs': segs,
         'palm': {'n': int(len(verts)), 'xy': b64(verts.astype(np.int16)), 'zf': b64(np.round(zf * 8).astype(np.int16)), 'zb': b64(np.round(zb * 8).astype(np.int16)), 'idx': b64(tris), 'zscale': 8},
         'texFront': png_b64(P_tex), 'texBack': png_b64(DA), 'outw': OUTW,
+        'mesh': mesh8,
         # carte d'épaisseur de la paume (collisions : un doigt ne traverse pas la paume)
         'fw': b64(np.round(FW * 255).astype(np.uint8)),
         'hgrid': {'step': 8, 'gw': int(np.ceil(W / 8)), 'gh': int(np.ceil(H / 8)),

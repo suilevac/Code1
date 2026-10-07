@@ -23,7 +23,16 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
 | v3 | Modèle 3D générique (WebXR hand, MIT) restylé | Pas sa main ; la peau s'étire, les ongles se déforment |
 | v5 | Phalanges rigides séparées, texturées | Mieux, mais « boudins » aux articulations et pouce qui se disloque |
 
-## Architecture actuelle (v7)
+## Architecture actuelle (v8, en cours)
+
+**v8 = UNE peau fermée pour toute la main** (remplace les tubes de doigts + nappe de paume de la v7, qui donnaient trous, boules et « boudins » à la base des doigts) :
+- `rig3d.py` (section v8) : silhouette intérieure exacte du dessin paume gonflée en volume (doigts : coupe en ellipse DF/DB × demi-largeur locale ; paume : nappes `hf`/`hb`), surface extraite par *marching cubes* (pas 5 px, ≈ 44 000 sommets) puis lissage de Taubin.
+- Squelette : paume, métacarpien du pouce (`CMC`), 3 phalanges par doigt. La base du doigt pivote à la tête du métacarpien, ½ largeur de doigt sous le pli de la racine (`DEEP8`). Articulations au milieu de l'épaisseur (`jz`).
+- Poids de peau lisses (≤ 4 os par sommet), mélange par quaternions duaux dans `skinMesh` (script.js). Une seule matière : dessin paume devant, dessin dos derrière, fondus sur la tranche.
+- Passe « identité » : une partie nette par triangle ; palmures et éminence = paume.
+- Les photos de la main de l'utilisateur (profil, poing, pince, O…) ont servi de référence de volumes ; elles ne sont pas dans le dépôt.
+
+## Architecture précédente (v7)
 
 ```
 references/   paume.jpg, dos.png      ← les deux dessins de l'utilisateur
