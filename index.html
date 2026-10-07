@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Points alignés CE1</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&display=swap">
+<style>
+/* Mise en page : une feuille blanche plein écran, consigne en haut, trousse d'outils en bas, réglages enseignant en tiroir à droite. */
+:root{
+  color-scheme: light;
+  --paper:#ffffff;
+  --ink:#1d2733;
+  --chrome:#edf1f5;
+  --chrome-2:#dfe6ee;
+  --muted:#5b6878;
+  --rose:#d9327a;
+  --bleu:#1f68c9;
+  --ok:#1b9450;
+  --bad:#d23a2c;
+  --warn:#e07b00;
+  --hl:rgba(255,212,0,.5);
+  --ruler:rgba(255,243,190,.86);
+  --ruler-edge:#8a6d1f;
+  --font:"Andika", "Comic Sans MS", "Trebuchet MS", system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font);font-size:16px;display:flex;flex-direction:column;overflow:hidden;-webkit-user-select:none;user-select:none}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--bleu);outline-offset:2px}
+
+header{display:flex;align-items:center;gap:12px;padding:8px 16px;padding-top:calc(8px + env(safe-area-inset-top,0px));background:var(--chrome);border-bottom:1px solid var(--chrome-2);flex-wrap:wrap}
+#consigne{flex:1 1 320px;min-width:0;font-size:1.25rem;line-height:1.3;font-weight:700;text-wrap:balance}
+.status{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:var(--paper);border:2px solid var(--chrome-2);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip.rose{border-color:var(--rose);color:var(--rose)}
+.chip.bleu{border-color:var(--bleu);color:var(--bleu)}
+#gear{border:0;background:transparent;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+#gear:hover{background:var(--chrome-2)}
+
+main{flex:1;position:relative;min-height:0}
+#stage{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;background:var(--paper)}
+.pt{stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;fill:var(--ink)}
+.seg{stroke:var(--ink);stroke-width:2.4;stroke-linecap:round}
+.lbl{fill:var(--ink);font-family:var(--font);font-size:20px;font-weight:700}
+.rtick{stroke:var(--ink);stroke-width:1.6}
+.rnum{fill:var(--ink);font-family:var(--font);font-size:14px;font-weight:700;text-anchor:middle}
+#ruler{cursor:grab}
+#rulerHandle{cursor:alias}
+
+#toast{position:absolute;left:50%;top:12px;transform:translateX(-50%);max-width:min(90%,640px);padding:10px 18px;border-radius:14px;background:var(--ink);color:var(--paper);font-size:1.15rem;font-weight:700;text-align:center;pointer-events:none;transition:opacity .25s}
+#toast.ok{background:var(--ok)} #toast.bad{background:var(--bad)} #toast.part{background:var(--warn)}
+#bravo{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.6)}
+#bravo>div{background:var(--paper);border:4px solid var(--ok);border-radius:24px;padding:24px 32px;text-align:center;display:grid;gap:14px;box-shadow:0 10px 40px rgba(0,0,0,.15)}
+#bravo h2{margin:0;font-size:2.4rem;color:var(--ok)}
+
+footer{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;padding:8px 16px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));background:var(--chrome);border-top:1px solid var(--chrome-2)}
+.grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tb{min-height:52px;min-width:52px;padding:4px 12px;border-radius:14px;border:2px solid var(--chrome-2);background:var(--paper);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.85rem;font-weight:700}
+.tb svg{width:26px;height:26px}
+.tb[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.tb.pen{flex-direction:row;gap:8px;font-size:1rem;padding:4px 16px}
+.tb.pen .dot{width:20px;height:20px;border-radius:50%}
+.tb.pen[data-color="rose"] .dot{background:var(--rose)}
+.tb.pen[data-color="bleu"] .dot{background:var(--bleu)}
+.tb.pen[data-color="rose"][aria-pressed="true"]{background:var(--rose);border-color:var(--rose)}
+.tb.pen[data-color="bleu"][aria-pressed="true"]{background:var(--bleu);border-color:var(--bleu)}
+.tb.pen[aria-pressed="true"] .dot{background:var(--paper)}
+#rot{width:min(170px,34vw);height:40px;accent-color:var(--ruler-edge)}
+.sep{width:1px;align-self:stretch;background:var(--chrome-2)}
+
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(380px,100%);background:var(--paper);border-left:1px solid var(--chrome-2);box-shadow:-8px 0 30px rgba(0,0,0,.12);overflow-y:auto;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:16px;z-index:10;-webkit-user-select:text;user-select:text}
+#panel h2{margin:0;font-size:1.3rem}
+#panel fieldset{border:1px solid var(--chrome-2);border-radius:12px;padding:10px 12px;margin:0;display:grid;gap:8px}
+#panel legend{font-weight:700;padding:0 4px;color:var(--muted);font-size:.8rem;letter-spacing:.06em;text-transform:uppercase}
+#panel label{display:flex;align-items:center;gap:8px}
+#panel .row{display:flex;gap:12px;flex-wrap:wrap}
+#panel select,#panel input[type=number]{padding:6px 8px;border-radius:8px;border:1px solid var(--chrome-2);background:var(--paper)}
+#panel input[type=number]{width:70px}
+#panel .actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:10px 16px;border-radius:12px;border:2px solid var(--ink);background:var(--paper);font-weight:700}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.hint{color:var(--muted);font-size:.85rem;margin:0}
+.panelHead{display:flex;justify-content:space-between;align-items:center}
+
+@media (max-width:600px){
+  #consigne{font-size:1.05rem}
+  .tb{min-height:46px;min-width:46px;padding:2px 8px}
+  .tb .txt{display:none}
+}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <div id="consigne">Trouve les points alignés.</div>
+  <div class="status">
+    <span class="chip" id="progress">0 / 0</span>
+    <span class="chip rose" title="Points de l'élève rose">★ <span id="scRose">0</span></span>
+    <span class="chip bleu" title="Points de l'élève bleu">★ <span id="scBleu">0</span></span>
+    <button id="gear" aria-label="Réglages de l'enseignant" title="Réglages de l'enseignant">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <svg id="stage" xmlns="http://www.w3.org/2000/svg">
+    <g id="lyHl"></g>
+    <g id="lyBase"></g>
+    <g id="lyMarks"></g>
+    <g id="lyLive"></g>
+    <g id="lyFb"></g>
+    <g id="ruler"></g>
+  </svg>
+  <div id="toast" style="opacity:0"></div>
+  <div id="bravo" hidden>
+    <div>
+      <h2>Bravo !</h2>
+      <p id="bravoTxt" style="margin:0;font-size:1.2rem">Tu as tout trouvé.</p>
+      <div class="actions" style="display:flex;gap:10px;justify-content:center">
+        <button class="btn" id="bravoClose">Regarder</button>
+        <button class="btn primary" id="bravoNew">Nouvel exercice</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="grp" role="group" aria-label="Élève">
+    <button class="tb pen" data-color="rose" aria-pressed="true"><span class="dot"></span>Rose</button>
+    <button class="tb pen" data-color="bleu" aria-pressed="false"><span class="dot"></span>Bleu</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grp" role="group" aria-label="Outils">
+    <button class="tb" data-tool="lasso" aria-pressed="true" title="Entourer des points">
+      <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="4 3"><ellipse cx="13" cy="13" rx="11" ry="8"/></svg><span class="txt">Entourer</span></button>
+    <button class="tb" data-tool="line" aria-pressed="false" title="Tracer un trait">
+      <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M3 22 L22 4"/><path d="M18 3l5 5"/></svg><span class="txt">Tracer</span></button>
+    <button class="tb" data-tool="hl" aria-pressed="false" title="Surligner le point du milieu">
+      <svg viewBox="0 0 26 26"><path d="M3 18 H23" stroke="#f5c400" stroke-width="8" stroke-linecap="round" opacity=".8"/><path d="M9 11l4 4M17 11l-4 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" transform="translate(0,3)"/></svg><span class="txt">Surligner</span></button>
+    <button class="tb" data-tool="point" aria-pressed="false" title="Placer un point">
+      <svg viewBox="0 0 26 26" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M7 7l12 12M19 7L7 19"/></svg><span class="txt">Point</span></button>
+  </div>
+  <button class="tb" id="undo" title="Annuler mon dernier geste">
+    <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L4 11l5 5"/><path d="M4 11h11a6 6 0 0 1 0 12h-3"/></svg><span class="txt">Retour</span></button>
+  <div class="sep"></div>
+  <div class="grp" role="group" aria-label="Règle">
+    <button class="tb" id="rulerToggle" aria-pressed="true" title="Afficher ou cacher la règle">
+      <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="8" width="22" height="10" rx="1.5"/><path d="M6 8v4M10 8v3M14 8v4M18 8v3M22 8v4"/></svg><span class="txt">Règle</span></button>
+    <button class="tb" id="rotMinus" title="Tourner la règle" aria-label="Tourner la règle vers la gauche">
+      <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 13a7 7 0 1 1-2-5"/><path d="M19 3v5h-5"/></svg></button>
+    <input type="range" id="rot" min="-180" max="180" step="1" value="0" aria-label="Pivoter la règle">
+    <button class="tb" id="rotPlus" title="Tourner la règle" aria-label="Tourner la règle vers la droite">
+      <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" transform="scale(-1,1)"><path d="M20 13a7 7 0 1 1-2-5"/><path d="M19 3v5h-5"/></svg></button>
+    <button class="tb" id="rot0" title="Remettre la règle droite"><span style="font-size:1.4rem;line-height:1">━</span><span class="txt">Droite</span></button>
+  </div>
+</footer>
+
+<aside id="panel" hidden aria-label="Réglages de l'enseignant">
+  <div class="panelHead">
+    <h2>Réglages enseignant</h2>
+    <button class="btn" id="panelClose">Masquer</button>
+  </div>
+
+  <fieldset>
+    <legend>Progression</legend>
+    <select id="preset" aria-label="Étape de la progression">
+      <option value="">Choisir une étape…</option>
+    </select>
+    <p class="hint">Une étape remplit les réglages ci-dessous. Tu peux ensuite les ajuster.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Objectif</legend>
+    <label><input type="radio" name="mode" value="align"> Trouver les points alignés</label>
+    <label><input type="radio" name="mode" value="reperer"> Repérer le milieu d'un segment</label>
+    <label><input type="radio" name="mode" value="placer"> Placer le milieu d'un segment</label>
+    <label><input type="radio" name="mode" value="aligne"> Placer un point aligné avec deux points</label>
+  </fieldset>
+
+  <fieldset id="fsAlign">
+    <legend>Points alignés</legend>
+    <div class="row">
+      <label><input type="checkbox" name="size" value="3"> par 3</label>
+      <label><input type="checkbox" name="size" value="4"> par 4</label>
+      <label><input type="checkbox" name="size" value="5"> par 5</label>
+      <label><input type="checkbox" name="size" value="6"> par 6</label>
+    </div>
+    <label>Groupes de points alignés <input type="number" id="groups" min="1" max="5"></label>
+    <label>Points intrus <input type="number" id="intrus" min="0" max="14"></label>
+    <label><input type="checkbox" id="milieu"> Un point est au milieu de chaque groupe (à surligner)</label>
+  </fieldset>
+
+  <fieldset id="fsSeg">
+    <legend>Segments et points</legend>
+    <label>Nombre de segments / paires <input type="number" id="nbSeg" min="1" max="4"></label>
+    <label>Direction
+      <select id="segDir"><option value="h">Horizontaux</option><option value="libre">Toutes directions</option></select>
+    </label>
+    <label>Points à placer par paire
+      <select id="nbPlacer"><option value="1">1 point</option><option value="2">2 points</option></select>
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Outils</legend>
+    <label>Précision demandée
+      <select id="precision"><option value="facile">Facile</option><option value="normal">Normale</option><option value="exigeant">Exigeante</option></select>
+    </label>
+    <label><input type="checkbox" id="demi"> Graduations des demi-centimètres (sans nombres)</label>
+    <label><input type="checkbox" id="snap"> Le trait suit le bord de la règle numérique</label>
+    <label><input type="checkbox" id="penOnly"> Dessiner seulement au stylet (la main et la règle posées ne tracent pas)</label>
+  </fieldset>
+
+  <div class="actions">
+    <button class="btn primary" id="newEx">Nouvel exercice</button>
+    <button class="btn danger" id="clearAll">Effacer les traits</button>
+  </div>
+  <p class="hint">La règle numérique tourne autour de son 0. Toutes les longueurs à mesurer tombent sur des centimètres entiers.</p>
+</aside>
+
+<script>
+(() => {
+'use strict';
+const CM = 40;                       // 1 cm de la règle = 40 px à l'écran
+const RULER_CM = 15;
+const NS = 'http://www.w3.org/2000/svg';
+const LETTERS = 'ABCDEFGHIJKLMNOP';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs){
+    const v = attrs[k];
+    if (typeof v==='string' && v.startsWith('var(')) e.style.setProperty(k, v);   // les couleurs passent par les variables CSS
+    else e.setAttribute(k, v);
+  }
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const rnd = (a,b) => a + Math.random()*(b-a);
+const rint = (a,b) => Math.floor(rnd(a, b+1));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+function distLine(p,a,b){ const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy)||1; return Math.abs((p.x-a.x)*dy-(p.y-a.y)*dx)/L; }
+function distSeg(p,a,b){ const dx=b.x-a.x, dy=b.y-a.y, L2=dx*dx+dy*dy||1; const t=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/L2,0,1); return Math.hypot(p.x-(a.x+t*dx), p.y-(a.y+t*dy)); }
+function tripleDev(a,b,c){
+  const d1=dist(a,b), d2=dist(a,c), d3=dist(b,c);
+  if (d1>=d2 && d1>=d3) return distLine(c,a,b);
+  if (d2>=d1 && d2>=d3) return distLine(b,a,c);
+  return distLine(a,b,c);
+}
+function inPoly(p, poly){
+  let ins=false;
+  for (let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const a=poly[i], b=poly[j];
+    if ((a.y>p.y)!==(b.y>p.y) && p.x < (b.x-a.x)*(p.y-a.y)/(b.y-a.y)+a.x) ins=!ins;
+  }
+  return ins;
+}
+
+/* ---------- Réglages ---------- */
+const DEFAULTS = {mode:'align', sizes:[3], groups:2, intrus:5, milieu:false, nbSeg:2, segDir:'h', nbPlacer:1, precision:'normal', demi:false, snap:true, penOnly:false};
+const PRESETS = [
+  ['Étape 1 · 3 points alignés, 1 groupe', {mode:'align', sizes:[3], groups:1, intrus:3, milieu:false}],
+  ['Étape 2 · 3 points alignés, 2 groupes', {mode:'align', sizes:[3], groups:2, intrus:5, milieu:false}],
+  ['Étape 3 · groupes de 3 et 4 points', {mode:'align', sizes:[3,4], groups:3, intrus:6, milieu:false}],
+  ['Étape 4 · groupes de 4, 5 et 6 points', {mode:'align', sizes:[4,5,6], groups:3, intrus:6, milieu:false}],
+  ['Étape 5 · 3 points alignés et le point du milieu', {mode:'align', sizes:[3], groups:2, intrus:4, milieu:true}],
+  ['Étape 6 · repérer le milieu (segments horizontaux)', {mode:'reperer', nbSeg:2, segDir:'h'}],
+  ['Étape 7 · repérer le milieu (toutes directions)', {mode:'reperer', nbSeg:3, segDir:'libre'}],
+  ['Étape 8 · placer le milieu (segments horizontaux)', {mode:'placer', nbSeg:2, segDir:'h'}],
+  ['Étape 9 · placer le milieu (toutes directions)', {mode:'placer', nbSeg:3, segDir:'libre'}],
+  ['Étape 10 · placer un point aligné avec A et B', {mode:'aligne', nbSeg:2, nbPlacer:1}],
+  ['Étape 11 · placer deux points alignés', {mode:'aligne', nbSeg:2, nbPlacer:2}],
+];
+let set = (() => {
+  try { const s = JSON.parse(localStorage.getItem('alignCE1') || 'null'); if (s) return {...DEFAULTS, ...s}; } catch(e){}
+  return {...DEFAULTS};
+})();
+function saveSet(){ try { localStorage.setItem('alignCE1', JSON.stringify(set)); } catch(e){} }
+const TOLS = {facile:{on:13, straight:16, mid:13}, normal:{on:9, straight:10, mid:9}, exigeant:{on:6, straight:6, mid:6}};
+const tol = () => TOLS[set.precision] || TOLS.normal;
+
+/* ---------- État ---------- */
+const S = {W:0, H:0, points:[], groups:[], segs:[], pairs:[], marks:[], color:'rose', tool:'lasso',
+           ruler:{x:60, y:300, a:0, show:true}, nextId:1, bravoShown:false};
+
+const stage = $('#stage');
+const lyHl=$('#lyHl'), lyBase=$('#lyBase'), lyMarks=$('#lyMarks'), lyLive=$('#lyLive'), lyFb=$('#lyFb'), gRuler=$('#ruler');
+const colorVar = c => c==='rose' ? 'var(--rose)' : 'var(--bleu)';
+
+/* ---------- Génération ---------- */
+// le bas de la feuille est laissé libre pour la règle au départ
+function area(){ const m = CM*0.9; return {x0:m, y0:m, x1:S.W-m, y1:S.H-CM*2.9}; }
+const inside = (p,A) => p.x>=A.x0 && p.x<=A.x1 && p.y>=A.y0 && p.y<=A.y1;
+const MIN_GAP = 36, COL_TOL = 26;
+
+function canAdd(p, list){
+  for (const q of list) if (dist(p,q) < MIN_GAP) return false;
+  for (let i=0;i<list.length;i++) for (let j=i+1;j<list.length;j++){
+    const a=list[i], b=list[j];
+    if (p.g!=null && a.g===p.g && b.g===p.g) continue;
+    if (tripleDev(a,b,p) < COL_TOL) return false;
+  }
+  return true;
+}
+function placeLine(lenPx, A, angle){
+  const ang = angle ?? rnd(0, Math.PI);
+  const ux=Math.cos(ang), uy=Math.sin(ang), dx=ux*lenPx, dy=uy*lenPx;
+  const xa = Math.max(A.x0, A.x0-dx), xb = Math.min(A.x1, A.x1-dx);
+  const ya = Math.max(A.y0, A.y0-dy), yb = Math.min(A.y1, A.y1-dy);
+  if (xa>xb || ya>yb) return null;
+  return {x:rnd(xa,xb), y:rnd(ya,yb), ux, uy};
+}
+function makeGroup(size, gi, list, A){
+  for (let t=0;t<150;t++){
+    let pos, mid=null;
+    if (set.milieu){
+      const maxL = Math.floor(Math.min(12, (Math.hypot(A.x1-A.x0, A.y1-A.y0)*0.8)/CM)/2)*2;
+      const minL = Math.max(4, size%2 ? size+1 : size);
+      if (maxL < minL) return null;
+      const L = 2*rint(minL/2, maxL/2);
+      mid = L/2;
+      const others = shuffle([...Array(L-1)].map((_,i)=>i+1).filter(c=>c!==mid)).slice(0, size-3);
+      pos = [0, L, mid, ...others].sort((a,b)=>a-b);
+    } else {
+      pos = [0];
+      for (let k=1;k<size;k++) pos.push(pos[k-1] + rnd(1.3, 2.6));
+    }
+    const o = placeLine(pos[pos.length-1]*CM, A);
+    if (!o) continue;
+    const pts = pos.map(c => ({x:o.x+o.ux*c*CM, y:o.y+o.uy*c*CM, g:gi, isMid: mid!==null && c===mid}));
+    const tmp = list.slice(); let ok = true;
+    for (const p of pts){ if (!canAdd(p,tmp)){ ok=false; break; } tmp.push(p); }
+    if (ok) return pts;
+  }
+  return null;
+}
+function genAlign(){
+  const A = area();
+  let nG = set.groups;
+  while (nG >= 1){
+    for (let attempt=0; attempt<50; attempt++){
+      const list=[], groups=[]; let ok=true;
+      for (let gi=0; gi<nG; gi++){
+        const pts = makeGroup(pick(set.sizes), gi, list, A);
+        if (!pts){ ok=false; break; }
+        list.push(...pts); groups.push(pts);
+      }
+      if (!ok) continue;
+      for (let k=0;k<set.intrus;k++){
+        for (let t=0;t<300;t++){
+          const p = {x:rnd(A.x0,A.x1), y:rnd(A.y0,A.y1), g:null};
+          if (canAdd(p,list)){ list.push(p); break; }
+        }
+      }
+      shuffle(list).forEach(p => p.id = 'p'+(S.nextId++));
+      S.points = list;
+      S.groups = groups.map(g => g.map(p=>p.id));
+      return;
+    }
+    nG--;
+  }
+}
+function segsClear(a,b,segs,gap){
+  for (const s of segs){
+    for (let i=0;i<=20;i++){
+      const p={x:a.x+(b.x-a.x)*i/20, y:a.y+(b.y-a.y)*i/20};
+      if (distSeg(p,s.a,s.b) < gap) return false;
+      const q={x:s.a.x+(s.b.x-s.a.x)*i/20, y:s.a.y+(s.b.y-s.a.y)*i/20};
+      if (distSeg(q,a,b) < gap) return false;
+    }
+  }
+  return true;
+}
+function segAngle(){
+  if (set.segDir==='h') return 0;
+  let a; do { a = rnd(-80, 80); } while (Math.abs(a) < 8);
+  return a*Math.PI/180;
+}
+function genSegments(withCands){
+  const A = area();
+  const maxCm = Math.floor((A.x1-A.x0)/CM);
+  for (let attempt=0; attempt<80; attempt++){
+    const segs=[], pts=[]; let ok=true;
+    for (let i=0;i<set.nbSeg;i++){
+      let placed=false;
+      for (let t=0;t<200 && !placed;t++){
+        const L = 2*rint(2, Math.max(2, Math.floor(Math.min(12, maxCm)/2)));
+        const o = placeLine(L*CM, {x0:A.x0, y0:A.y0+CM*0.6, x1:A.x1, y1:A.y1}, segAngle());
+        if (!o) continue;
+        const a={x:o.x, y:o.y}, b={x:o.x+o.ux*L*CM, y:o.y+o.uy*L*CM};
+        if (!segsClear(a,b,segs,CM*1.8)) continue;
+        const s = {a, b, L, ux:o.ux, uy:o.uy, i};
+        segs.push(s); placed=true;
+        // l'étiquette se place du côté « au-dessus » du segment
+        let nx=o.uy, ny=-o.ux; if (ny>0){ nx=-nx; ny=-ny; }
+        pts.push({x:a.x, y:a.y, role:'end', seg:i, label:LETTERS[2*i], lx:a.x+nx*22-o.ux*10, ly:a.y+ny*22-o.uy*10});
+        pts.push({x:b.x, y:b.y, role:'end', seg:i, label:LETTERS[2*i+1], lx:b.x+nx*22+o.ux*10, ly:b.y+ny*22+o.uy*10});
+        if (withCands){
+          const mid=L/2;
+          const others = shuffle([...Array(L-1)].map((_,k)=>k+1).filter(c=>Math.abs(c-mid)>=1));
+          const cands = [mid, ...others.slice(0, L>=6 ? 2 : 1)];
+          for (const c of cands) pts.push({x:a.x+o.ux*c*CM, y:a.y+o.uy*c*CM, role:'cand', seg:i, isMid:c===mid});
+        }
+      }
+      if (!placed){ ok=false; break; }
+    }
+    if (!ok) continue;
+    pts.forEach(p => p.id='p'+(S.nextId++));
+    S.points=pts; S.segs=segs;
+    return;
+  }
+}
+function genPairs(){
+  const A = area();
+  for (let attempt=0; attempt<80; attempt++){
+    const pts=[], pairs=[]; let ok=true;
+    for (let i=0;i<set.nbSeg;i++){
+      let placed=false;
+      for (let t=0;t<200 && !placed;t++){
+        const L = rint(3,7);
+        const o = placeLine(L*CM, {x0:A.x0+CM, y0:A.y0+CM, x1:A.x1-CM, y1:A.y1-CM});
+        if (!o) continue;
+        const a={x:o.x, y:o.y}, b={x:o.x+o.ux*L*CM, y:o.y+o.uy*L*CM};
+        if (pts.some(p => dist(p,a)<CM*2.5 || dist(p,b)<CM*2.5)) continue;
+        if (!segsClear(a,b,pairs,CM*2)) continue;
+        pairs.push({a,b,i}); placed=true;
+        pts.push({...a, role:'pair', pair:i, label:LETTERS[2*i], lx:a.x+12, ly:a.y-12});
+        pts.push({...b, role:'pair', pair:i, label:LETTERS[2*i+1], lx:b.x+12, ly:b.y-12});
+      }
+      if (!placed){ ok=false; break; }
+    }
+    if (!ok) continue;
+    pts.forEach(p => p.id='p'+(S.nextId++));
+    S.points=pts; S.pairs=pairs;
+    return;
+  }
+}
+function newExercise(){
+  S.points=[]; S.groups=[]; S.segs=[]; S.pairs=[]; S.marks=[]; S.bravoShown=false;
+  if (set.mode==='align') genAlign();
+  else if (set.mode==='reperer') genSegments(true);
+  else if (set.mode==='placer') genSegments(false);
+  else genPairs();
+  setTool(set.mode==='align' ? 'lasso' : set.mode==='reperer' ? 'hl' : 'point');
+  S.ruler.x = CM*1.2; S.ruler.y = S.H - CM*2.4; S.ruler.a = 0;
+  drawBase(); drawRuler(); render(); updateConsigne();
+  $('#bravo').hidden = true;
+  $('#toast').style.opacity = 0;
+}
+
+/* ---------- Dessin ---------- */
+const ptById = id => S.points.find(p => p.id===id);
+function cross(parent, x, y, cls, color){
+  const g = el('g', {class:cls||''}, parent);
+  const r = 7;
+  const attrs = color ? {stroke:color, 'stroke-width':3, 'stroke-linecap':'round'} : {class:'pt'};
+  el('line', {x1:x-r, y1:y-r, x2:x+r, y2:y+r, ...attrs}, g);
+  el('line', {x1:x-r, y1:y+r, x2:x+r, y2:y-r, ...attrs}, g);
+  return g;
+}
+function drawBase(){
+  lyBase.innerHTML='';
+  for (const s of S.segs) el('line', {x1:s.a.x, y1:s.a.y, x2:s.b.x, y2:s.b.y, class:'seg'}, lyBase);
+  for (const p of S.points){
+    cross(lyBase, p.x, p.y);
+    if (p.label){ const t = el('text', {x:p.lx, y:p.ly+7, class:'lbl', 'text-anchor':'middle'}, lyBase); t.textContent = p.label; }
+  }
+}
+function drawRuler(){
+  gRuler.innerHTML='';
+  const H = 1.7*CM, x0=-0.6*CM, x1=(RULER_CM+0.6)*CM;
+  el('rect', {x:x0, y:0, width:x1-x0, height:H, rx:6, fill:'var(--ruler)', stroke:'var(--ruler-edge)', 'stroke-width':1.5}, gRuler);
+  for (let i=0;i<=RULER_CM;i++){
+    el('line', {x1:i*CM, y1:0, x2:i*CM, y2:(i%5===0?0.62:0.45)*CM, class:'rtick'}, gRuler);
+    const t = el('text', {x:i*CM, y:0.95*CM+5, class:'rnum'}, gRuler); t.textContent = i;
+    if (set.demi && i<RULER_CM) el('line', {x1:(i+0.5)*CM, y1:0, x2:(i+0.5)*CM, y2:0.25*CM, class:'rtick'}, gRuler);
+  }
+  // repère du zéro : la règle tourne autour de ce point
+  el('path', {d:`M0 ${1.2*CM} l-6 9 h12 z`, fill:'var(--bad)'}, gRuler);
+  const h = el('g', {id:'rulerHandle'}, gRuler);
+  const hx=(RULER_CM+1.25)*CM, hy=0.85*CM;
+  el('circle', {cx:hx, cy:hy, r:0.55*CM, fill:'var(--ruler)', stroke:'var(--ruler-edge)', 'stroke-width':1.5}, h);
+  el('path', {d:`M${hx+9} ${hy} a9 9 0 1 1 -3 -6.7 M${hx+7} ${hy-12} v6 h-6`, fill:'none', stroke:'var(--ink)', 'stroke-width':2.2, 'stroke-linecap':'round'}, h);
+  placeRuler();
+}
+function placeRuler(){
+  const r=S.ruler;
+  gRuler.setAttribute('transform', `translate(${r.x} ${r.y}) rotate(${r.a})`);
+  gRuler.style.display = r.show ? '' : 'none';
+  $('#rot').value = Math.round(r.a);
+  $('#rulerToggle').setAttribute('aria-pressed', r.show);
+}
+function toLocal(p){
+  const r=S.ruler, a=r.a*Math.PI/180, dx=p.x-r.x, dy=p.y-r.y;
+  return {x: dx*Math.cos(a)+dy*Math.sin(a), y: -dx*Math.sin(a)+dy*Math.cos(a)};
+}
+function toWorld(lx, ly){
+  const r=S.ruler, a=r.a*Math.PI/180;
+  return {x: r.x+lx*Math.cos(a)-ly*Math.sin(a), y: r.y+lx*Math.sin(a)+ly*Math.cos(a)};
+}
+const pathD = pts => pts.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
+
+function fbIcon(x, y, st, n){
+  x = clamp(x, 18, S.W-18); y = clamp(y, 18, S.H-18);
+  const fill = st==='ok' ? 'var(--ok)' : st==='bad' ? 'var(--bad)' : 'var(--warn)';
+  const g = el('g', {}, lyFb);
+  el('circle', {cx:x, cy:y, r:15, fill, stroke:'var(--paper)', 'stroke-width':2}, g);
+  if (st==='ok') el('path', {d:`M${x-7} ${y} l5 5 l9 -10`, fill:'none', stroke:'var(--paper)', 'stroke-width':3.2, 'stroke-linecap':'round', 'stroke-linejoin':'round'}, g);
+  else if (st==='bad') el('path', {d:`M${x-6} ${y-6} l12 12 M${x+6} ${y-6} l-12 12`, stroke:'var(--paper)', 'stroke-width':3.2, 'stroke-linecap':'round'}, g);
+  else { const t = el('text', {x, y:y+7, 'text-anchor':'middle', fill:'var(--paper)', 'font-size':19, 'font-weight':700, 'font-family':'var(--font)'}, g); t.textContent = n; }
+  return g;
+}
+function ring(p, ok){
+  el('circle', {cx:p.x, cy:p.y, r:14, fill:'none', stroke: ok ? 'var(--ok)' : 'var(--bad)', 'stroke-width':2.5, 'stroke-dasharray': ok ? '' : '4 3'}, lyFb);
+}
+
+function render(){
+  lyHl.innerHTML=''; lyMarks.innerHTML=''; lyFb.innerHTML='';
+  for (const m of S.marks){
+    const col = colorVar(m.color);
+    if (m.type==='lasso'){
+      el('path', {d:pathD(m.pts)+' Z', fill:col, 'fill-opacity':.06, stroke:col, 'stroke-width':2.5, 'stroke-dasharray':'8 6', 'stroke-linejoin':'round'}, lyMarks);
+    } else if (m.type==='line'){
+      if (m.snapped) el('line', {x1:m.a.x, y1:m.a.y, x2:m.b.x, y2:m.b.y, stroke:col, 'stroke-width':3, 'stroke-linecap':'round'}, lyMarks);
+      else el('path', {d:pathD(m.pts), fill:'none', stroke:col, 'stroke-width':3, 'stroke-linecap':'round', 'stroke-linejoin':'round'}, lyMarks);
+      if (m.res){
+        (m.res.rings||[]).forEach(([id,ok]) => ring(ptById(id), ok));
+        const L = dist(m.a,m.b)||1, ux=(m.b.x-m.a.x)/L, uy=(m.b.y-m.a.y)/L;
+        fbIcon(m.b.x+ux*26, m.b.y+uy*26, m.res.st, m.res.n);
+        if (m.res.st==='ok' && m.res.extra){
+          const x=clamp(m.b.x+ux*26+30, 20, S.W-20), y=clamp(m.b.y+uy*26, 20, S.H-20);
+          const t = el('text', {x, y:y+6, fill:'var(--warn)', 'font-size':18, 'font-weight':700, 'font-family':'var(--font)'}, lyFb); t.textContent = '+'+m.res.extra;
+        }
+      }
+    } else if (m.type==='hl'){
+      el('path', {d:pathD(m.pts), fill:'none', stroke:'var(--hl)', 'stroke-width':22, 'stroke-linecap':'round', 'stroke-linejoin':'round'}, lyHl);
+      (m.res||[]).forEach(r => { const p=ptById(r.id); fbIcon(p.x+22, p.y-24, r.st); });
+    } else if (m.type==='point'){
+      cross(lyMarks, m.x, m.y, '', col);
+      if (m.res) fbIcon(m.x+22, m.y-24, m.res.st);
+    }
+  }
+  updateStatus();
+}
+
+/* ---------- Évaluation ---------- */
+function fitLine(pts){
+  let mx=0, my=0; pts.forEach(p=>{mx+=p.x; my+=p.y;}); mx/=pts.length; my/=pts.length;
+  let sxx=0, syy=0, sxy=0;
+  pts.forEach(p=>{ const dx=p.x-mx, dy=p.y-my; sxx+=dx*dx; syy+=dy*dy; sxy+=dx*dy; });
+  const ang = 0.5*Math.atan2(2*sxy, sxx-syy), ux=Math.cos(ang), uy=Math.sin(ang);
+  let tmin=Infinity, tmax=-Infinity, dev=0;
+  pts.forEach(p=>{ const dx=p.x-mx, dy=p.y-my, t=dx*ux+dy*uy; tmin=Math.min(tmin,t); tmax=Math.max(tmax,t); dev=Math.max(dev, Math.abs(-dx*uy+dy*ux)); });
+  let a={x:mx+ux*tmin, y:my+uy*tmin}, b={x:mx+ux*tmax, y:my+uy*tmax};
+  if (dist(a, pts[pts.length-1]) < dist(b, pts[pts.length-1])) [a,b]=[b,a];   // b = fin du geste
+  return {a, b, dev};
+}
+function pendingLasso(color){
+  for (let i=S.marks.length-1;i>=0;i--){
+    const m=S.marks[i];
+    if (m.color!==color) continue;
+    if (m.type==='line' && m.lassoId) return null;
+    if (m.type==='lasso') return m;
+  }
+  return null;
+}
+function evalLine(m, lasso){
+  const T = tol(), a=m.a, b=m.b, L=dist(a,b);
+  if (!m.straight) return {st:'bad', msg:"Ton trait n'est pas droit. Utilise la règle !"};
+  const ux=(b.x-a.x)/L, uy=(b.y-a.y)/L;
+  const on = S.points.filter(p => { const t=(p.x-a.x)*ux+(p.y-a.y)*uy; return t>=-18 && t<=L+18 && distLine(p,a,b)<=T.on; }).map(p=>p.id);
+  const C = lasso.inside;
+  const cOn = C.filter(id => on.includes(id)), cOff = C.filter(id => !on.includes(id));
+  const extra = on.filter(id => !C.includes(id)).length;
+  const rings = [...cOn.map(id=>[id,true]), ...cOff.map(id=>[id,false])];
+  if (cOn.length < 2) return {st:'bad', rings, msg:"Ton trait ne passe pas bien sur les points entourés."};
+  if (cOff.length===0){
+    if (C.length>=3) return {st:'ok', n:C.length, extra, rings, cOn,
+      msg:`Bravo ! ${C.length} points alignés.` + (extra ? ` Regarde : ${extra===1?'un autre point est':extra+' autres points sont'} aussi sur ton trait !` : '')};
+    return {st:'part', n:2, rings, msg:"C'est juste, mais 2 points sont toujours alignés. Cherche-en au moins 3 !"};
+  }
+  return {st:'part', n:cOn.length, rings, cOn,
+    msg:`Ton trait est juste, mais seulement ${cOn.length} points sont alignés. ` +
+        (cOff.length===1 ? "Un point entouré n'est pas sur le trait." : `${cOff.length} points entourés ne sont pas sur le trait.`)};
+}
+function evalHl(p){
+  if (set.mode==='align'){
+    if (!set.milieu) return null;
+    if (p.g==null) return {id:p.id, st:'bad', msg:"Ce point n'est aligné avec aucun autre."};
+    return p.isMid ? {id:p.id, st:'ok', msg:"Oui ! C'est le point du milieu."}
+                   : {id:p.id, st:'bad', msg:"Ce n'est pas le milieu. Mesure avec la règle."};
+  }
+  if (set.mode==='reperer'){
+    if (p.role==='end') return {id:p.id, st:'bad', msg:`${p.label} est une extrémité du segment, pas son milieu.`};
+    return p.isMid ? {id:p.id, st:'ok', msg:"Oui ! Ce point est au milieu du segment."}
+                   : {id:p.id, st:'bad', msg:"Ce point n'est pas au milieu. Mesure les deux côtés avec la règle."};
+  }
+  return null;
+}
+function evalPoint(m){
+  const T = tol();
+  if (set.mode==='placer'){
+    let best=null, bd=Infinity;
+    for (const s of S.segs){ const d=distSeg(m,s.a,s.b); if (d<bd){ bd=d; best=s; } }
+    if (!best) return null;
+    const mid = {x:(best.a.x+best.b.x)/2, y:(best.a.y+best.b.y)/2};
+    const A=LETTERS[2*best.i], B=LETTERS[2*best.i+1];
+    if (dist(m,mid) <= T.mid) return {st:'ok', seg:best.i, msg:`Bravo ! Ton point est au milieu de [${A}${B}].`};
+    if (bd <= T.on) return {st:'bad', seg:best.i, msg:"Ton point est sur le segment, mais pas au milieu. Mesure avec la règle."};
+    return {st:'bad', msg:"Ton point doit être sur le segment."};
+  }
+  if (set.mode==='aligne'){
+    let best=null, bd=Infinity;
+    for (const pr of S.pairs){ const d=distLine(m,pr.a,pr.b); if (d<bd){ bd=d; best=pr; } }
+    if (!best) return null;
+    const A=LETTERS[2*best.i], B=LETTERS[2*best.i+1];
+    if (dist(m,best.a)<CM*0.6 || dist(m,best.b)<CM*0.6) return {st:'bad', msg:`Ton point est sur ${dist(m,best.a)<dist(m,best.b)?A:B}. Place un nouveau point.`};
+    if (bd <= T.on) return {st:'ok', pair:best.i, msg:`Bravo ! Ton point est aligné avec ${A} et ${B}.`};
+    return {st:'bad', msg:"Ton point n'est pas aligné. Trace la droite avec la règle d'abord."};
+  }
+  return null;
+}
+
+/* ---------- Statut / consigne ---------- */
+function progress(){
+  if (set.mode==='align'){
+    const found = S.groups.filter(g => S.marks.some(m => m.type==='line' && m.res && m.res.st==='ok' && g.every(id => m.res.cOn.includes(id)))).length;
+    let done=found, total=S.groups.length, label=`Alignements ${found} / ${total}`;
+    if (set.milieu){
+      const mids = S.points.filter(p=>p.isMid);
+      const fm = mids.filter(p => S.marks.some(m => m.type==='hl' && (m.res||[]).some(r=>r.id===p.id && r.st==='ok'))).length;
+      label += ` · Milieux ${fm} / ${mids.length}`; done+=fm; total+=mids.length;
+    }
+    return {label, complete: total>0 && done===total};
+  }
+  if (set.mode==='reperer'){
+    const f = S.segs.filter(s => S.marks.some(m => m.type==='hl' && (m.res||[]).some(r => r.st==='ok' && ptById(r.id).seg===s.i))).length;
+    return {label:`Milieux ${f} / ${S.segs.length}`, complete: S.segs.length>0 && f===S.segs.length};
+  }
+  if (set.mode==='placer'){
+    const f = S.segs.filter(s => S.marks.some(m => m.type==='point' && m.res && m.res.st==='ok' && m.res.seg===s.i)).length;
+    return {label:`Milieux ${f} / ${S.segs.length}`, complete: S.segs.length>0 && f===S.segs.length};
+  }
+  const f = S.pairs.filter(pr => S.marks.filter(m => m.type==='point' && m.res && m.res.st==='ok' && m.res.pair===pr.i).length >= set.nbPlacer).length;
+  return {label:`Paires ${f} / ${S.pairs.length}`, complete: S.pairs.length>0 && f===S.pairs.length};
+}
+function score(color){
+  let n=0;
+  for (const m of S.marks){
+    if (m.color!==color) continue;
+    if ((m.type==='line' || m.type==='point') && m.res && m.res.st==='ok') n++;
+    if (m.type==='hl') n += (m.res||[]).filter(r=>r.st==='ok').length;
+  }
+  return n;
+}
+function updateStatus(){
+  const p = progress();
+  $('#progress').textContent = p.label;
+  $('#scRose').textContent = score('rose');
+  $('#scBleu').textContent = score('bleu');
+  if (p.complete && !S.bravoShown){
+    S.bravoShown = true;
+    $('#bravoTxt').textContent = set.mode==='align' ? 'Tu as trouvé tous les points alignés.' :
+      set.mode==='aligne' ? 'Tous tes points sont bien alignés.' : 'Tu as trouvé tous les milieux.';
+    setTimeout(()=>{ $('#bravo').hidden=false; }, 900);
+  }
+  if (!p.complete) S.bravoShown = false;
+}
+function updateConsigne(){
+  let t;
+  if (set.mode==='align'){
+    const sz = [...set.sizes].sort();
+    const par = sz.length===1 ? `par ${sz[0]}` : 'par ' + sz.slice(0,-1).join(', ') + ' ou ' + sz[sz.length-1];
+    t = `Trouve les points alignés ${par}. Entoure-les, puis trace un trait à la règle.`;
+    if (set.milieu) t += ' Surligne le point du milieu.';
+  } else if (set.mode==='reperer'){
+    t = 'Mesure avec la règle. Surligne le point qui est au milieu de chaque segment.';
+  } else if (set.mode==='placer'){
+    t = 'Mesure chaque segment avec la règle, puis place un point en son milieu.';
+  } else {
+    const names = S.pairs.map(pr => `${LETTERS[2*pr.i]} et ${LETTERS[2*pr.i+1]}`);
+    const what = set.nbPlacer===1 ? 'un point aligné' : 'deux points alignés';
+    t = `Place ${what} avec ${names.join(', puis avec ')}.`;
+  }
+  $('#consigne').textContent = t;
+}
+let toastTimer=null;
+function toast(msg, st){
+  const t=$('#toast');
+  t.textContent=msg; t.className=st||''; t.style.opacity=1;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ t.style.opacity=0; }, 3800);
+}
+
+/* ---------- Pointeur ---------- */
+let act=null;
+function evPt(e){ const r=stage.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+stage.addEventListener('pointerdown', e => {
+  if (act) return;
+  const p = evPt(e);
+  if (e.target.closest('#rulerHandle')){
+    const r=S.ruler;
+    act = {kind:'rot', id:e.pointerId, off: Math.atan2(p.y-r.y, p.x-r.x)*180/Math.PI - r.a};
+  } else if (e.target.closest('#ruler')){
+    act = {kind:'drag', id:e.pointerId, dx:p.x-S.ruler.x, dy:p.y-S.ruler.y};
+    gRuler.style.cursor='grabbing';
+  } else {
+    if (set.penOnly && e.pointerType==='touch') return;
+    act = {kind:'draw', id:e.pointerId, pts:[p], snap:null, tool:S.tool};
+    if (S.tool==='line' && S.ruler.show && set.snap){
+      const lp = toLocal(p);
+      if (lp.y>=-26 && lp.y<0 && lp.x>=-10 && lp.x<=RULER_CM*CM+10) act.snap = {x0: clamp(lp.x, 0, RULER_CM*CM), x1: clamp(lp.x, 0, RULER_CM*CM)};
+    }
+    drawLive();
+  }
+  try { stage.setPointerCapture(e.pointerId); } catch(_){}
+  e.preventDefault();
+});
+stage.addEventListener('pointermove', e => {
+  if (!act || e.pointerId!==act.id) return;
+  const p = evPt(e);
+  if (act.kind==='drag'){
+    S.ruler.x = clamp(p.x-act.dx, -RULER_CM*CM, S.W+RULER_CM*CM);
+    S.ruler.y = clamp(p.y-act.dy, -CM, S.H+CM);
+    placeRuler();
+  } else if (act.kind==='rot'){
+    let a = Math.atan2(p.y-S.ruler.y, p.x-S.ruler.x)*180/Math.PI - act.off;
+    a = ((a+540)%360)-180;
+    for (const s of [-180,-90,0,90,180]) if (Math.abs(a-s)<1.5) a=s;
+    S.ruler.a = a; placeRuler();
+  } else {
+    const last = act.pts[act.pts.length-1];
+    if (dist(p,last) >= 2) act.pts.push(p);
+    if (act.snap) act.snap.x1 = clamp(toLocal(p).x, 0, RULER_CM*CM);
+    drawLive();
+  }
+});
+function endPointer(e){
+  if (!act || e.pointerId!==act.id) return;
+  const a = act; act = null;
+  gRuler.style.cursor='';
+  lyLive.innerHTML='';
+  if (a.kind==='draw') finishStroke(a);
+}
+stage.addEventListener('pointerup', endPointer);
+stage.addEventListener('pointercancel', e => { if (act && e.pointerId===act.id){ act=null; lyLive.innerHTML=''; } });
+
+function drawLive(){
+  lyLive.innerHTML='';
+  const a=act, col=colorVar(S.color);
+  if (a.tool==='lasso') el('path', {d:pathD(a.pts), fill:'none', stroke:col, 'stroke-width':2.5, 'stroke-dasharray':'8 6'}, lyLive);
+  else if (a.tool==='line'){
+    if (a.snap){ const p=toWorld(a.snap.x0,0), q=toWorld(a.snap.x1,0); el('line', {x1:p.x, y1:p.y, x2:q.x, y2:q.y, stroke:col, 'stroke-width':3, 'stroke-linecap':'round'}, lyLive); }
+    else el('path', {d:pathD(a.pts), fill:'none', stroke:col, 'stroke-width':3, 'stroke-linecap':'round'}, lyLive);
+  }
+  else if (a.tool==='hl') el('path', {d:pathD(a.pts), fill:'none', stroke:'var(--hl)', 'stroke-width':22, 'stroke-linecap':'round'}, lyLive);
+}
+function finishStroke(a){
+  const color = S.color, id = 'm'+(S.nextId++);
+  if (a.tool==='lasso'){
+    if (a.pts.length<6) return;
+    const ins = S.points.filter(p => inPoly(p, a.pts)).map(p=>p.id);
+    if (!ins.length){ toast("Ton cercle n'entoure aucun point.", 'bad'); return; }
+    S.marks.push({id, type:'lasso', color, pts:a.pts, inside:ins});
+    if (set.mode==='align'){ toast(`Tu as entouré ${ins.length} point${ins.length>1?'s':''}. Maintenant, trace le trait avec la règle.`); setTool('line'); }
+  } else if (a.tool==='line'){
+    let m;
+    if (a.snap){
+      if (Math.abs(a.snap.x1-a.snap.x0) < CM*0.6) return;
+      m = {id, type:'line', color, snapped:true, a:toWorld(a.snap.x0,0), b:toWorld(a.snap.x1,0), straight:true};
+    } else {
+      if (a.pts.length<3) return;
+      const f = fitLine(a.pts);
+      if (dist(f.a,f.b) < CM*0.6) return;
+      m = {id, type:'line', color, pts:a.pts, a:f.a, b:f.b, straight: f.dev <= tol().straight};
+    }
+    if (set.mode==='align'){
+      const lasso = pendingLasso(color);
+      if (!lasso){ toast("D'abord, entoure les points alignés.", 'part'); setTool('lasso'); return; }
+      m.lassoId = lasso.id;
+      m.res = evalLine(m, lasso);
+      toast(m.res.msg, m.res.st);
+      setTool('lasso');
+    }
+    S.marks.push(m);
+  } else if (a.tool==='hl'){
+    if (a.pts.length<1) return;
+    const touched = S.points.filter(p => a.pts.some(q => dist(p,q) <= 16));
+    const res = touched.map(evalHl).filter(Boolean);
+    S.marks.push({id, type:'hl', color, pts:a.pts.length>1 ? a.pts : [a.pts[0], {x:a.pts[0].x+1, y:a.pts[0].y}], res});
+    if (res.length) toast(res[res.length-1].msg, res[res.length-1].st);
+  } else if (a.tool==='point'){
+    const p = a.pts[a.pts.length-1];
+    const m = {id, type:'point', color, x:p.x, y:p.y};
+    m.res = evalPoint(m);
+    if (m.res) toast(m.res.msg, m.res.st);
+    S.marks.push(m);
+  }
+  render();
+}
+
+/* ---------- Boutons ---------- */
+function setTool(t){ S.tool=t; $$('[data-tool]').forEach(b => b.setAttribute('aria-pressed', b.dataset.tool===t)); }
+$$('[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+$$('[data-color]').forEach(b => b.addEventListener('click', () => {
+  S.color = b.dataset.color;
+  $$('[data-color]').forEach(x => x.setAttribute('aria-pressed', x===b));
+}));
+$('#undo').addEventListener('click', () => {
+  for (let i=S.marks.length-1;i>=0;i--){
+    if (S.marks[i].color===S.color){
+      const m = S.marks.splice(i,1)[0];
+      if (m.type==='line' && m.lassoId && set.mode==='align') setTool('line');
+      render(); return;
+    }
+  }
+  toast(`Il n'y a rien à effacer pour le crayon ${S.color}.`);
+});
+$('#rulerToggle').addEventListener('click', () => { S.ruler.show = !S.ruler.show; placeRuler(); });
+$('#rot').addEventListener('input', e => { S.ruler.a = +e.target.value; placeRuler(); });
+$('#rotMinus').addEventListener('click', () => { S.ruler.a = Math.max(-180, Math.round(S.ruler.a)-1); placeRuler(); });
+$('#rotPlus').addEventListener('click', () => { S.ruler.a = Math.min(180, Math.round(S.ruler.a)+1); placeRuler(); });
+$('#rot0').addEventListener('click', () => { S.ruler.a = 0; placeRuler(); });
+$('#bravoClose').addEventListener('click', () => { $('#bravo').hidden = true; });
+$('#bravoNew').addEventListener('click', newExercise);
+
+/* ---------- Panneau enseignant ---------- */
+const panel = $('#panel');
+$('#gear').addEventListener('click', () => { panel.hidden = !panel.hidden; });
+$('#panelClose').addEventListener('click', () => { panel.hidden = true; });
+document.addEventListener('keydown', e => { if (e.key==='Escape') panel.hidden = true; });
+PRESETS.forEach(([name], i) => { const o=document.createElement('option'); o.value=i; o.textContent=name; $('#preset').appendChild(o); });
+
+function fillForm(){
+  $$('input[name=mode]').forEach(r => r.checked = r.value===set.mode);
+  $$('input[name=size]').forEach(c => c.checked = set.sizes.includes(+c.value));
+  $('#groups').value=set.groups; $('#intrus').value=set.intrus; $('#milieu').checked=set.milieu;
+  $('#nbSeg').value=set.nbSeg; $('#segDir').value=set.segDir; $('#nbPlacer').value=set.nbPlacer;
+  $('#precision').value=set.precision; $('#demi').checked=set.demi; $('#snap').checked=set.snap; $('#penOnly').checked=set.penOnly;
+  $('#fsAlign').disabled = set.mode!=='align';
+  $('#fsSeg').disabled = set.mode==='align';
+  $('#nbPlacer').disabled = set.mode!=='aligne';
+  $('#segDir').disabled = set.mode==='aligne';
+}
+function readForm(){
+  set.mode = ($$('input[name=mode]').find(r=>r.checked)||{}).value || 'align';
+  const sizes = $$('input[name=size]').filter(c=>c.checked).map(c=>+c.value);
+  set.sizes = sizes.length ? sizes : [3];
+  set.groups = clamp(+$('#groups').value||1, 1, 5);
+  set.intrus = clamp(+$('#intrus').value||0, 0, 14);
+  set.milieu = $('#milieu').checked;
+  set.nbSeg = clamp(+$('#nbSeg').value||1, 1, 4);
+  set.segDir = $('#segDir').value; set.nbPlacer = +$('#nbPlacer').value;
+  set.precision = $('#precision').value; set.demi = $('#demi').checked; set.snap = $('#snap').checked; set.penOnly = $('#penOnly').checked;
+  saveSet();
+}
+panel.addEventListener('change', e => {
+  if (e.target.id==='preset'){
+    const pr = PRESETS[+e.target.value]; if (!pr) return;
+    set = {...set, ...pr[1]}; saveSet(); fillForm(); newExercise();
+    e.target.value='';
+    return;
+  }
+  const before = JSON.stringify({m:set.mode, s:set.sizes, g:set.groups, i:set.intrus, mi:set.milieu, n:set.nbSeg, d:set.segDir, p:set.nbPlacer});
+  readForm(); fillForm();
+  if (e.target.id==='demi') drawRuler();
+  const after = JSON.stringify({m:set.mode, s:set.sizes, g:set.groups, i:set.intrus, mi:set.milieu, n:set.nbSeg, d:set.segDir, p:set.nbPlacer});
+  if (before!==after) newExercise();
+});
+$('#newEx').addEventListener('click', newExercise);
+let clearArmed=false;
+$('#clearAll').addEventListener('click', e => {
+  if (!clearArmed){ clearArmed=true; e.target.textContent='Confirmer l\'effacement'; setTimeout(()=>{ clearArmed=false; e.target.textContent='Effacer les traits'; }, 3000); return; }
+  clearArmed=false; e.target.textContent='Effacer les traits';
+  S.marks=[]; S.bravoShown=false; render();
+});
+
+/* ---------- Démarrage ---------- */
+let started=false;
+new ResizeObserver(() => {
+  const r = stage.getBoundingClientRect();
+  if (r.width<10 || r.height<10) return;
+  S.W=r.width; S.H=r.height;
+  stage.setAttribute('viewBox', `0 0 ${S.W} ${S.H}`);
+  if (!started){ started=true; fillForm(); newExercise(); }
+}).observe(stage);
+})();
+</script>
+</body>
+</html>
