@@ -381,7 +381,8 @@ def half_width_at(k, s):
 raw = {}; sK = {}
 for k in FINGS:
     s, l = polyproj(P2, chain8[k]); w = half_width_at(k, s); sK[k] = s
-    r_ = np.where(l <= w + 2, 1.0, np.exp(-((l - w - 2) / 22.0) ** 2))
+    # palmure : elle reste surtout avec la paume (sinon, doigt plié, elle rentre dans le doigt voisin)
+    r_ = np.where(l <= w + 2, 1.0, np.exp(-((l - w - 2) / 11.0) ** 2))
     own_other = np.array([o != '' and not o.startswith(k + '.') for o in vown])
     own_self = np.char.startswith(vown, k + '.')
     r_ = np.where(own_other, 0, np.where(own_self, 1, r_))
@@ -389,7 +390,8 @@ for k in FINGS:
 tot = sum(raw.values()); scale = np.where(tot > 1, 1 / np.maximum(tot, 1e-9), 1)
 for k in FINGS:
     c = raw[k] * scale; s = sK[k]; cs = cum(chain8[k]); w0 = segw0(k)
-    t1 = sstep(cs[1] - .4 * w0, cs[1] + .4 * w0, s); t2 = sstep(cs[2] - .35 * w0, cs[2] + .35 * w0, s)
+    # zone de passage d'une phalange à l'autre assez large pour que la peau s'arrondisse sur l'articulation (pas de coude)
+    t1 = sstep(cs[1] - .85 * w0, cs[1] + .85 * w0, s); t2 = sstep(cs[2] - .75 * w0, cs[2] + .75 * w0, s)
     b = BONES.index(k + '.0'); Wb[:, b] = c * (1 - t1); Wb[:, b + 1] = c * t1 * (1 - t2); Wb[:, b + 2] = c * t1 * t2
 # pouce : métacarpien (éminence thénar) puis 2 phalanges
 def thenarW8(x, y):
@@ -397,11 +399,17 @@ def thenarW8(x, y):
     s = (dx * ax + dy * ay) / L2; nx, ny = -ay / L, ax / L
     if nx * (500 - CMC8[0]) + ny * (560 - CMC8[1]) < 0: nx, ny = -nx, -ny
     l = dx * nx + dy * ny
-    return sstep(-.12, .78, s) * np.where(l > 0, 1 - sstep(28, 135, l), 1) * (1 - sstep(1.15, 1.6, s) * sstep(10, 60, l))
+    # éminence thénar : influence large et progressive vers le creux de la paume (pouce rentré sans pliure en « feuille de papier »)
+    return sstep(-.12, .78, s) * np.where(l > 0, 1 - sstep(20, 210, l), 1) * (1 - sstep(1.15, 1.6, s) * sstep(10, 60, l))
 sT, lT = polyproj(P2, chain8['pouce']); csT = cum(chain8['pouce'])
-cT = np.where(np.char.startswith(vown, 'pouce.'), 1.0, thenarW8(P2[:, 0], P2[:, 1]))
+# influence du pouce continue (pas de marche au bord de la « région pouce ») : éminence thénar OU proximité de l'axe du pouce
+wT = np.array([np.mean([(a + b) / 2 for a, b in zip(g['wl'], g['wr']) if a + b > 8]) for g in segs['pouce']]).mean()
+latT = np.where(lT <= wT + 2, 1.0, np.exp(-((lT - wT - 2) / 26.0) ** 2))
+axT = sstep(csT[1] - 70, csT[1] + 10, sT) * latT
+axT = np.where(np.array([o != '' and not o.startswith('pouce.') for o in vown]), 0, axT)
+cT = np.maximum(thenarW8(P2[:, 0], P2[:, 1]), axT)
 cT = np.minimum(cT, 1 - np.minimum(Wb[:, 4:].sum(1), 1))
-tM = sstep(csT[1] - 22, csT[1] + 22, sT); tI = sstep(csT[2] - 18, csT[2] + 18, sT)
+tM = sstep(csT[1] - 40, csT[1] + 40, sT); tI = sstep(csT[2] - 32, csT[2] + 32, sT)
 Wb[:, 1] = cT * (1 - tM); Wb[:, 2] = cT * tM * (1 - tI); Wb[:, 3] = cT * tM * tI
 Wb[:, 0] = np.clip(1 - Wb[:, 1:].sum(1), 0, 1)
 # 4 influences au plus par sommet
