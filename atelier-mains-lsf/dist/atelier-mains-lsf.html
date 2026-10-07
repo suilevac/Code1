@@ -241,7 +241,7 @@ ALL.forEach(k=>{AX[k]=HD.segs[k].map(sg=>{const u=new THREE.Vector3(sg.u[0],-sg.
 const ang=k=>Math.atan2(AX[k][0].u.y,AX[k][0].u.x);
 const PAR={};FING.forEach(k=>PAR[k]=-(ang('majeur')-ang(k))/D);
 const SPREAD={index:[-10,25],majeur:[-15,15],annulaire:[-20,12],auriculaire:[-45,15]}; // + = vers le pouce, 0 = parallèle au majeur
-const CONV={index:-16,majeur:3,annulaire:14,auriculaire:24};                       // convergence naturelle quand le doigt plie
+const CONV={index:-16,majeur:3,annulaire:10,auriculaire:14};                       // convergence naturelle quand le doigt plie
 const LIMF={mcp:[-20,90],pip:[0,105],dip:[-10,80]};
 const LIMT={av:[0,45],rap:[-20,40],mcp:[-10,55],ip:[-20,80]};
 const ENSLAVE=[['index','majeur',90],['majeur','annulaire',85],['annulaire','auriculaire',75]];
@@ -378,6 +378,11 @@ const PALM_RIM=[];for(let i=0;i<NP;i+=3)if(PZF[i]<=2*ZS)PALM_RIM.push(toM(PXY[2*
 const HG=HD.hgrid,HGF=b64arr(HG.hf,Int16Array),HGB=b64arr(HG.hb,Int16Array);
 const palmH=(x,y)=>{const i=Math.round(x/HG.step),j=Math.round(y/HG.step);if(i<0||j<0||i>=HG.gw||j>=HG.gh)return null;const k=j*HG.gw+i;return HGF[k]||HGB[k]?[HGF[k],HGB[k]]:null};
 const SEGW={};ALL.forEach(k=>SEGW[k]=HD.segs[k].map(sg=>{const w=sg.ts.map((_,i)=>(sg.wl[i]+sg.wr[i])/2).filter(v=>v>4);return w.reduce((a,b)=>a+b,0)/w.length/SC}));
+// la vraie articulation de la base (tête du métacarpien) n'est pas au pli de la racine du doigt visible sur le dessin,
+// mais ≈ 1,5 cm plus bas, sous le pli distal de la paume : le doigt pivote de là (sinon 1re phalange trop courte,
+// les deux autres trop longues : le bout plonge dans la paume au lieu de s'y poser). Le dessin au repos ne change pas.
+const DEEP={};ALL.forEach(k=>DEEP[k]=k==='pouce'?0:.8*2*SEGW[k][0]);
+const MCPJ=k=>{const c=HD.chains[k][0],u=HD.segs[k][0].u,d=DEEP[k]*SC;return toM(c[0]-u[0]*d,c[1]-u[1]*d,0)};
 
 /* ======================================================================
    Une main = une hiérarchie d'articulations + des peaux
@@ -398,7 +403,7 @@ function makeHand(skeletonOnly){
   }
   const joints={};
   ALL.forEach(k=>{
-    const J=HD.chains[k].map(p=>toM(p[0],p[1],0));joints[k]=[];joints[k].J=J;
+    const J=HD.chains[k].map(p=>toM(p[0],p[1],0));if(DEEP[k])J[0]=MCPJ(k);joints[k]=[];joints[k].J=J;
     let parent=root,prev=new THREE.Vector3();
     if(k==='pouce'){const c=new THREE.Group();c.position.copy(CMC);root.add(c);joints.cmc=c;parent=c;prev=CMC.clone()}
     HD.segs[k].forEach((sg,i)=>{const g=new THREE.Group();g.position.copy(J[i].clone().sub(prev));parent.add(g);joints[k].push(g);parent=g;prev=J[i]});
@@ -520,11 +525,14 @@ function penetration(f){
       if(k==='pouce'&&thenarW(x,y)>.6)return;
       const hh=palmH(x,y);if(!hh)return;const z=q.z*SC,rp=r*SC,front=(hh[0]-SOFT)-(z-rp),back=(z+rp)+hh[1]-SOFT;
       if(front>0&&back>0)pen+=Math.min(front,back)})}));
+  // la partie cachée de la 1re phalange (dans la paume) ne compte pas entre doigts
+  const vis=k=>segs[k].map(([a,b],i)=>i?[a,b]:[a.clone().lerp(b,DEEP[k]/(DEEP[k]+HD.segs[k][0].len/SC)),b]);
+  
   // 2. le pouce ne traverse pas les doigts
-  segs.pouce.forEach(([a,b],i)=>FING.forEach(k=>segs[k].forEach(([c,d],j)=>{const o=(SEGW.pouce[i]+SEGW[k][j])*.8-ssd(a,b,c,d)-tol;if(o>0)pen+=o*SC})));
+  segs.pouce.forEach(([a,b],i)=>FING.forEach(k=>vis(k).forEach(([c,d],j)=>{const o=(SEGW.pouce[i]+SEGW[k][j])*.8-ssd(a,b,c,d)-tol;if(o>0)pen+=o*SC})));
   // 3. doigts voisins : ils peuvent se toucher, pas se traverser ; un doigt ne se replie pas dans lui-même
-  for(let n=0;n<3;n++){const A=segs[FING[n]],B=segs[FING[n+1]];A.forEach(([a,b],i)=>B.forEach(([c,d],j)=>{const o=(SEGW[FING[n]][i]+SEGW[FING[n+1]][j])*.68-ssd(a,b,c,d)-tol;if(o>0)pen+=o*SC}))}
-  FING.forEach(k=>{const [a,b]=segs[k][2],[c,d]=segs[k][0];const o=(SEGW[k][2]+SEGW[k][0])*.8-ssd(a,b,c,d)-tol;if(o>0)pen+=o*SC});
+  for(let n=0;n<3;n++){const A=vis(FING[n]),B=vis(FING[n+1]);A.forEach(([a,b],i)=>B.forEach(([c,d],j)=>{const o=(SEGW[FING[n]][i]+SEGW[FING[n+1]][j])*.68-ssd(a,b,c,d)-tol;if(o>0)pen+=o*SC}))}
+  FING.forEach(k=>{const [a,b]=segs[k][2],[c,d]=vis(k)[0];const o=(SEGW[k][2]+SEGW[k][0])*.8-ssd(a,b,c,d)-tol;if(o>0)pen+=o*SC});
   // 4. posture du pouce : jamais le bout tourné vers le poignet
   const [ta,tb]=segs.pouce[1],[pa,pb]=segs.pouce[0],dd=tb.clone().sub(ta).normalize(),dp=pb.clone().sub(pa).normalize();
   if(dd.y<-.45)pen+=(-.45-dd.y)*60;if(dp.y<-.2)pen+=(-.2-dp.y)*60;
@@ -560,7 +568,11 @@ const REACH={
   'Index (1)':h=>h.joints.majeur[1].getWorldPosition(W3()).lerp(h.joints.annulaire[2].getWorldPosition(W3()),.5),
   'V (2)':h=>h.joints.annulaire[1].getWorldPosition(W3()).lerp(h.joints.auriculaire[2].getWorldPosition(W3()),.5)
 };
-function settle(fromF,toF){let cur=clone(fromF);[...FING,'pouce'].forEach(k=>{const tgt=clone(cur);tgt[k]=clone(toF[k]);cur=solve(cur,tgt)});return cur}
+// passage d'une configuration à une autre : le pouce s'écarte d'abord (il ne bloque plus les doigts), puis chaque doigt,
+// puis le pouce rejoint sa place. Le résultat ne dépend donc pas de la pose précédente.
+function settle(fromF,toF){let cur=clone(fromF);
+  {const tgt=clone(cur);tgt.pouce={av:0,rap:-10,mcp:0,ip:0};cur=solve(cur,tgt)}
+  [...FING,'pouce'].forEach(k=>{const tgt=clone(cur);tgt[k]=clone(toF[k]);cur=solve(cur,tgt)});return cur}
 
 /* ======================================================================
    Scène et rendu (couleurs + traits intérieurs là où une partie passe devant une autre)
