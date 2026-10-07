@@ -287,12 +287,12 @@ for r_ in range(2, 61, 2):
 loc = np.maximum(loc, 2)
 circ8 = lambda u: np.sqrt(np.clip(1 - (1 - np.clip(u, 0, 1)) ** 2, 0, 1))
 # aplatissement du dos au bout des doigts (lit de l'ongle)
-tipf = np.zeros((H, W))
+tipf = np.zeros((H, W)); tax = np.zeros((H, W))      # tax : abscisse le long de la dernière phalange (0 articulation, 1 bout)
 for k, pts in CP.items():
     pts = np.array(pts, float); a, b = pts[-2], pts[-1]; u = (b - a) / np.hypot(*(b - a))
     t = ((XX - a[0]) * u[0] + (YY - a[1]) * u[1]) / np.hypot(*(b - a))
     own = np.char.startswith(owner.astype(str), k + '.' + str(len(pts) - 2))
-    tipf = np.where(own, np.clip((t - .15) / .35, 0, 1), tipf)
+    tipf = np.where(own, np.clip((t - .15) / .35, 0, 1), tipf); tax = np.where(own, t, tax)
 fF = DF8 * loc * circ8(d8 / loc)
 fB = (DB8 - (DB8 - DBT8) * tipf) * loc * circ8(d8 / loc)
 wfin = np.clip(ndimage.gaussian_filter(finger.astype(float), 6), 0, 1)
@@ -302,7 +302,73 @@ hfP = np.minimum((52 * (1 - wr_) + 88 * wr_ + 18 * gauss(675, 650, 75) + 10 * ga
 hbP = np.minimum((46 * (1 - wr_) + 84 * wr_ + 8 * gauss(500, 420, 140)) * circ8(d8 / Rr) * (.75 + .25 * circ8(dist_cut / 34.0)), 24 + .55 * dist_cut)
 front8 = wfin * fF + (1 - wfin) * hfP
 back8 = wfin * fB + (1 - wfin) * hbP
-out8 = ndimage.distance_transform_edt(~M8)
+# ---------- ongles ----------
+# Sur une vraie main l'ongle est bordé de peau (replis latéraux) et ne touche pas la tranche ; dans le dessin dos il touche
+# le contour. L'ongle n'est plus peint dans la texture (bord flou au grossissement, bouts de trait étirés en taches à sa
+# base) : on garde sa FORME dessinée, recoupée à NAILM px de la tranche, coins arrondis, rangée en distance signée
+# (texture texNail, < 0 dans l'ongle) ; le shader le trace net à tout grossissement : aplat + trait fin comme le dessin.
+# Le volume suit : ongle bombé en travers, peau un peu relevée autour (replis latéraux et proximal, pas au bord libre).
+NAILM, NAILLW, NDOME, NFOLD = 10.0, 2.4, .08, 1.6   # marge de peau (px), trait (px), bombé (× demi-largeur), repli (px)
+from skimage.morphology import convex_hull_image
+_ss = lambda x: np.clip(x, 0, 1) ** 2 * (3 - 2 * np.clip(x, 0, 1))
+lumA = DA[..., :3].mean(-1)
+labN, nN = ndimage.label((lumA > .55) & mask)
+nail_in = np.zeros((H, W), bool); erase = np.zeros((H, W), bool); ticks = np.zeros((H, W), bool); NAILC = []; tcen = np.zeros((H, W))
+for i in range(1, nN + 1):
+    c = labN == i
+    if c.sum() < 300: continue
+    # forme : enveloppe convexe de l'ongle dessiné (un ongle est convexe ; efface les crans laissés par le contour retiré)
+    nail_in |= convex_hull_image(c) & mask; NAILC.append(DA[ndimage.binary_erosion(c, iterations=3), :3]); tcen[ndimage.binary_dilation(c, iterations=25)] = tax[c].mean()
+    # trait du dessin autour de l'ongle (et ses bouts étirés en taches) : traits noirs qui touchent l'ongle
+    dk = ndimage.binary_dilation(c, iterations=12) & mask & (lumA < .22)
+    ld, _ = ndimage.label(dk); hit = np.unique(ld[ndimage.binary_dilation(c, iterations=3) & dk]); hit = hit[hit > 0]
+    erase |= ndimage.binary_dilation(c | np.isin(ld, hit), iterations=2) & mask; ticks |= ndimage.binary_dilation(np.isin(ld, hit), iterations=2) & mask
+NAILC = np.median(np.concatenate(NAILC), 0)
+# distance signée au bord extérieur du trait d'ongle dessiné, recoupée à NAILM px de la tranche, coins arrondis
+sdN = ndimage.distance_transform_edt(~nail_in) - ndimage.distance_transform_edt(nail_in) + .5 - NAILLW
+sdN = ndimage.gaussian_filter(np.maximum(sdN, NAILM - ndimage.gaussian_filter(d8, 3.0)), 2.0)
+# l'ongle recoupé reste convexe (la tranche du dessin a de petits creux) ; distance signée lissée au demi-pixel
+labC, nC = ndimage.label(sdN < 0); nail_cut = np.zeros((H, W), bool)
+for i in range(1, nC + 1): nail_cut |= convex_hull_image(labC == i)
+sdN = ndimage.gaussian_filter(ndimage.distance_transform_edt(~nail_cut) - ndimage.distance_transform_edt(nail_cut) + .5, 2.5)
+# peau sous l'ongle effacé : prolongée en douceur depuis la peau voisine (diffusion, sans stries)
+ys_, xs_ = np.nonzero(erase); y0, y1, x0, x1 = ys_.min() - 8, ys_.max() + 9, xs_.min() - 8, xs_.max() + 9
+er, mk = erase[y0:y1, x0:x1, None], mask[y0:y1, x0:x1, None].astype(float); orig = DA[y0:y1, x0:x1, :3].copy()
+_, (ey, ex) = ndimage.distance_transform_edt(~(mask & ~erase)[y0:y1, x0:x1], return_indices=True)
+fill = np.where(er, orig[ey, ex], orig); den = ndimage.uniform_filter(mk, (5, 5, 1)) + 1e-6
+for _ in range(80): fill = np.where(er, ndimage.uniform_filter(fill * mk, (5, 5, 1)) / den, orig)
+# près de la tranche, la couleur reste celle d'avant (peau prolongée depuis l'intérieur) : la tranche, vue de face comme de
+# dos, ne change pas ; seuls l'ongle, sa bordure et les bouts de trait noirs (taches à la base de l'ongle) sont repeints
+halo = ndimage.binary_dilation((lumA > .55) & mask, iterations=2) & mask
+_, (sy_, sx_) = ndimage.distance_transform_edt(~(mask & ~halo), return_indices=True)
+keep = np.clip((d8 - 11) / 3, 0, 1)[..., None]
+DA_old = np.where(halo[..., None], DA[sy_, sx_, :3] * (1 - keep) + DA[..., :3] * keep, DA[..., :3])
+DA[y0:y1, x0:x1, :3] = fill
+DA_new = DA[..., :3].copy()
+DA[..., :3] = np.where(((d8 < NAILM + 4) & ~(ticks & (d8 >= 9)))[..., None], DA_old, DA[..., :3])
+# La texture dos elle-même reste celle d'avant (DA_old) : sinon ses niveaux de mipmap, lus en biais sur la tranche, changent
+# la vue paume au repos (le dessin doit rester exact au pixel près). La peau repeinte (sous l'ongle, son trait, les bouts de
+# trait étirés en taches à sa base, ceux tout près de la tranche) passe par texNail : canal G = poids, canal B = clarté de
+# la peau qui la remplace (la peau du dessin = vert × clarté). Le shader l'applique sur le dos franc, et partout hors pose
+# du dessin (sinon les bouts de trait restaient en points noirs sous l'ongle, vus de côté).
+rep = np.any(np.abs(DA_new - DA_old) > 1e-4, -1) | ticks   # tout le trait de l'ongle, bord libre compris (le shader le retrace en « U »)
+tickW = np.clip(1.5 * ndimage.gaussian_filter(ndimage.binary_dilation(rep).astype(float), 1.0), 0, 1)
+tickB = DA_new.mean(-1) / (GREEN.mean() / 255)
+DA[..., :3] = DA_old
+# volume : bombé de l'ongle (nul au bord, plein à mi-largeur) + repli de peau autour (sauf au bord libre). Appliqué aux
+# sommets du dos APRÈS le lissage (rien ne bouge ailleurs, ni la tranche ni la paume) ; nul près de la tranche.
+# Le relief s'éteint en douceur vers la tranche (12 px) : vu de profil, la silhouette ne fait pas de cran au bord de l'ongle.
+bumpN = np.where(M8, NDOME * loc * _ss(-sdN / (.5 * loc)) + NFOLD * np.clip(1 - ((sdN - 3) / 5) ** 2, 0, 1) ** 2 * (1 - _ss((tax - tcen) / .3)), 0) * _ss((d8 - 10) / 12)
+# trait de l'ongle : comme dans le dessin, un « U » (côtés et base) ouvert au bord libre, qui se confond avec le contour du
+# doigt. Poids du trait = 1 sur les côtés et à la base, 0 au bord libre (normale sortante du bord dans l'axe du doigt).
+uxN = np.zeros((H, W)); uyN = np.zeros((H, W)); lastP = np.zeros((H, W), bool)
+for k, pts in CP.items():
+    a, b = np.array(pts[-2], float), np.array(pts[-1], float); u = (b - a) / np.hypot(*(b - a))
+    own = np.char.startswith(owner.astype(str), k + '.' + str(len(pts) - 2)); uxN[own], uyN[own] = u; lastP |= own
+_, (ly_, lx_) = ndimage.distance_transform_edt(~lastP, return_indices=True); uxN, uyN = uxN[ly_, lx_], uyN[ly_, lx_]
+gyS, gxS = np.gradient(ndimage.gaussian_filter(sdN, 1.5)); gnS = np.hypot(gxS, gyS) + 1e-9
+nailE = ndimage.gaussian_filter(1 - _ss(((gxS * uxN + gyS * uyN) / gnS - .3) / .35), 1.0)
+out8 =ndimage.distance_transform_edt(~M8)
 front8 = np.where(M8, front8, -out8); back8 = np.where(M8, back8, -out8)
 # poignet coupé net (le bas du dessin) : on ferme le volume par un fond plat
 STEP8 = 5
@@ -325,6 +391,7 @@ A = sparse.csr_matrix((np.ones(len(I)), (I, Jn)), shape=(nV, nV)); A.data[:] = 1
 deg = np.asarray(A.sum(1)).ravel(); Ln = sparse.diags(1 / np.maximum(deg, 1)) @ A
 for _ in range(6):
     V8 = V8 + .5 * (Ln @ V8 - V8); V8 = V8 - .53 * (Ln @ V8 - V8)
+BUMP8 = np.where(V8[:, 2] < -1, ndimage.map_coordinates(bumpN, [V8[:, 1], V8[:, 0]], order=1), 0)   # ongles bombés (dos) : voir dz
 # orientation des faces : normales vers l'extérieur
 fn = np.cross(V8[ff[:, 1]] - V8[ff[:, 0]], V8[ff[:, 2]] - V8[ff[:, 0]])
 top = np.argmax(V8[ff].mean(1)[:, 2])
@@ -487,6 +554,9 @@ part8 = np.array([PART[o.split('.')[0]] if o else 1 for o in vown], np.uint8)
 gy8, gx8 = np.gradient(ndimage.gaussian_filter(d8, 2.0))
 gn = np.hypot(gx8, gy8) + 1e-9; dv = d8[vy, vx]; push = np.clip(7 - dv, 0, 7)
 UV8 = np.stack([vx + gx8[vy, vx] / gn[vy, vx] * push, vy + gy8[vy, vx] / gn[vy, vx] * push], 1)
+# sur l'ongle (dos), coordonnées de texture exactes (pas arrondies au pixel) : bord net sans ondulation au grossissement.
+# Pas sur la tranche (dv ≥ 11) : vue de face au repos, le bout du doigt reste exact au pixel près
+UV8 = np.where(((sdN[vy, vx] < 6) & (dv >= 11) & (V8[:, 2] < -2))[:, None], P2, UV8)
 mesh8 = {'uv': base64.b64encode(np.round(UV8 * 4).astype(np.int16).tobytes()).decode(), 'n': int(nV), 'xyz': base64.b64encode(np.round(V8 * 4).astype(np.int16).tobytes()).decode(), 'q': 4,
          'idx': base64.b64encode(ff.astype(np.uint16 if nV < 65536 else np.uint32).tobytes()).decode(), 'i32': nV >= 65536,
          'nFront': nFront, 'bi': base64.b64encode(order.astype(np.uint8).tobytes()).decode(), 'bw': base64.b64encode(w8.astype(np.uint8).tobytes()).decode(),
@@ -527,27 +597,25 @@ DZ8 = np.where(ok8, -bc + (zz + bv) * (fc + bc) / np.maximum(fv + bv, 1e-3) - zz
 nearT = np.clip(1 - (ndimage.distance_transform_edt(~np.char.startswith(own8, 'pouce.')) - 30) / 30, 0, 1)
 DZ8 *= 1 - smp(nearT) * sstep(-8, 8, zz - (fv - bv) / 2)
 for _ in range(12): DZ8 = .5 * DZ8 + .5 * (Ln @ DZ8)
+# + bombé des ongles et repli de peau autour (dos) : lui aussi hors pose du dessin seulement (dessin au repos exact)
+DZ8 = DZ8 - BUMP8
 mesh8['dz'] = base64.b64encode(np.round(DZ8 * 4).astype(np.int16).tobytes()).decode()
 print('racines : |dz| max %.1f, sommets %d' % (np.abs(DZ8).max(), int((np.abs(DZ8) > .5).sum())))
 print('peau v8 : sommets', nV, 'triangles', len(ff))
 
-# ongles : sur une vraie main, l'ongle est bordé de peau (replis latéraux) et ne touche pas la tranche du doigt.
-# Dans le dessin dos il touche le contour : en 3D, la tranche le coupait net (« ongle fendu »). On le termine avant la tranche.
-nailm = (DA[..., :3].mean(-1) > .55) & mask
-halo = ndimage.binary_dilation(nailm, iterations=2) & mask
-skin_ok = mask & ~halo
-_, (sy_, sx_) = ndimage.distance_transform_edt(~skin_ok, return_indices=True)
-skinfill = DA[sy_, sx_, :3]
-keep = np.clip((np.where(M8, d8, 0) - 11) / 3, 0, 1)[..., None]          # 0 près de la tranche, 1 à l'intérieur
-DA[..., :3] = np.where(halo[..., None], skinfill * (1 - keep) + DA[..., :3] * keep, DA[..., :3])
-
 def png_b64(arr):
     img = Image.fromarray((np.clip(arr, 0, 1) * 255).round().astype(np.uint8), 'RGBA')
     b = io.BytesIO(); img.save(b, 'PNG', optimize=True); return 'data:image/png;base64,' + base64.b64encode(b.getvalue()).decode()
+def png_rgb(arr):
+    b = io.BytesIO(); Image.fromarray(arr.astype(np.uint8), 'RGB').save(b, 'PNG', optimize=True); return 'data:image/png;base64,' + base64.b64encode(b.getvalue()).decode()
 b64 = lambda a: base64.b64encode(np.ascontiguousarray(a).tobytes()).decode()
 data = {'W': W, 'H': H, 'chains': CP, 'segs': segs,
         'palm': {'n': int(len(verts)), 'xy': b64(verts.astype(np.int16)), 'zf': b64(np.round(zf * 8).astype(np.int16)), 'zb': b64(np.round(zb * 8).astype(np.int16)), 'idx': b64(tris), 'zscale': 8},
         'texFront': png_b64(P_tex), 'texBack': png_b64(DA), 'outw': OUTW,
+        # ongles : R = distance signée au bord (px, codée 128 + 12·d), G/B = bouts de trait à effacer ; couleur de l'aplat, trait
+        'texNail': png_rgb(np.clip(np.round(np.stack([128 + 12 * sdN, 255 * tickW, 200 * tickB], -1)), 0, 255)),
+        'texNailE': png_rgb(np.repeat(np.clip(np.round(255 * nailE), 0, 255)[..., None], 3, -1)),   # poids du trait de l'ongle
+        'nail': {'col': [float(x) for x in NAILC], 'lw': NAILLW, 'skin': [float(x) for x in GREEN / 255 / 200]},
         'mesh': mesh8,
         # carte d'épaisseur de la paume (collisions : un doigt ne traverse pas la paume)
         'fw': b64(np.round(FW * 255).astype(np.uint8)),

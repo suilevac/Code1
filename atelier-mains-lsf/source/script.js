@@ -88,13 +88,21 @@ const editable=()=>S.mode==='pose'?S.pose:(S.target==='debut'?S.debut:S.fin);
    Textures : dessin paume devant, dessin dos recalé derrière
    ====================================================================== */
 function tex(src){return new Promise(r=>{const t=new THREE.TextureLoader().load(src,()=>r(t));t.anisotropy=4})}
-const [TF,TB]=await Promise.all([tex(HD.texFront),tex(HD.texBack)]);
+const [TF,TB,TN,TE]=await Promise.all([tex(HD.texFront),tex(HD.texBack),tex(HD.texNail),tex(HD.texNailE)]);
+[TN,TE].forEach(t=>{t.generateMipmaps=false;t.minFilter=THREE.LinearFilter});   // distance signée : pas de moyenne entre niveaux (elle déborderait sur la tranche)
+const NAILC=new THREE.Vector3(...HD.nail.col),NAILS=new THREE.Vector3(...HD.nail.skin);
 const LIGHT=new THREE.Vector3(-.45,.55,1).normalize();
 const VS=`attribute float part;attribute float rnz;uniform float hlPart;varying float vH;varying float vS;varying vec2 vUv;varying vec3 vN;void main(){vH=abs(part-hlPart)<.5?1.:0.;vS=smoothstep(-.3,.3,rnz);vUv=uv;vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
-const FS=`uniform sampler2D colTex;uniform sampler2D colTex2;uniform sampler2D alphaTex;uniform float opacity;uniform float hl;uniform vec3 L;varying float vH;varying float vS;varying vec2 vUv;varying vec3 vN;
-void main(){if(texture2D(alphaTex,vUv).a<.35){gl_FragColor=vec4(.067,.067,.067,opacity);return;}vec3 c=mix(texture2D(colTex2,vUv).rgb,texture2D(colTex,vUv).rgb,vS);
+// ongles (dos seulement) : texNail R = distance signée au bord (px) → aplat net + trait fin du dessin, nets à tout grossissement ;
+// G/B = peau repeinte (sous l'ongle, son trait, bouts de trait étirés en taches), sur le dos franc (vS≈0) ; texNailE = poids
+// du trait : il s'amincit jusqu'à rien au bord libre (« U » ouvert du dessin). Pose du dessin : rien sur la tranche ni vu en biais (vue paume = dessin exact) ; hors pose (npose) partout
+const FS=`uniform sampler2D nailTex;uniform sampler2D nailE;uniform float npose;uniform vec3 nailCol;uniform vec3 nailSkin;uniform float nailLW;uniform sampler2D colTex;uniform sampler2D colTex2;uniform sampler2D alphaTex;uniform float opacity;uniform float hl;uniform vec3 L;varying float vH;varying float vS;varying vec2 vUv;varying vec3 vN;
+void main(){if(texture2D(alphaTex,vUv).a<.35){gl_FragColor=vec4(.067,.067,.067,opacity);return;}vec3 cb=texture2D(colTex2,vUv).rgb;
+vec3 nt=texture2D(nailTex,vUv).rgb;cb=mix(cb,nailSkin*nt.b*255.,nt.g*max((1.-smoothstep(0.,.15,vS))*smoothstep(.15,.4,normalize(vN).z),npose));
+float sd=(nt.r*255.-128.)/12.,aw=clamp(fwidth(sd),.03,1.5),wn=max(1.-smoothstep(.5,.9,vS),npose);cb=mix(cb,nailCol,wn*clamp(.5-sd/aw,0.,1.));
+float lw=nailLW*texture2D(nailE,vUv).r;cb*=1.-wn*min(lw/aw,1.)*clamp(.5-(abs(sd+lw*.5)-lw*.5)/aw,0.,1.);vec3 c=mix(cb,texture2D(colTex,vUv).rgb,vS);
 float s=clamp(.8+.26*max(dot(normalize(vN),L),0.),0.,1.);c*=s;c=mix(c,vec3(1.,.78,.1),hl*vH*.4);gl_FragColor=vec4(c,opacity);}`;
-const skinMat=back=>new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},colTex2:{value:TB},alphaTex:{value:TF},opacity:{value:1},hl:{value:0},hlPart:{value:-10},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS});
+const skinMat=back=>new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},colTex2:{value:TB},alphaTex:{value:TF},nailTex:{value:TN},nailE:{value:TE},npose:{value:0},nailCol:{value:NAILC},nailSkin:{value:NAILS},nailLW:{value:HD.nail.lw},opacity:{value:1},hl:{value:0},hlPart:{value:-10},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS,extensions:{derivatives:true}});
 const HULL=HD.outw+.6;
 
 function orient(geo,inside){
@@ -242,7 +250,7 @@ function makeHand(skeletonOnly){
     const me=new THREE.Mesh(g,f),mh=new THREE.Mesh(hg,hullMat);me.frustumCulled=mh.frustumCulled=false;
     me.userData={hull:false,idMat:SKIN_ID};mh.userData={hull:true};root.add(me,mh);meshes.push(me,mh);
     const idg=new THREE.BufferGeometry();idg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9*NT),3));idg.setAttribute('color',MIDFA);
-    const idm=new THREE.Mesh(idg,SKIN_ID);idm.visible=false;idm.frustumCulled=false;root.add(idm);skin={g,hg,idg,idm,key:'',hm:hullMat,gR:0};
+    const idm=new THREE.Mesh(idg,SKIN_ID);idm.visible=false;idm.frustumCulled=false;root.add(idm);skin={g,hg,idg,idm,key:'',hm:hullMat,sm:f,gR:0};
   }
   const joints={};
   ALL.forEach(k=>{
@@ -389,7 +397,7 @@ function dqApply(b,s,p){ // base du pouce : mélange (paume, métacarpien) par q
 function skinMesh(h,key,f){
   const S_=h.skin;if(S_.key===key)return;S_.key=key;
   const gR=f?rootBlend(f):0;
-  if(gR!==S_.gR){S_.gR=gR;const rz=S_.g.attributes.rnz;for(let i=0;i<MN;i++)rz.array[i]=MRNZ[i]+(MRNZC[i]-MRNZ[i])*gR;rz.needsUpdate=true}
+  if(gR!==S_.gR){S_.gR=gR;S_.sm.uniforms.npose.value=gR;const rz=S_.g.attributes.rnz;for(let i=0;i<MN;i++)rz.array[i]=MRNZ[i]+(MRNZC[i]-MRNZ[i])*gR;rz.needsUpdate=true}
   _inv.copy(h.root.matrixWorld).invert();
   const ST={};CHN.forEach(k=>ST[k]=ARCJ[k].map((J,j)=>arcState(J,h.joints[k][j].quaternion)));
   const BC=boneDQ1(h,h.joints.cmc,CMC),pa=S_.g.attributes.position.array,p=[0,0,0],K=1/65535;
