@@ -5,6 +5,7 @@
 import { codeText, makeToken } from './engine.js';
 import { nombresEnLettres } from './numbers.js';
 import { render } from './render.js';
+import { buildTableau } from './tableau.js';
 import { FAMILIES, SOUNDS } from './data.js';
 
 const $ = (s) => document.querySelector(s);
@@ -262,15 +263,15 @@ function brancher() {
   lie('#opt-verifier', 'verifier');
   lie('#opt-nombres', 'nombres');
 
-  $('#btn-exemple').addEventListener('click', () => {
+  $('#btn-exemple')?.addEventListener('click', () => {
     saisie.value = prefs.texte = EXEMPLE; ecrire(PREFS, prefs); majTexte();
   });
-  $('#btn-effacer').addEventListener('click', () => {
+  $('#btn-effacer')?.addEventListener('click', () => {
     saisie.value = prefs.texte = ''; ecrire(PREFS, prefs); majTexte(); saisie.focus();
   });
-  $('#btn-imprimer').addEventListener('click', () => window.print());
-  $('#btn-copier').addEventListener('click', copier);
-  $('#btn-exporter').addEventListener('click', exporter);
+  $('#btn-imprimer')?.addEventListener('click', () => window.print());
+  $('#btn-copier')?.addEventListener('click', copier);
+  $('#btn-exporter')?.addEventListener('click', exporter);
 
   $('#btn-corrections').addEventListener('click', ouvrirCorrections);
   $('#btn-fermer-corrections').addEventListener('click', () => $('#dlg-corrections').close());
@@ -283,6 +284,13 @@ function brancher() {
     delete fixes[k]; ecrire(FIXES, fixes); majBoutonCorrections(); majTexte(); ouvrirCorrections();
   });
 
+  $('#lien-tableau')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const ref = $('#ref-tableau');
+    if (!ref.dataset.pret) { ref.innerHTML = buildTableau(); ref.dataset.pret = '1'; }
+    $('#dlg-tableau').showModal();
+  });
+  $('#btn-fermer-tableau')?.addEventListener('click', () => $('#dlg-tableau').close());
   $('#lien-aide').addEventListener('click', (e) => { e.preventDefault(); $('#dlg-aide').showModal(); });
   $('#btn-fermer-aide').addEventListener('click', () => $('#dlg-aide').close());
 

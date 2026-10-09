@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lire en couleurs — le code de la méthode Aloé</title>
+<title>Lire en couleurs</title>
 <meta name="description" content="Transforme un texte en texte codé pour soutenir la lecture : une couleur par son-voyelle, nasales entourées, consonnes en noir, lettres muettes soulignées.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
     <p>Le texte que vous écrivez est codé avec le code de lecture de la classe (méthode Aloé).</p>
   </div>
   <nav>
-    <a href="tableau.html">Tableau des codes</a>
+    <a href="#" id="lien-tableau">Tableau des codes</a>
     <a href="#" id="lien-aide">Mode d'emploi</a>
   </nav>
 </header>
@@ -89,6 +89,17 @@
     <button class="bouton" id="btn-vider" type="button">Tout effacer</button>
     <button class="bouton bouton--plein" id="btn-fermer-corrections" type="button">Fermer</button>
   </div>
+</dialog>
+
+<dialog id="dlg-tableau" class="dlg-large">
+  <div class="dlg-barre">
+    <strong>Le tableau des codes</strong>
+    <span class="dlg-actions">
+      <a class="bouton horsfichier" href="tableau.html" target="_blank" rel="noopener">Version imprimable</a>
+      <button class="bouton bouton--plein" id="btn-fermer-tableau" type="button">Fermer</button>
+    </span>
+  </div>
+  <div class="ref" id="ref-tableau"></div>
 </dialog>
 
 <dialog id="dlg-aide" class="carte" style="max-width:640px;padding:22px;border:0;border-radius:14px">

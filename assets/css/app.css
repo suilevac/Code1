@@ -213,3 +213,47 @@ input[type="range"] { width: 110px; accent-color: var(--accent); }
   .tk--verifier::after { display: none; }
   @page { margin: 16mm; }
 }
+
+/* ---------- fenêtres ---------- */
+dialog {
+  background: var(--papier); color: var(--encre);
+  border: 1px solid var(--trait); border-radius: 14px; padding: 18px;
+  box-shadow: var(--ombre);
+}
+dialog::backdrop { background: rgba(16, 24, 40, .45); }
+.dlg-large { max-width: min(1100px, 94vw); width: 94vw; padding: 0; }
+.dlg-barre {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 18px; background: var(--papier); border-bottom: 1px solid var(--trait);
+}
+.dlg-actions { display: flex; gap: 8px; align-items: center; }
+.dlg-large .ref { padding: 8px 18px 24px; }
+.dlg-large .ref h2:first-child { margin-top: 8px; }
+
+/* ---------- thème sombre (l'interface suit, la feuille reste blanche) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --encre: #e9ecf1; --papier: #1c1f25; --fond: #121419; --trait: #2f353f;
+    --doux: #9aa3b2; --accent: #57a8e3;
+    --ombre: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+  :root:not([data-theme="light"]) .bouton:hover { background: #262b33; }
+  :root:not([data-theme="light"]) .puce:hover { background: #262b33; }
+}
+:root[data-theme="dark"] {
+  --encre: #e9ecf1; --papier: #1c1f25; --fond: #121419; --trait: #2f353f;
+  --doux: #9aa3b2; --accent: #57a8e3;
+  --ombre: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+:root[data-theme="dark"] .bouton:hover,
+:root[data-theme="dark"] .puce:hover { background: #262b33; }
+
+/* la feuille de travail garde l'aspect d'une feuille de papier */
+.feuille, .dlg-large .ref, .menu {
+  --papier: #ffffff; --encre: #15161a; --trait: #e2e6ee; --doux: #667085;
+  color-scheme: light;
+  background: var(--papier); color: var(--encre);
+}

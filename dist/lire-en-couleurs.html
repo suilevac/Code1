@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lire en couleurs</title>
+<meta name="description" content="Transforme un texte en texte codé pour soutenir la lecture : une couleur par son-voyelle, nasales entourées, consonnes en noir, lettres muettes soulignées.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* =============================================================
+   app.css — Lire en couleurs (méthode Aloé)
+   ============================================================= */
+
+:root {
+  --encre: #15161a;
+  --papier: #ffffff;
+  --fond: #f2f4f7;
+  --trait: #d9dee6;
+  --doux: #667085;
+  --accent: #1878B4;
+  --rayon: 14px;
+  --ombre: 0 1px 2px rgba(16, 24, 40, .06), 0 8px 24px rgba(16, 24, 40, .07);
+  --police-sortie: 'Andika', 'Verdana', system-ui, sans-serif;
+  --taille-sortie: 34px;
+  --interligne: 2;
+  --espace-lettres: 0.01em;
+  --espace-mots: 0.1em;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--fond);
+  color: var(--encre);
+  font-family: 'Andika', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--accent); }
+
+/* ---------- en-tête ---------- */
+.entete {
+  display: flex; flex-wrap: wrap; gap: 12px 20px;
+  align-items: baseline; justify-content: space-between;
+  padding: 18px 20px 14px;
+  background: var(--papier);
+  border-bottom: 1px solid var(--trait);
+}
+.entete h1 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
+.entete h1 .points span { display: inline-block; width: .52em; height: .52em; border-radius: 50%; margin-left: .12em; }
+.entete p { margin: 2px 0 0; color: var(--doux); font-size: 14px; }
+.entete nav { display: flex; gap: 14px; font-size: 14px; }
+
+/* ---------- barre d'outils ---------- */
+.outils {
+  display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+  padding: 12px 20px;
+  background: var(--papier);
+  border-bottom: 1px solid var(--trait);
+  position: sticky; top: 0; z-index: 20;
+}
+.groupe { display: flex; align-items: center; gap: 8px; }
+.groupe > label { font-size: 13px; color: var(--doux); }
+.sep { width: 1px; height: 26px; background: var(--trait); }
+
+select, input[type="range"] { font: inherit; font-size: 14px; }
+select {
+  padding: 6px 8px; border: 1px solid var(--trait); border-radius: 8px;
+  background: var(--papier); color: var(--encre);
+}
+input[type="range"] { width: 110px; accent-color: var(--accent); }
+
+.bascule { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; cursor: pointer; user-select: none; }
+.bascule input { width: 17px; height: 17px; accent-color: var(--accent); margin: 0; }
+
+.bouton {
+  font: inherit; font-size: 14px; cursor: pointer;
+  padding: 7px 14px; border-radius: 9px;
+  border: 1px solid var(--trait); background: var(--papier); color: var(--encre);
+}
+.bouton:hover { background: #f7f9fc; }
+.bouton--plein { background: var(--accent); border-color: var(--accent); color: #fff; }
+.bouton--plein:hover { background: #136498; }
+
+/* ---------- colonnes ---------- */
+.colonnes {
+  display: grid; grid-template-columns: minmax(280px, 400px) 1fr;
+  gap: 20px; padding: 20px; align-items: start;
+  max-width: 1600px; margin: 0 auto;
+}
+@media (max-width: 900px) { .colonnes { grid-template-columns: 1fr; } }
+
+.carte {
+  background: var(--papier); border: 1px solid var(--trait);
+  border-radius: var(--rayon); box-shadow: var(--ombre);
+}
+.carte h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); margin: 0; padding: 14px 16px 0; }
+
+#saisie {
+  display: block; width: 100%; min-height: 320px; resize: vertical;
+  border: 0; background: transparent; color: inherit;
+  font: inherit; font-size: 16px; line-height: 1.6;
+  padding: 12px 16px 16px;
+}
+#saisie:focus { outline: none; }
+
+.aide { padding: 0 16px 14px; font-size: 13px; color: var(--doux); }
+.aide kbd { font: inherit; font-size: 12px; background: var(--fond); border: 1px solid var(--trait); border-radius: 5px; padding: 1px 5px; }
+
+/* ---------- la feuille ---------- */
+.feuille {
+  padding: 28px 32px 40px; min-height: 420px;
+  border-radius: var(--rayon);
+}
+.sortie {
+  font-family: var(--police-sortie);
+  font-size: var(--taille-sortie);
+  line-height: var(--interligne);
+  letter-spacing: var(--espace-lettres);
+  word-spacing: var(--espace-mots);
+}
+.ligne { margin: 0 0 .25em; }
+.vide { color: var(--doux); font-family: inherit; font-size: 15px; }
+
+/* ---------- les graphèmes ---------- */
+.mot { white-space: nowrap; }
+.tk { position: relative; display: inline-block; line-height: 1; color: var(--encre); }
+.tk--vowel { color: var(--c, var(--encre)); }
+.out--mono .tk--vowel { color: var(--encre); }
+
+.tk__t { position: relative; }
+.tk--circle .tk__t { padding: 0 .13em; }
+.tk--tri .tk__t { padding: 0 .34em 0 .09em; }
+.tk--circle { margin: 0 .04em; }
+.tk--tri { margin: 0 .04em; }
+
+.tk--tri .tk__shape { top: -.3em; bottom: .19em; }
+.tk__shape {
+  position: absolute; left: 0; right: 0; top: .04em; bottom: .02em;
+  width: auto; height: auto; pointer-events: none; overflow: visible;
+}
+
+.tk--muette .tk__t {
+  text-decoration: underline;
+  text-decoration-thickness: .05em;
+  text-underline-offset: .14em;
+}
+.out--muettes-grises .tk--muette { color: #9aa1ad; }
+
+.tk--sifflante .tk__t {
+  text-decoration: underline double;
+  text-decoration-thickness: .045em;
+  text-underline-offset: .13em;
+}
+
+.tk--verifier::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -.18em; height: 0;
+  border-bottom: .06em dotted #e07a00;
+}
+.tk--manuel .tk__t { background: rgba(255, 221, 87, .3); border-radius: 3px; }
+
+/* clic pour corriger */
+.sortie--corrigeable .tk { cursor: pointer; border-radius: 4px; }
+.sortie--corrigeable .tk:hover { background: rgba(24, 120, 180, .12); }
+
+/* ---------- menu de correction ---------- */
+.menu {
+  position: absolute; z-index: 60; min-width: 230px;
+  background: var(--papier); border: 1px solid var(--trait);
+  border-radius: 12px; box-shadow: var(--ombre); padding: 10px;
+  font-size: 14px;
+}
+.menu[hidden] { display: none; }
+.menu h3 { margin: 2px 4px 8px; font-size: 13px; color: var(--doux); font-weight: 600; }
+.menu .rangee { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.puce {
+  font: inherit; font-size: 13px; cursor: pointer;
+  border: 1px solid var(--trait); background: var(--papier);
+  border-radius: 8px; padding: 5px 9px; display: inline-flex; align-items: center; gap: 6px;
+}
+.puce:hover { background: #f7f9fc; }
+.puce i { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+.puce--rond i { border-radius: 50%; }
+.puce--tri i { border-radius: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+
+/* ---------- gestes ---------- */
+.tk__geste {
+  position: absolute; left: 50%; bottom: 86%;
+  transform: translateX(-50%);
+  width: .62em; color: #4a5160; pointer-events: none;
+}
+.tk__geste .gst { display: block; width: 100%; height: auto; }
+.out--gestes .ligne { padding-top: .85em; }
+
+/* ---------- tableau de référence ---------- */
+.ref { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+.ref h2 { font-size: 17px; margin: 28px 0 10px; }
+.ref p.note { color: var(--doux); font-size: 14px; max-width: 70ch; }
+.grille { display: flex; flex-wrap: wrap; gap: 10px; }
+.case {
+  border: 1px solid var(--trait); border-radius: 10px; background: var(--papier);
+  padding: 10px 12px; min-width: 104px; text-align: center; box-shadow: var(--ombre);
+}
+.case .forme { height: 34px; display: flex; align-items: center; justify-content: center; }
+.case .forme svg { width: 26px; height: 34px; }
+.case .graphies { font-family: var(--police-sortie); font-size: 22px; line-height: 1.35; margin-top: 4px; }
+.case .nom { font-size: 12px; color: var(--doux); margin-top: 6px; }
+.case--cons .graphies { color: var(--encre); }
+
+/* ---------- impression ---------- */
+@media print {
+  .entete, .outils, .pane--saisie, .aide, .menu, .nonimprimable { display: none !important; }
+  body { background: #fff; }
+  .colonnes { display: block; padding: 0; }
+  .carte { border: 0; box-shadow: none; }
+  .feuille { padding: 0; }
+  .sortie--corrigeable .tk { cursor: auto; }
+  .tk--verifier::after { display: none; }
+  @page { margin: 16mm; }
+}
+
+/* ---------- fenêtres ---------- */
+dialog {
+  background: var(--papier); color: var(--encre);
+  border: 1px solid var(--trait); border-radius: 14px; padding: 18px;
+  box-shadow: var(--ombre);
+}
+dialog::backdrop { background: rgba(16, 24, 40, .45); }
+.dlg-large { max-width: min(1100px, 94vw); width: 94vw; padding: 0; }
+.dlg-barre {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 18px; background: var(--papier); border-bottom: 1px solid var(--trait);
+}
+.dlg-actions { display: flex; gap: 8px; align-items: center; }
+.dlg-large .ref { padding: 8px 18px 24px; }
+.dlg-large .ref h2:first-child { margin-top: 8px; }
+
+/* ---------- thème sombre (l'interface suit, la feuille reste blanche) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --encre: #e9ecf1; --papier: #1c1f25; --fond: #121419; --trait: #2f353f;
+    --doux: #9aa3b2; --accent: #57a8e3;
+    --ombre: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+    color-scheme: dark;
+  }
+  :root:not([data-theme="light"]) .bouton:hover { background: #262b33; }
+  :root:not([data-theme="light"]) .puce:hover { background: #262b33; }
+}
+:root[data-theme="dark"] {
+  --encre: #e9ecf1; --papier: #1c1f25; --fond: #121419; --trait: #2f353f;
+  --doux: #9aa3b2; --accent: #57a8e3;
+  --ombre: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .35);
+  color-scheme: dark;
+}
+:root[data-theme="dark"] .bouton:hover,
+:root[data-theme="dark"] .puce:hover { background: #262b33; }
+
+/* la feuille de travail garde l'aspect d'une feuille de papier */
+.feuille, .dlg-large .ref, .menu {
+  --papier: #ffffff; --encre: #15161a; --trait: #e2e6ee; --doux: #667085;
+  color-scheme: light;
+  background: var(--papier); color: var(--encre);
+}
+
+</style>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='9' cy='11' r='6' fill='%23D1282E'/><circle cx='22' cy='11' r='6' fill='%231878B4'/><circle cx='16' cy='23' r='6' fill='%231E9D4F'/></svg>">
+</head>
+<body>
+
+<header class="entete">
+  <div>
+    <h1>Lire en couleurs<span class="points"
+      ><span style="background:#D1282E"></span><span style="background:#1878B4"></span><span style="background:#D9BE00"></span><span style="background:#1E9D4F"></span></span></h1>
+    <p>Le texte que vous écrivez est codé avec le code de lecture de la classe (méthode Aloé).</p>
+  </div>
+  <nav>
+    <a href="#" id="lien-tableau">Tableau des codes</a>
+    <a href="#" id="lien-aide">Mode d'emploi</a>
+  </nav>
+</header>
+
+<div class="outils">
+  <div class="groupe">
+    <label for="police">Police</label>
+    <select id="police">
+      <option value="'Andika', Verdana, sans-serif">Andika (lecture)</option>
+      <option value="'Comic Neue', 'Comic Sans MS', cursive">Comic Neue</option>
+      <option value="Verdana, sans-serif">Verdana</option>
+      <option value="Arial, Helvetica, sans-serif">Arial</option>
+      <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+      <option value="'Segoe Script', 'Bradley Hand', cursive">Cursive du système</option>
+    </select>
+  </div>
+  <div class="groupe">
+    <label for="taille">Taille</label>
+    <input type="range" id="taille" min="18" max="72" step="2" value="34">
+  </div>
+  <div class="groupe">
+    <label for="interligne">Interligne</label>
+    <input type="range" id="interligne" min="1.2" max="3.4" step="0.1" value="2">
+  </div>
+  <div class="groupe">
+    <label for="espacement">Espacement</label>
+    <input type="range" id="espacement" min="0" max="0.3" step="0.01" value="0.01">
+  </div>
+  <div class="sep"></div>
+  <label class="bascule"><input type="checkbox" id="opt-couleurs" checked> Couleurs</label>
+  <label class="bascule"><input type="checkbox" id="opt-contraste"> Couleurs foncées</label>
+  <label class="bascule"><input type="checkbox" id="opt-gestes"> Gestes</label>
+  <label class="bascule"><input type="checkbox" id="opt-muettes" checked> Muettes en gris</label>
+  <label class="bascule"><input type="checkbox" id="opt-verifier" checked> Signaler les mots à vérifier</label>
+  <label class="bascule"><input type="checkbox" id="opt-nombres"> Nombres en lettres</label>
+  <div class="sep"></div>
+  <button class="bouton" id="btn-corrections" type="button">Mes corrections (0)</button>
+  <button class="bouton" id="btn-copier" type="button">Copier</button>
+  <button class="bouton" id="btn-exporter" type="button">Exporter</button>
+  <button class="bouton bouton--plein" id="btn-imprimer" type="button">Imprimer</button>
+</div>
+
+<main class="colonnes">
+  <section class="carte pane--saisie">
+    <h2>Votre texte</h2>
+    <textarea id="saisie" spellcheck="true" placeholder="Écrivez ou collez votre texte ici…"></textarea>
+    <p class="aide">
+      Cliquez sur une lettre du texte codé pour corriger son code : la correction est gardée
+      pour toutes les fois où le mot revient. <kbd>Échap</kbd> ferme le menu.
+      <button class="bouton" id="btn-exemple" type="button" style="margin-top:8px">Texte d'exemple</button>
+      <button class="bouton" id="btn-effacer" type="button" style="margin-top:8px">Effacer</button>
+    </p>
+  </section>
+
+  <section class="carte feuille">
+    <div id="sortie" class="sortie sortie--corrigeable" aria-live="polite"></div>
+  </section>
+</main>
+
+<div class="menu" id="menu" hidden></div>
+
+<dialog id="dlg-corrections" class="carte" style="max-width:520px;padding:18px;border:0;border-radius:14px">
+  <h2 style="padding:0">Mes corrections</h2>
+  <div id="liste-corrections" style="margin:12px 0;max-height:50vh;overflow:auto"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="bouton" id="btn-vider" type="button">Tout effacer</button>
+    <button class="bouton bouton--plein" id="btn-fermer-corrections" type="button">Fermer</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-tableau" class="dlg-large">
+  <div class="dlg-barre">
+    <strong>Le tableau des codes</strong>
+    <span class="dlg-actions">
+      <button class="bouton bouton--plein" id="btn-fermer-tableau" type="button">Fermer</button>
+    </span>
+  </div>
+  <div class="ref" id="ref-tableau"></div>
+</dialog>
+
+<dialog id="dlg-aide" class="carte" style="max-width:640px;padding:22px;border:0;border-radius:14px">
+  <h2 style="padding:0">Mode d'emploi</h2>
+  <div style="font-size:15px;line-height:1.6">
+    <p><strong>Le code.</strong> Une couleur par son-voyelle ; les consonnes restent noires.
+      Un son nasal est entouré d'un rond, dans la couleur de sa voyelle
+      (<em>an</em>, <em>en</em>, <em>on</em>, <em>in</em>, <em>ein</em>, <em>un</em>).
+      Un son avec yod est dans un triangle (<em>ill</em>, <em>ian</em>, <em>ion</em>, <em>ien</em>).</p>
+    <p><strong>Les traits.</strong> Un trait simple sous une lettre : elle ne se dit pas.
+      Un double trait : elle fait le son [s].</p>
+    <p><strong>Corriger.</strong> Le découpage est automatique : il se trompe parfois sur les mots rares,
+      sur <em>-ent</em> (verbe ou son [an] ?) et sur <em>ill</em>. Les endroits douteux sont soulignés
+      en pointillé orange. Cliquez sur la lettre pour choisir le bon code ; la correction est enregistrée
+      dans ce navigateur et réutilisée ensuite.</p>
+    <p><strong>Imprimer.</strong> Le bouton <em>Imprimer</em> n'imprime que la feuille de droite.
+      <em>Copier</em> met le texte en couleurs dans le presse-papier (collable dans un traitement de texte),
+      <em>Exporter</em> enregistre une page web autonome.</p>
+  </div>
+  <div style="display:flex;justify-content:flex-end"><button class="bouton bouton--plein" id="btn-fermer-aide" type="button">Fermer</button></div>
+</dialog>
+
+<script type="module">
+/* ---- data.js ---- */
+/* =============================================================
+   data.js — Les données du code de lecture (méthode Aloé)
+   Relevé sur l'affichage de classe : une couleur par son-voyelle,
+   consonnes en noir, nasales entourées, sons avec yod en triangle.
+   ============================================================= */
+
+/* --- Les 8 familles de couleur (une par son-voyelle de base) --- */
+const FAMILIES = {
+  a:  { label: 'a',  color: '#D1282E', strong: '#A3161B' },
+  o:  { label: 'o',  color: '#1878B4', strong: '#0E5887' },
+  i:  { label: 'i',  color: '#D9BE00', strong: '#9C8800' },
+  e2: { label: 'é',  color: '#1E9D4F', strong: '#136E36' },
+  u:  { label: 'u',  color: '#C1884B', strong: '#8C5C2A' },
+  oi: { label: 'oi', color: '#4C3D93', strong: '#322665' },
+  ou: { label: 'ou', color: '#E0A116', strong: '#A37200' },
+  e:  { label: 'e',  color: '#D45C96', strong: '#A32F68' },
+};
+
+/* --- Les sons-voyelles -------------------------------------
+   fam   : famille de couleur
+   shape : 'rect' (son simple) | 'circle' (nasale) | 'tri' (yod)
+   gr    : graphies du tableau de classe
+   ----------------------------------------------------------- */
+const SOUNDS = {
+  a:   { fam: 'a',  shape: 'rect',   name: '[a]',   gr: ['a', 'à', 'â'] },
+  o:   { fam: 'o',  shape: 'rect',   name: '[o]',   gr: ['o', 'ô', 'au', 'eau'] },
+  i:   { fam: 'i',  shape: 'rect',   name: '[i]',   gr: ['i', 'î', 'ï', 'y'] },
+  e2:  { fam: 'e2', shape: 'rect',   name: '[é] [è]', gr: ['é', 'è', 'ê', 'ei', 'ai'] },
+  u:   { fam: 'u',  shape: 'rect',   name: '[u]',   gr: ['u', 'û'] },
+  oi:  { fam: 'oi', shape: 'rect',   name: '[oi]',  gr: ['oi'] },
+  ou:  { fam: 'ou', shape: 'rect',   name: '[ou]',  gr: ['ou', 'où', 'oû'] },
+  e:   { fam: 'e',  shape: 'rect',   name: '[e] [eu]', gr: ['e', 'eu', 'œu', 'oeu'] },
+
+  an:  { fam: 'a',  shape: 'circle', name: '[an]',  gr: ['an', 'am'] },
+  en:  { fam: 'e',  shape: 'circle', name: '[an] (en)', gr: ['en', 'em'] },
+  on:  { fam: 'o',  shape: 'circle', name: '[on]',  gr: ['on', 'om'] },
+  in:  { fam: 'i',  shape: 'circle', name: '[in]',  gr: ['in', 'im'] },
+  ein: { fam: 'e2', shape: 'circle', name: '[in] (ein)', gr: ['ein', 'ain', 'aim'] },
+  un:  { fam: 'u',  shape: 'circle', name: '[un]',  gr: ['un', 'um'] },
+  oin: { fam: 'oi', shape: 'circle', name: '[oin]', gr: ['oin'], extra: true },
+
+  il:  { fam: 'i',  shape: 'tri',    name: '[ill]', gr: ['il', 'ill', 'y'] },
+  ian: { fam: 'a',  shape: 'tri',    name: '[ian]', gr: ['ian'] },
+  ion: { fam: 'o',  shape: 'tri',    name: '[ion]', gr: ['ion'] },
+  ien: { fam: 'e2', shape: 'tri',    name: '[ien]', gr: ['ien'] },
+  ay:  { fam: 'e2', shape: 'tri',    name: '[ay]',  gr: ['ay', 'ey'], extra: true },
+  oy:  { fam: 'oi', shape: 'tri',    name: '[oy]',  gr: ['oy'], extra: true },
+  uy:  { fam: 'u',  shape: 'tri',    name: '[uy]',  gr: ['uy'], extra: true },
+};
+
+/* --- Les consonnes (noires) + leur geste --------------------
+   g  : clé du geste dessiné dans gestures.js
+   gr : graphies du tableau de classe
+   ----------------------------------------------------------- */
+const CONSONANTS = {
+  s:  { name: '[s]',  g: 's',  gr: ['s', 'ss', 'c', 'ce', 'ç'] },
+  t:  { name: '[t]',  g: 't',  gr: ['t', 'tt'] },
+  ch: { name: '[ch]', g: 'ch', gr: ['ch'] },
+  z:  { name: '[z]',  g: 'z',  gr: ['z', 's'] },
+  l:  { name: '[l]',  g: 'l',  gr: ['l', 'll'] },
+  p:  { name: '[p]',  g: 'p',  gr: ['p', 'pp'] },
+  b:  { name: '[b]',  g: 'b',  gr: ['b'] },
+  m:  { name: '[m]',  g: 'm',  gr: ['m', 'mm'] },
+  k:  { name: '[k]',  g: 'k',  gr: ['c', 'qu', 'k'] },
+  v:  { name: '[v]',  g: 'v',  gr: ['v'] },
+  f:  { name: '[f]',  g: 'f',  gr: ['f', 'ff', 'ph'] },
+  d:  { name: '[d]',  g: 'd',  gr: ['d'] },
+  n:  { name: '[n]',  g: 'n',  gr: ['n', 'nn'] },
+  r:  { name: '[r]',  g: 'r',  gr: ['r', 'rr'] },
+  j:  { name: '[j]',  g: 'j',  gr: ['j', 'ge'] },
+  g:  { name: '[g]',  g: 'g',  gr: ['g', 'gu'] },
+  gn: { name: '[gn]', g: 'gn', gr: ['gn'] },
+  ks: { name: '[ks]', g: null, gr: ['x'] },
+};
+
+/* --- Les attaques du bas du tableau (consonne + l / r) ------ */
+const BLENDS = ['pl', 'pr', 'tr', 'dr', 'cr', 'cl', 'fr', 'fl', 'vr', 'br', 'bl', 'gr', 'gl'];
+
+/* --- Mots dont le code ne se déduit pas des règles -----------
+   Format : groupes séparés par « | ».
+   Un groupe = les lettres, puis « = » et la clé du son.
+   Sans « = », le son est déduit de la graphie.
+   Clés spéciales :  _  lettre muette
+                     s2 lettre qui fait [s] (double trait)
+                     z  lettre qui fait [z]
+   ----------------------------------------------------------- */
+const LEXICON = {
+  // nombres et mots de la numération
+  'six':      's|i|x=s2',
+  'dix':      'd|i|x=s2',
+  'soixante': 's|oi|x=s2|an|t|e=_',
+  'sept':     's|e=e2|p=_|t',
+  'huit':     'h=_|u|i|t',
+  'neuf':     'n|eu|f',
+  'cinq':     'c=s2|in|q=k',
+  'vingt':    'v|in|g=_|t=_',
+  'vingts':   'v|in|g=_|t=_|s=_',
+  'cent':     'c=s2|en|t=_',
+  'cents':    'c=s2|en|t=_|s=_',
+  'mille':    'm|i|ll|e=_',
+  'onze':     'on|z|e=_',
+  'cents':    'c=s2|en|t=_|s=_',
+
+  // mots outils irréguliers
+  'est':      'e=e2|s=_|t=_',
+  'es':       'e=e2|s=_',
+  'et':       'e=e2|t=_',
+  'les':      'l|e=e2|s=_',
+  'des':      'd|e=e2|s=_',
+  'mes':      'm|e=e2|s=_',
+  'tes':      't|e=e2|s=_',
+  'ses':      's|e=e2|s=_',
+  'ces':      'c=s2|e=e2|s=_',
+  'ils':      'i|l|s=_',
+  'elles':    'e=e2|ll|e=_|s=_',
+  'fils':     'f|i|l|s',
+  'eu':       'e=_|u',
+  'eue':      'e=_|u|e=_',
+  'eut':      'e=_|u|t=_',
+  'plus':     'p|l|u|s',
+  'tous':     't|ou|s=_',
+  'bus':      'b|u|s',
+  'ours':     'ou|r|s',
+  'mars':     'm|a|r|s',
+  'sens':     's|en|s',
+  'os':       'o|s',
+  'sud':      's|u|d',
+  'but':      'b|u|t',
+  'net':      'n|e=e2|t',
+  'ouest':    'ou|e=e2|s|t',
+  'août':     'a=_|oû=ou|t',
+  'hier':     'h=_|i=il|e=e2|r',
+  'monsieur': 'm|o=e|n=_|s|i=il|eu|r=_',
+  'messieurs':'m|e=e2|ss|i=il|eu|r=_|s=_',
+  'femme':    'f|e=a|mm|e=_',
+  'femmes':   'f|e=a|mm|e=_|s=_',
+  'oignon':   'o|i=_|gn|on',
+  'oignons':  'o|i=_|gn|on|s=_',
+  'automne':  'au|t|o|m=_|n|e=_',
+  'second':   's|e=e2|c=g|on|d=_',
+  'seconde':  's|e=e2|c=g|on|d|e=_',
+  'examen':   'e=e2|x|a|m|en',
+  'yeux':     'y=il|eu|x=_',
+  'oeil':     'oe=e|il',
+  'œil':      'œ=e|il',
+  'paon':     'p|aon=an',
+  'faon':     'f|aon=an',
+  'pays':     'p|ay=e2|s=_',
+  'ville':    'v|i|ll|e=_',
+  'villes':   'v|i|ll|e=_|s=_',
+  'village':  'v|i|ll|a|g=j|e=_',
+  'villages': 'v|i|ll|a|g=j|e=_|s=_',
+  'tranquille':'t|r|an|qu|i|ll|e=_',
+  'chorale':  'ch=k|o|r|a|l|e=_',
+  'écho':     'é|ch=k|o',
+  'chœur':    'ch=k|œu=e|r',
+  'orchestre':'o|r|ch=k|e=e2|s|t|r|e=_',
+  'technique':'t|e=e2|ch=k|n|i|qu|e=_',
+  'aujourd\'hui': "au|j|ou|r|d|'|h=_|u=_|i",
+  'gentil':   'j=j|en|t|i|l=_',
+  'outil':    'ou|t|i|l=_',
+  'fusil':    'f|u|s=z|i|l=_',
+  'blanc':    'b|l|an|c=_',
+  'blancs':   'b|l|an|c=_|s=_',
+  'banc':     'b|an|c=_',
+  'franc':    'f|r|an|c=_',
+  'tabac':    't|a|b|a|c=_',
+  'estomac':  'e=e2|s|t|o|m|a|c=_',
+  'nez':      'n|e=e2|z=_',
+  'clef':     'c=k|l|e=e2|f=_',
+  'faisait':  'f|ai=e|s=z|ai=e2|t=_',
+  'faisons':  'f|ai=e|s=z|on|s=_',
+  'monsieur': 'm|o=e|n=_|s|i=il|eu|r=_',
+
+  // verbes fréquents en -ent (terminaison muette après consonne)
+  'aiment':   'ai=e2|m|ent=_',
+  'arrivent': 'a|rr|i|v|ent=_',
+  'cherchent':'ch|e=e2|r|ch|ent=_',
+  'chantent': 'ch|an|t|ent=_',
+  'courent':  'c=k|ou|r|ent=_',
+  'disent':   'd|i|s=z|ent=_',
+  'donnent':  'd|o|nn|ent=_',
+  'dorment':  'd|o|r|m|ent=_',
+  'écoutent': 'é|c=k|ou|t|ent=_',
+  'entendent':'en|t|en|d|ent=_',
+  'habitent': 'h=_|a|b|i|t|ent=_',
+  'lisent':   'l|i|s=z|ent=_',
+  'marchent': 'm|a|r|ch|ent=_',
+  'mangent':  'm|an|g=j|ent=_',
+  'parlent':  'p|a|r|l|ent=_',
+  'partent':  'p|a|r|t|ent=_',
+  'passent':  'p|a|ss|ent=_',
+  'pensent':  'p|en|s|ent=_',
+  'portent':  'p|o|r|t|ent=_',
+  'prennent': 'p|r|e=e2|nn|ent=_',
+  'regardent':'r|e|g|a|r|d|ent=_',
+  'restent':  'r|e=e2|s|t|ent=_',
+  'sortent':  's|o|r|t|ent=_',
+  'tombent':  't|on=on|b|ent=_',
+  'trouvent': 't|r|ou|v|ent=_',
+  'veulent':  'v|eu|l|ent=_',
+  'viennent': 'v|i=il|e=e2|nn|ent=_',
+  'vivent':   'v|i|v|ent=_',
+  'voient':   'v|oi|ent=_',
+};
+
+/* --- Mots où la consonne finale se prononce ----------------- */
+const FINAL_SOUNDED = new Set([
+  'fils', 'bus', 'ours', 'mars', 'sens', 'os', 'sud', 'but', 'net', 'ouest',
+  'est', 'sept', 'huit', 'août', 'plus', 'tennis', 'autobus', 'cactus', 'virus',
+  'bus', 'index', 'sac', 'avec', 'lac', 'bec', 'chef', 'actif', 'neuf', 'oeuf',
+]);
+
+/* --- Petits mots où le « e » final se prononce -------------- */
+const KEEP_FINAL_E = new Set(['le', 'je', 'me', 'te', 'se', 'ce', 'de', 'ne', 'que']);
+
+/* --- Mots en -er où le r se prononce ------------------------ */
+const ER_SOUNDED = new Set([
+  'hier', 'mer', 'fer', 'ver', 'cher', 'fier', 'hiver', 'amer', 'enfer',
+  'cuiller', 'super', 'aster', 'ter', 'per', 'over',
+]);
+
+/* ---- gestures.js ---- */
+/* =============================================================
+   gestures.js — Les gestes du tableau, dessinés en SVG
+   (affichés au-dessus des lettres quand l'option est cochée)
+   ============================================================= */
+
+const D = (cx, cy) => `<circle cx="${cx}" cy="${cy}" r="1.7" fill="currentColor" stroke="none"/>`;
+
+const GESTURES = {
+  s:  '<path d="M4 12h16"/><path d="M4 20h16"/>',
+  t:  '<path d="M12 4v24"/>',
+  ch: '<path d="M8 4v22h11"/>',
+  z:  '<path d="M6 8h12L6 24h12"/>',
+  l:  '<path d="M12 28V5"/><path d="M7 10l5-5 5 5"/>',
+  p:  '<path d="M4 16h16"/>',
+  b:  '<circle cx="12" cy="16" r="5"/><path d="M3 16h18"/>',
+  m:  `<path d="M6 16h12"/>${D(5, 16)}${D(12, 16)}${D(19, 16)}`,
+  k:  '<path d="M7 7v8a5 5 0 0 0 10 0V7"/>',
+  v:  '<path d="M7 8l5 16 5-16"/>',
+  f:  '<path d="M9 6v20"/><path d="M15 6v20"/>',
+  d:  '<circle cx="10" cy="20" r="5"/><path d="M15 5v20"/>',
+  n:  `<path d="M12 7v19"/>${D(6, 16)}${D(18, 16)}`,
+  r:  '<path d="M3 23c-1-7 6-7 5 0"/><path d="M8 23c-1-7 6-7 5 0"/><path d="M13 23c-1-7 6-7 5 0"/>',
+  j:  '<path d="M17 5v13a5 5 0 0 1-10 0"/>',
+  g:  '<circle cx="12" cy="16" r="7"/>',
+  gn: `<path d="M13 5v13a5 5 0 0 1-9 3"/>${D(16, 11)}${D(20, 11)}`,
+};
+
+/* Le geste d'une voyelle, c'est sa forme coloriée */
+function shapeSvg(shape, color, filled = true) {
+  const f = filled ? color : 'none';
+  if (shape === 'circle') return svg(`<circle cx="12" cy="16" r="10" fill="${f}" stroke="${color}" stroke-width="2"/>`);
+  if (shape === 'tri') return svg(`<path d="M4 6v20h16z" fill="${f}" stroke="${color}" stroke-width="2"/>`);
+  return svg(`<rect x="4" y="5" width="16" height="22" fill="${f}" stroke="${color}" stroke-width="2"/>`);
+}
+
+function gestureSvg(key) {
+  const d = GESTURES[key];
+  return d ? svg(d) : '';
+}
+
+function svg(inner) {
+  return `<svg class="gst" viewBox="0 0 24 32" aria-hidden="true" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+}
+
+/* ---- numbers.js ---- */
+/* =============================================================
+   numbers.js — Écrire un nombre en lettres (numération de classe)
+   ============================================================= */
+
+const U = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit', 'neuf',
+  'dix', 'onze', 'douze', 'treize', 'quatorze', 'quinze', 'seize',
+  'dix-sept', 'dix-huit', 'dix-neuf'];
+const T = ['', '', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', 'soixante', 'quatre-vingt', 'quatre-vingt'];
+
+function sousCent(n) {
+  if (n < 20) return U[n];
+  const d = Math.floor(n / 10), u = n % 10;
+  if (d === 7 || d === 9) {
+    const reste = U[10 + u];
+    return (d === 7 && u === 1) ? 'soixante et onze' : `${T[d]}-${reste}`;
+  }
+  if (u === 0) return d === 8 ? 'quatre-vingts' : T[d];
+  if (u === 1 && d !== 8) return `${T[d]} et un`;
+  return `${T[d]}-${U[u]}`;
+}
+
+function sousMille(n) {
+  if (n < 100) return sousCent(n);
+  const c = Math.floor(n / 100), r = n % 100;
+  const tete = c === 1 ? 'cent' : `${U[c]} cent${r === 0 ? 's' : ''}`;
+  return r === 0 ? tete : `${tete} ${sousCent(r)}`;
+}
+
+function enLettres(n) {
+  n = Math.trunc(Math.abs(Number(n)));
+  if (!Number.isFinite(n)) return '';
+  if (n < 1000) return sousMille(n);
+  if (n < 1000000) {
+    const m = Math.floor(n / 1000), r = n % 1000;
+    const tete = m === 1 ? 'mille' : `${sousMille(m)} mille`;
+    return r === 0 ? tete : `${tete} ${sousMille(r)}`;
+  }
+  return String(n);
+}
+
+/* Remplace les nombres écrits en chiffres par leur écriture en lettres */
+function nombresEnLettres(texte) {
+  return String(texte).replace(/\d+/g, (m) => (m.length <= 6 ? enLettres(m) : m));
+}
+
+/* ---- tableau.js ---- */
+/* =============================================================
+   tableau.js — Construit le tableau des codes à partir des données
+   (utilisé par la page tableau.html et par la fenêtre du site)
+   ============================================================= */
+
+
+const section = (titre, note, cases) => `
+  <h2>${titre}</h2>
+  ${note ? `<p class="note">${note}</p>` : ''}
+  <div class="grille">${cases}</div>`;
+
+const caseVoyelle = (cle) => {
+  const s = SOUNDS[cle];
+  const c = FAMILIES[s.fam].color;
+  return `<div class="case">
+    <div class="forme">${shapeSvg(s.shape, c, true)}</div>
+    <div class="graphies" style="color:${c}">${s.gr.join('<br>')}</div>
+    <div class="nom">${s.name}${s.extra ? ' *' : ''}</div>
+  </div>`;
+};
+
+const caseConsonne = (cle) => {
+  const k = CONSONANTS[cle];
+  return `<div class="case case--cons">
+    <div class="forme">${k.g ? gestureSvg(k.g) : ''}</div>
+    <div class="graphies">${k.gr.join('<br>')}</div>
+    <div class="nom">${k.name}</div>
+  </div>`;
+};
+
+const par = (f) => (l) => l.map(f).join('');
+
+function buildTableau() {
+  return section('Les sons-voyelles', 'Une couleur par son. Le rectangle est la forme du son simple.',
+      par(caseVoyelle)(['a', 'o', 'i', 'e2', 'u', 'oi', 'ou', 'e'])) +
+    section('Les sons nasaux', 'Entourés d\'un rond, dans la couleur de leur voyelle.',
+      par(caseVoyelle)(['an', 'en', 'on', 'in', 'ein', 'un', 'oin'])) +
+    section('Les sons avec yod', 'Dans un triangle, dans la couleur de leur voyelle.',
+      par(caseVoyelle)(['il', 'ian', 'ion', 'ien', 'ay', 'oy', 'uy'])) +
+    section('Les consonnes', 'Elles restent noires. Le dessin est le geste du tableau de classe.',
+      par(caseConsonne)(Object.keys(CONSONANTS))) +
+    section('Les attaques', 'Consonne + l ou r : les deux gestes s\'enchaînent.',
+      BLENDS.map((b) => `<div class="case case--cons"><div class="graphies">${b}</div></div>`).join('')) +
+    `<h2>Les traits</h2>
+     <p class="note">
+       <strong>Trait simple</strong> sous une lettre : elle ne se dit pas
+       (le <em>p</em> de sept, le <em>s</em> de quatre-vingts).<br>
+       <strong>Double trait</strong> : la lettre fait le son [s] (cinq, six, dix, soixante, cent).<br>
+       <em>* Les cases marquées d'une étoile ne sont pas sur l'affichage de la classe :
+       elles ont été ajoutées pour que le site sache coder tous les mots (oin, ay, oy, uy).</em>
+     </p>`;
+}
+
+/* ---- engine.js ---- */
+/* =============================================================
+   engine.js — Découpage d'un texte en graphèmes codés
+   Chaque graphème reçoit :
+     kind  : 'vowel' | 'cons' | 'mute' | 'other'
+     key   : la clé du son (voir data.js)
+     fam   : famille de couleur (voyelles)
+     shape : 'rect' | 'circle' | 'tri'  (voyelles)
+     mark  : 'none' | 'single' (muette) | 'double' (fait [s])
+   ============================================================= */
+
+const VOWEL_LETTERS = 'aeiouyàâäéèêëîïôöûüùœ';
+const LETTER_RE = /[a-zàâäéèêëîïôöûüùçœA-ZÀÂÄÉÈÊËÎÏÔÖÛÜÙÇŒ]/;
+
+const isVowel = (ch) => !!ch && VOWEL_LETTERS.includes(ch);
+const isLetter = (ch) => !!ch && LETTER_RE.test(ch);
+const isCons = (ch) => isLetter(ch) && !isVowel(ch);
+
+/* ---------- conditions utilisées par les règles ---------- */
+
+// une nasale n'en est une que si le n/m n'est ni doublé ni suivi d'une voyelle
+const nasal = (c) => {
+  const next = c.next;
+  if (!next) return true;
+  if (isVowel(next)) return false;
+  if (next === c.w[c.i + c.len - 1]) return false; // ann..., omm...
+  return true;
+};
+const consBefore   = (c) => isCons(c.prev);
+const beforeVowel  = (c) => isVowel(c.next);
+const beforeEIY    = (c) => !!c.next && 'eiyéèêë'.includes(c.next);
+const beforeAOU    = (c) => !!c.next && 'aouâôû'.includes(c.next);
+const between      = (c) => isVowel(c.prev) && isVowel(c.next);
+const yodEnd       = (c) => isVowel(c.prev) && (!c.next || c.next === 's');
+const yodY         = (c) => (isVowel(c.prev) && isVowel(c.next)) || (c.i === 0 && isVowel(c.next));
+const tiSound      = (c) => c.prev !== 's' &&
+  (c.w.slice(c.i + 1, c.i + 4) === 'ion' || /^ie(nt|l|ux)/.test(c.w.slice(c.i + 1)));
+// « ai », « ei » ne prennent pas le i d'un -ail / -eil final (travail, soleil)
+const notYodIl     = (c) => !(c.next === 'l' && !isLetter(c.w[c.i + c.len + 1]));
+
+// « e » qui se lit [è] : devant une consonne double, un groupe de consonnes,
+// ou une consonne finale prononcée  (elle, merci, sec, cette)
+const eGrave = (c) => {
+  const n1 = c.next, n2 = c.w[c.i + 2];
+  if (!isCons(n1)) return false;
+  if (c.mute.has(c.i + 1)) return false;
+  if (!n2) return true;                      // sec, bec
+  if (isCons(n2) && !c.mute.has(c.i + 2)) return true;  // elle, merci, espace
+  if (c.lastSounded(c.i + 1)) return true;   // ...er prononcé
+  return false;
+};
+
+/* ---------- la table des règles, dans l'ordre ---------- */
+const R = (p, key, cond) => ({ p, key, cond });
+
+const RULES = [
+  // sons avec yod (triangle)
+  R('ill', 'il'),
+  R('il', 'il', yodEnd),
+  R('ay', 'ay', beforeVowel),
+  R('ey', 'ay', beforeVowel),
+  R('oy', 'oy', beforeVowel),
+  R('uy', 'uy', beforeVowel),
+  R('ian', 'ian', (c) => consBefore(c) && nasal(c)),
+  R('ien', 'ien', (c) => consBefore(c) && nasal(c)),
+  R('ion', 'ion', (c) => consBefore(c) && nasal(c)),
+
+  // nasales (rond)
+  R('aim', 'ein', nasal), R('ain', 'ein', nasal),
+  R('eim', 'ein', nasal), R('ein', 'ein', nasal),
+  R('oin', 'oin', nasal),
+  R('aon', 'an', nasal),
+  R('yn', 'in', nasal), R('ym', 'in', nasal),
+  R('an', 'an', nasal), R('am', 'an', nasal),
+  R('en', 'en', nasal), R('em', 'en', nasal),
+  R('on', 'on', nasal), R('om', 'on', nasal),
+  R('in', 'in', nasal), R('im', 'in', nasal),
+  R('un', 'un', nasal), R('um', 'un', nasal),
+
+  // voyelles à plusieurs lettres
+  R('eau', 'o'), R('au', 'o'),
+  R('œu', 'e'), R('oeu', 'e'), R('œ', 'e'), R('eu', 'e'),
+  R('ou', 'ou'), R('où', 'ou'), R('oû', 'ou'),
+  R('oi', 'oi'), R('oî', 'oi'), R('oy', 'oi'),
+  R('ai', 'e2', notYodIl), R('aî', 'e2'), R('ei', 'e2', notYodIl),
+
+  // consonnes à plusieurs lettres
+  R('ch', 'ch'), R('ph', 'f'), R('gn', 'gn'), R('th', 't'),
+  R('qu', 'k'), R('gu', 'g', beforeEIY), R('ge', 'j', beforeAOU),
+  R('sc', 's2', beforeEIY),
+  R('ss', 's'), R('ll', 'l'), R('tt', 't'), R('mm', 'm'), R('nn', 'n'),
+  R('rr', 'r'), R('pp', 'p'), R('ff', 'f'), R('cc', 'k'), R('dd', 'd'),
+  R('bb', 'b'), R('gg', 'g'), R('zz', 'z'),
+
+  // voyelles simples
+  R('é', 'e2'), R('è', 'e2'), R('ê', 'e2'), R('ë', 'e2'),
+  R('à', 'a'), R('â', 'a'), R('a', 'a'),
+  R('ô', 'o'), R('o', 'o'),
+  R('î', 'i'), R('ï', 'i'), R('i', 'i'),
+  R('û', 'u'), R('ù', 'u'), R('u', 'u'),
+  R('y', 'il', yodY), R('y', 'i'),
+  R('e', 'e2', (c) => c.next === 'i' && c.w[c.i + 2] === 'l'),  // soleil, abeille
+  R('e', 'e2', eGrave), R('e', 'e'),
+
+  // consonnes simples
+  R('ç', 's2'), R('c', 's2', beforeEIY), R('c', 'k'),
+  R('g', 'j', beforeEIY), R('g', 'g'),
+  R('s', 'z', between), R('s', 's'),
+  R('t', 's2', tiSound), R('t', 't'),
+  R('x', 'ks'), R('h', '_'),
+  R('b', 'b'), R('d', 'd'), R('f', 'f'), R('j', 'j'), R('k', 'k'),
+  R('l', 'l'), R('m', 'm'), R('n', 'n'), R('p', 'p'), R('q', 'k'),
+  R('r', 'r'), R('v', 'v'), R('w', 'v'), R('z', 'z'),
+];
+
+/* clé par défaut d'une graphie (sert au lexique) */
+const DEFAULT_KEY = {};
+for (const r of RULES) if (!r.cond && !(r.p in DEFAULT_KEY)) DEFAULT_KEY[r.p] = r.key;
+for (const r of RULES) if (!(r.p in DEFAULT_KEY)) DEFAULT_KEY[r.p] = r.key;
+
+/* ---------- fabrication d'un jeton ---------- */
+function makeToken(src, key, extra = {}) {
+  const t = { src, key, kind: 'other', fam: null, shape: null, mark: 'none', gesture: null, ...extra };
+  if (key === '_') {
+    t.kind = 'mute'; t.mark = 'single';
+  } else if (key === 'noir') {
+    t.kind = 'cons';
+  } else if (key === 's2') {
+    t.kind = 'cons'; t.key = 's'; t.mark = 'double'; t.gesture = 's';
+  } else if (SOUNDS[key]) {
+    t.kind = 'vowel'; t.fam = SOUNDS[key].fam; t.shape = SOUNDS[key].shape;
+  } else if (CONSONANTS[key]) {
+    t.kind = 'cons'; t.gesture = CONSONANTS[key].g;
+  }
+  return t;
+}
+
+/* ---------- lettres finales muettes et terminaisons ---------- */
+const SILENT_FINALS = 'stdxzpg';
+
+function endingPass(w) {
+  const forced = {};                 // index -> { len, key }
+  const mute = new Set();            // index des lettres muettes
+  const n = w.length;
+  const put = (i, len, key) => {
+    forced[i] = { len, key };
+    if (key === '_') for (let k = i; k < i + len; k++) mute.add(k);
+  };
+  if (n === 0) return { forced, mute };
+
+  // ils jouent, ils créent : -ent muet après une voyelle
+  if (n >= 4 && w.endsWith('ent') && isVowel(w[n - 4])) {
+    put(n - 3, 3, '_');
+    return { forced, mute };
+  }
+  // chanter, nager : -er = [é] + r muet
+  if (n >= 3 && w.endsWith('er') && !ER_SOUNDED.has(w)) {
+    put(n - 2, 1, 'e2'); put(n - 1, 1, '_');
+    return { forced, mute };
+  }
+  // chez, nez : -ez = [é] + z muet
+  if (n >= 3 && w.endsWith('ez')) {
+    put(n - 2, 1, 'e2'); put(n - 1, 1, '_');
+    return { forced, mute };
+  }
+  // paquet, et : -et final = [é] + t muet
+  if (n >= 2 && w.endsWith('et') && !FINAL_SOUNDED.has(w)) {
+    put(n - 2, 1, 'e2'); put(n - 1, 1, '_');
+    return { forced, mute };
+  }
+  // pommes : -es final = deux lettres muettes
+  if (n >= 3 && w.endsWith('es')) {
+    put(n - 2, 2, '_');
+    return { forced, mute };
+  }
+  // jaune : e final muet
+  if (n >= 2 && w.endsWith('e') && !KEEP_FINAL_E.has(w)) {
+    put(n - 1, 1, '_');
+    return { forced, mute };
+  }
+  // petit, grand, temps : consonnes finales muettes
+  if (!FINAL_SOUNDED.has(w)) {
+    let i = n - 1;
+    while (i > 0 && SILENT_FINALS.includes(w[i]) && isLetter(w[i - 1])) {
+      // on garde au moins une lettre prononcée dans le mot
+      if (i === 0) break;
+      put(i, 1, '_');
+      i--;
+    }
+  }
+  return { forced, mute };
+}
+
+/* ---------- lecture du lexique ---------- */
+function fromLexicon(entry, original) {
+  const tokens = [];
+  let pos = 0;
+  for (const part of entry.split('|')) {
+    const [letters, key] = part.split('=');
+    const src = original.substr(pos, letters.length);
+    pos += letters.length;
+    tokens.push(makeToken(src, key || DEFAULT_KEY[letters] || letters, { fromLexicon: true }));
+  }
+  return tokens;
+}
+
+/* ---------- découpage d'un mot ---------- */
+function codeWord(word) {
+  const lower = word.toLowerCase();
+  if (LEXICON[lower]) return fromLexicon(LEXICON[lower], word);
+
+  const { forced, mute } = endingPass(lower);
+  const lastSounded = (j) => {
+    for (let k = j + 1; k < lower.length; k++) if (!mute.has(k)) return false;
+    return true;
+  };
+
+  const tokens = [];
+  let i = 0;
+  while (i < lower.length) {
+    if (forced[i]) {
+      const f = forced[i];
+      tokens.push(makeToken(word.substr(i, f.len), f.key));
+      i += f.len;
+      continue;
+    }
+    let hit = null;
+    for (const r of RULES) {
+      if (!lower.startsWith(r.p, i)) continue;
+      const end = i + r.p.length;
+      if (mute.has(end - 1) || mute.has(i)) continue;   // ne pas manger une finale muette
+      const ctx = { w: lower, i, len: r.p.length, prev: lower[i - 1], next: lower[end], mute, lastSounded };
+      if (r.cond && !r.cond(ctx)) continue;
+      hit = { len: r.p.length, key: r.key };
+      break;
+    }
+    if (!hit) hit = { len: 1, key: null };
+    const tk = makeToken(word.substr(i, hit.len), hit.key);
+    // mots à vérifier : -ent après consonne, ill
+    if (hit.key === 'il' && lower.startsWith('ill', i)) tk.check = true;
+    tokens.push(tk);
+    i += hit.len;
+  }
+  // « -ent » gardé en nasale après une consonne : c'est peut-être un verbe
+  if (lower.endsWith('ent') && lower.length >= 4 && isCons(lower[lower.length - 4])) {
+    const last = tokens[tokens.length - 1];
+    if (last && last.key === 't') {
+      const nas = tokens[tokens.length - 2];
+      if (nas && nas.key === 'en') nas.check = true;
+    }
+  }
+  return tokens;
+}
+
+/* ---------- découpage d'un texte ---------- */
+const WORD_RE = /[a-zàâäéèêëîïôöûüùçœA-ZÀÂÄÉÈÊËÎÏÔÖÛÜÙÇŒ]+(?:['’\-][a-zàâäéèêëîïôöûüùçœA-ZÀÂÄÉÈÊËÎÏÔÖÛÜÙÇŒ]+)*/g;
+
+function codeText(text) {
+  const lines = String(text).split('\n');
+  return lines.map((line) => {
+    const items = [];
+    let last = 0;
+    for (const m of line.matchAll(WORD_RE)) {
+      if (m.index > last) items.push({ type: 'raw', src: line.slice(last, m.index) });
+      items.push(codeComposite(m[0]));
+      last = m.index + m[0].length;
+    }
+    if (last < line.length) items.push({ type: 'raw', src: line.slice(last) });
+    return items;
+  });
+}
+
+/* un « mot » peut contenir une apostrophe ou un trait d'union :
+   chaque morceau est analysé séparément (l'arbre, quatre-vingt-dix) */
+function codeComposite(word) {
+  const lower = word.toLowerCase();
+  if (LEXICON[lower]) return { type: 'word', src: word, tokens: fromLexicon(LEXICON[lower], word) };
+  const tokens = [];
+  let buf = '';
+  const flush = () => { if (buf) { tokens.push(...codeWord(buf)); buf = ''; } };
+  for (const ch of word) {
+    if (ch === "'" || ch === '’' || ch === '-') {
+      flush();
+      tokens.push(makeToken(ch, null, { kind: 'other' }));
+    } else buf += ch;
+  }
+  flush();
+  return { type: 'word', src: word, tokens };
+}
+
+/* ---- render.js ---- */
+/* =============================================================
+   render.js — Affichage du texte codé
+   ============================================================= */
+
+
+const NS = 'http://www.w3.org/2000/svg';
+
+function shapeOverlay(shape) {
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'tk__shape');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  let el;
+  if (shape === 'circle') {
+    el = document.createElementNS(NS, 'ellipse');
+    el.setAttribute('cx', '50'); el.setAttribute('cy', '50');
+    el.setAttribute('rx', '48'); el.setAttribute('ry', '46');
+  } else {
+    el = document.createElementNS(NS, 'polygon');
+    el.setAttribute('points', '4,4 4,96 96,96');
+  }
+  el.setAttribute('fill', 'none');
+  el.setAttribute('stroke', 'currentColor');
+  el.setAttribute('stroke-width', '2');
+  el.setAttribute('vector-effect', 'non-scaling-stroke');
+  svg.appendChild(el);
+  return svg;
+}
+
+function tokenEl(tk, opts) {
+  const span = document.createElement('span');
+  span.className = 'tk tk--' + tk.kind;
+  if (tk.kind === 'vowel') {
+    const fam = FAMILIES[tk.fam];
+    if (fam) span.style.setProperty('--c', opts.contrast ? fam.strong : fam.color);
+    span.dataset.fam = tk.fam;
+    if (tk.shape === 'circle') span.classList.add('tk--circle');
+    if (tk.shape === 'tri') span.classList.add('tk--tri');
+  }
+  if (tk.mark === 'single') span.classList.add('tk--muette');
+  if (tk.mark === 'double') span.classList.add('tk--sifflante');
+  if (tk.check && opts.check) span.classList.add('tk--verifier');
+  if (tk.manual) span.classList.add('tk--manuel');
+
+  if (tk.shape === 'circle' || tk.shape === 'tri') span.appendChild(shapeOverlay(tk.shape));
+
+  if (opts.gestures && tk.kind === 'cons' && tk.gesture) {
+    const g = document.createElement('span');
+    g.className = 'tk__geste';
+    g.innerHTML = gestureSvg(tk.gesture);
+    span.appendChild(g);
+  }
+
+  const txt = document.createElement('span');
+  txt.className = 'tk__t';
+  txt.textContent = tk.src;
+  span.appendChild(txt);
+  return span;
+}
+
+function render(container, lines, opts = {}) {
+  container.textContent = '';
+  container.classList.toggle('out--mono', !opts.colors);
+  container.classList.toggle('out--gestes', !!opts.gestures);
+  container.classList.toggle('out--muettes-grises', !!opts.greyMute);
+
+  let wi = 0;
+  for (const line of lines) {
+    const p = document.createElement('p');
+    p.className = 'ligne';
+    if (!line.length) p.innerHTML = '&nbsp;';
+    for (const item of line) {
+      if (item.type === 'raw') {
+        p.appendChild(document.createTextNode(item.src));
+        continue;
+      }
+      const w = document.createElement('span');
+      w.className = 'mot';
+      w.dataset.mot = item.src.toLowerCase();
+      w.dataset.w = String(wi++);
+      item.tokens.forEach((tk, ti) => {
+        const el = tokenEl(tk, opts);
+        el.dataset.t = String(ti);
+        w.appendChild(el);
+      });
+      p.appendChild(w);
+    }
+    container.appendChild(p);
+  }
+}
+
+/* ---- app.js ---- */
+/* =============================================================
+   app.js — Interface
+   ============================================================= */
+
+
+
+
+
+const $ = (s) => document.querySelector(s);
+const PREFS = 'aloe.prefs.v1';
+const FIXES = 'aloe.corrections.v1';
+
+const EXEMPLE = `Dans la cour de l'école, Léa joue au ballon avec son chien.
+Il fait beau : le soleil brille au-dessus des maisons.
+Quatre-vingt-dix élèves mangent à la cantine aujourd'hui.
+Papa a acheté dix-sept pommes rouges et une tarte au citron.`;
+
+/* ---------- préférences ---------- */
+const parDefaut = {
+  police: "'Andika', Verdana, sans-serif",
+  taille: 34, interligne: 2, espacement: 0.01,
+  couleurs: true, contraste: false, gestes: false,
+  muettes: true, verifier: true, nombres: false,
+  texte: EXEMPLE,
+};
+let prefs = { ...parDefaut, ...lire(PREFS, {}) };
+let fixes = lire(FIXES, {});
+
+function lire(cle, defaut) {
+  try { return JSON.parse(localStorage.getItem(cle)) ?? defaut; } catch { return defaut; }
+}
+function ecrire(cle, valeur) {
+  try { localStorage.setItem(cle, JSON.stringify(valeur)); } catch { /* navigation privée */ }
+}
+
+/* ---------- rendu ---------- */
+let lignes = [];
+
+function options() {
+  return {
+    colors: prefs.couleurs, contrast: prefs.contraste, gestures: prefs.gestes,
+    greyMute: prefs.muettes, check: prefs.verifier,
+  };
+}
+
+function appliquerCorrections(lines) {
+  for (const ligne of lines) {
+    for (const item of ligne) {
+      if (item.type !== 'word') continue;
+      const mot = item.src.toLowerCase();
+      item.tokens = item.tokens.map((tk, i) => {
+        const cle = fixes[`${mot}#${i}`];
+        if (!cle) return tk;
+        return makeToken(tk.src, cle === 'noir' ? 'noir' : cle, { manual: true });
+      });
+    }
+  }
+}
+
+function majTexte() {
+  const brut = prefs.nombres ? nombresEnLettres(prefs.texte) : prefs.texte;
+  lignes = codeText(brut);
+  appliquerCorrections(lignes);
+  const sortie = $('#sortie');
+  if (!prefs.texte.trim()) {
+    sortie.innerHTML = '<p class="vide">Écrivez un texte à gauche : il s\'affichera ici, codé.</p>';
+    return;
+  }
+  render(sortie, lignes, options());
+}
+
+function majStyle() {
+  const r = document.documentElement.style;
+  r.setProperty('--police-sortie', prefs.police);
+  r.setProperty('--taille-sortie', prefs.taille + 'px');
+  r.setProperty('--interligne', prefs.interligne);
+  r.setProperty('--espace-lettres', prefs.espacement + 'em');
+  r.setProperty('--espace-mots', Math.max(0.1, prefs.espacement * 3) + 'em');
+}
+
+function majBoutonCorrections() {
+  $('#btn-corrections').textContent = `Mes corrections (${Object.keys(fixes).length})`;
+}
+
+/* ---------- menu de correction ---------- */
+const GROUPES = [
+  { titre: 'Son-voyelle', forme: 'rect', cles: ['a', 'o', 'i', 'e2', 'u', 'oi', 'ou', 'e'] },
+  { titre: 'Nasale (entourée)', forme: 'rond', cles: ['an', 'en', 'on', 'in', 'ein', 'un', 'oin'] },
+  { titre: 'Avec yod (triangle)', forme: 'tri', cles: ['il', 'ian', 'ion', 'ien', 'ay', 'oy', 'uy'] },
+];
+
+let cible = null;
+
+function ouvrirMenu(tk) {
+  cible = tk;
+  const menu = $('#menu');
+  const lettres = tk.querySelector('.tk__t').textContent;
+  let html = `<h3>« ${lettres} » se lit…</h3>`;
+  for (const g of GROUPES) {
+    html += `<div class="rangee">`;
+    for (const k of g.cles) {
+      const fam = FAMILIES[SOUNDS[k].fam];
+      html += `<button class="puce puce--${g.forme}" data-cle="${k}" title="${SOUNDS[k].name}">
+        <i style="background:${fam.color}"></i>${SOUNDS[k].gr[0]}</button>`;
+    }
+    html += `</div>`;
+  }
+  html += `<div class="rangee">
+      <button class="puce" data-cle="noir">consonne noire</button>
+      <button class="puce" data-cle="_">lettre muette</button>
+      <button class="puce" data-cle="s2">fait [s]</button>
+      <button class="puce" data-cle="auto">automatique</button>
+    </div>`;
+  menu.innerHTML = html;
+  menu.hidden = false;
+
+  const r = tk.getBoundingClientRect();
+  const largeur = menu.offsetWidth;
+  const x = Math.min(Math.max(8, r.left + window.scrollX), window.scrollX + window.innerWidth - largeur - 8);
+  menu.style.left = x + 'px';
+  menu.style.top = (r.bottom + window.scrollY + 8) + 'px';
+}
+
+function fermerMenu() { $('#menu').hidden = true; cible = null; }
+
+/* ---------- sérialisation (copier / exporter) ---------- */
+function styleEnLigne(tk) {
+  const s = [];
+  if (tk.kind === 'vowel' && prefs.couleurs) {
+    const fam = FAMILIES[tk.fam];
+    if (fam) s.push(`color:${prefs.contraste ? fam.strong : fam.color}`);
+    if (tk.shape === 'circle') s.push(`border:2px solid currentColor;border-radius:50%;padding:0 4px`);
+    if (tk.shape === 'tri') s.push(`border-left:2px solid currentColor;border-bottom:2px solid currentColor;padding:0 3px`);
+  } else if (tk.kind === 'vowel') {
+    if (tk.shape === 'circle') s.push('border:2px solid #000;border-radius:50%;padding:0 4px');
+    if (tk.shape === 'tri') s.push('border-left:2px solid #000;border-bottom:2px solid #000;padding:0 3px');
+  }
+  if (tk.mark === 'single') {
+    s.push('text-decoration:underline');
+    if (prefs.muettes) s.push('color:#9aa1ad');
+  }
+  if (tk.mark === 'double') s.push('border-bottom:3px double currentColor');
+  return s.join(';');
+}
+
+function enHtml() {
+  const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const corps = lignes.map((ligne) => {
+    const contenu = ligne.map((item) => {
+      if (item.type === 'raw') return esc(item.src);
+      return '<span style="white-space:nowrap">' + item.tokens.map((tk) => {
+        const st = styleEnLigne(tk);
+        return st ? `<span style="${st}">${esc(tk.src)}</span>` : esc(tk.src);
+      }).join('') + '</span>';
+    }).join('');
+    return `<p style="margin:0 0 .25em">${contenu || '&nbsp;'}</p>`;
+  }).join('\n');
+  return `<div style="font-family:${prefs.police};font-size:${prefs.taille}px;line-height:${prefs.interligne};` +
+    `letter-spacing:${prefs.espacement}em">\n${corps}\n</div>`;
+}
+
+async function copier() {
+  const html = enHtml();
+  const texte = prefs.texte;
+  try {
+    await navigator.clipboard.write([new ClipboardItem({
+      'text/html': new Blob([html], { type: 'text/html' }),
+      'text/plain': new Blob([texte], { type: 'text/plain' }),
+    })]);
+    signaler('#btn-copier', 'Copié ✓');
+  } catch {
+    const zone = document.createElement('div');
+    zone.contentEditable = 'true';
+    zone.innerHTML = html;
+    zone.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(zone);
+    const sel = window.getSelection(); const rg = document.createRange();
+    rg.selectNodeContents(zone); sel.removeAllRanges(); sel.addRange(rg);
+    document.execCommand('copy');
+    sel.removeAllRanges(); zone.remove();
+    signaler('#btn-copier', 'Copié ✓');
+  }
+}
+
+function exporter() {
+  const page = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Texte codé</title>
+<style>body{margin:0;padding:24px;background:#fff;color:#15161a}@page{margin:16mm}</style>
+</head><body>
+${enHtml()}
+</body></html>`;
+  const url = URL.createObjectURL(new Blob([page], { type: 'text/html' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'texte-code.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function signaler(sel, texte) {
+  const b = $(sel); const avant = b.textContent;
+  b.textContent = texte;
+  setTimeout(() => { b.textContent = avant; }, 1400);
+}
+
+/* ---------- liste des corrections ---------- */
+function ouvrirCorrections() {
+  const liste = $('#liste-corrections');
+  const entrees = Object.entries(fixes);
+  if (!entrees.length) liste.innerHTML = '<p style="color:var(--doux)">Aucune correction enregistrée.</p>';
+  else liste.innerHTML = entrees.map(([k, v]) => {
+    const [mot, i] = k.split('#');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--trait)">
+      <strong style="min-width:9em">${mot}</strong>
+      <span style="color:var(--doux)">lettre ${Number(i) + 1} → ${v === '_' ? 'muette' : v === 's2' ? 'fait [s]' : v === 'noir' ? 'consonne' : v}</span>
+      <button class="bouton" data-suppr="${k}" style="margin-left:auto;padding:3px 9px">Retirer</button>
+    </div>`;
+  }).join('');
+  $('#dlg-corrections').showModal();
+}
+
+/* ---------- branchements ---------- */
+function brancher() {
+  const saisie = $('#saisie');
+  saisie.value = prefs.texte;
+
+  $('#police').value = prefs.police;
+  $('#taille').value = prefs.taille;
+  $('#interligne').value = prefs.interligne;
+  $('#espacement').value = prefs.espacement;
+  $('#opt-couleurs').checked = prefs.couleurs;
+  $('#opt-contraste').checked = prefs.contraste;
+  $('#opt-gestes').checked = prefs.gestes;
+  $('#opt-muettes').checked = prefs.muettes;
+  $('#opt-verifier').checked = prefs.verifier;
+  $('#opt-nombres').checked = prefs.nombres;
+
+  let minuteur;
+  saisie.addEventListener('input', () => {
+    prefs.texte = saisie.value;
+    clearTimeout(minuteur);
+    minuteur = setTimeout(() => { majTexte(); ecrire(PREFS, prefs); }, 120);
+  });
+
+  const lie = (sel, champ, transforme = (v) => v, style = false) => {
+    $(sel).addEventListener('input', (e) => {
+      prefs[champ] = transforme(e.target.type === 'checkbox' ? e.target.checked : e.target.value);
+      ecrire(PREFS, prefs);
+      if (style) majStyle(); else majTexte();
+    });
+  };
+  lie('#police', 'police', (v) => v, true);
+  lie('#taille', 'taille', Number, true);
+  lie('#interligne', 'interligne', Number, true);
+  lie('#espacement', 'espacement', Number, true);
+  lie('#opt-couleurs', 'couleurs');
+  lie('#opt-contraste', 'contraste');
+  lie('#opt-gestes', 'gestes');
+  lie('#opt-muettes', 'muettes');
+  lie('#opt-verifier', 'verifier');
+  lie('#opt-nombres', 'nombres');
+
+  $('#btn-exemple')?.addEventListener('click', () => {
+    saisie.value = prefs.texte = EXEMPLE; ecrire(PREFS, prefs); majTexte();
+  });
+  $('#btn-effacer')?.addEventListener('click', () => {
+    saisie.value = prefs.texte = ''; ecrire(PREFS, prefs); majTexte(); saisie.focus();
+  });
+  $('#btn-imprimer')?.addEventListener('click', () => window.print());
+  $('#btn-copier')?.addEventListener('click', copier);
+  $('#btn-exporter')?.addEventListener('click', exporter);
+
+  $('#btn-corrections').addEventListener('click', ouvrirCorrections);
+  $('#btn-fermer-corrections').addEventListener('click', () => $('#dlg-corrections').close());
+  $('#btn-vider').addEventListener('click', () => {
+    fixes = {}; ecrire(FIXES, fixes); majBoutonCorrections(); majTexte(); $('#dlg-corrections').close();
+  });
+  $('#liste-corrections').addEventListener('click', (e) => {
+    const k = e.target.dataset?.suppr;
+    if (!k) return;
+    delete fixes[k]; ecrire(FIXES, fixes); majBoutonCorrections(); majTexte(); ouvrirCorrections();
+  });
+
+  $('#lien-tableau')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const ref = $('#ref-tableau');
+    if (!ref.dataset.pret) { ref.innerHTML = buildTableau(); ref.dataset.pret = '1'; }
+    $('#dlg-tableau').showModal();
+  });
+  $('#btn-fermer-tableau')?.addEventListener('click', () => $('#dlg-tableau').close());
+  $('#lien-aide').addEventListener('click', (e) => { e.preventDefault(); $('#dlg-aide').showModal(); });
+  $('#btn-fermer-aide').addEventListener('click', () => $('#dlg-aide').close());
+
+  $('#sortie').addEventListener('click', (e) => {
+    const tk = e.target.closest('.tk');
+    if (!tk) { fermerMenu(); return; }
+    e.stopPropagation();
+    ouvrirMenu(tk);
+  });
+
+  $('#menu').addEventListener('click', (e) => {
+    const b = e.target.closest('.puce');
+    if (!b || !cible) return;
+    const mot = cible.closest('.mot').dataset.mot;
+    const i = cible.dataset.t;
+    const cle = b.dataset.cle;
+    if (cle === 'auto') delete fixes[`${mot}#${i}`];
+    else fixes[`${mot}#${i}`] = cle;
+    ecrire(FIXES, fixes); majBoutonCorrections(); fermerMenu(); majTexte();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#menu') && !e.target.closest('#sortie')) fermerMenu();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerMenu(); });
+}
+
+majStyle();
+brancher();
+majBoutonCorrections();
+majTexte();
+</script>
+</body>
+</html>

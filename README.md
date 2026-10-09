@@ -20,26 +20,39 @@ copié dans un traitement de texte ou exporté.
 | Trait simple | La lettre ne se dit pas (le *p* de sept, le *s* de quatre-vingts) |
 | Double trait | La lettre fait le son [s] (cinq, six, dix, soixante, cent) |
 
-La page [`tableau.html`](tableau.html) affiche tout le tableau, gestes des consonnes compris :
-c'est exactement ce que le site applique au texte.
+Le lien *Tableau des codes*, en haut du site, affiche tout le tableau, gestes des consonnes
+compris : c'est exactement ce que le site applique au texte. La page [`tableau.html`](tableau.html)
+en donne une version imprimable.
 
 Les sources de référence sont dans [`docs/`](docs/) : la photo de l'affichage de classe
 et les deux affichages de numération (nombres de 1 à 16, dizaines de 20 à 100).
 
-## Utiliser le site
+## Le plus simple : un seul fichier
 
-Ouvrez `index.html` **via un petit serveur** (les fichiers sont des modules JavaScript,
-un double-clic sur le fichier ne suffit pas) :
+Téléchargez **[`dist/lire-en-couleurs.html`](dist/lire-en-couleurs.html)** (sur GitHub : ouvrez le
+fichier, puis le bouton *Download raw file*) et **double-cliquez dessus**. Il s'ouvre dans votre
+navigateur, tout est dedans : rien à installer, pas de serveur, et il fonctionne sans connexion
+(avec une autre police). L'impression fonctionne depuis ce fichier.
+
+Pour le remettre à jour après une modification du code : `node tools/build.mjs`.
+
+## Mettre le site en ligne (GitHub Pages)
+
+*Settings → Pages → Source : « Deploy from a branch »*, choisissez la branche qui contient le site
+et le dossier `/ (root)`, puis *Save*. L'adresse apparaît au bout d'une minute :
+`https://<votre-compte>.github.io/<le-dépôt>/`.
+
+## Ouvrir le dossier complet en local
+
+Les pages `index.html` et `tableau.html` utilisent des modules JavaScript : un double-clic ne
+suffit pas, il faut un petit serveur.
 
 ```bash
 python3 -m http.server 8000
 # puis http://localhost:8000
 ```
 
-Ou publiez-le tel quel sur GitHub Pages : *Settings → Pages → Deploy from a branch*,
-branche `main`, dossier `/ (root)`. Le site est entièrement statique.
-
-### Ce que propose la barre d'outils
+## Ce que propose la barre d'outils
 
 - **Police, taille, interligne, espacement** — pour adapter à l'élève.
 - **Couleurs** / **Couleurs foncées** — version noir et blanc, ou couleurs plus contrastées.
@@ -69,7 +82,10 @@ assets/js/engine.js    le découpage du texte en graphèmes codés
 assets/js/render.js    l'affichage (ronds, triangles, traits)
 assets/js/gestures.js  les gestes des consonnes, en SVG
 assets/js/numbers.js   les nombres écrits en lettres
+assets/js/tableau.js   le tableau des codes, construit à partir des données
 assets/js/app.js       l'interface
+tools/build.mjs        fabrique le fichier unique
+dist/                  le fichier unique, prêt à l'emploi
 tests/engine.test.mjs  les tests du découpage
 ```
 
