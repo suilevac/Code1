@@ -27,7 +27,7 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
 
 **v8 = UNE peau fermée pour toute la main** (remplace les tubes de doigts + nappe de paume de la v7, qui donnaient trous, boules et « boudins » à la base des doigts) :
 - `rig3d.py` (section v8) : silhouette intérieure exacte du dessin paume gonflée en volume (doigts : coupe en ellipse DF/DB × demi-largeur locale ; paume : nappes `hf`/`hb`), surface extraite par *marching cubes* (pas 5 px, ≈ 44 000 sommets) puis lissage de Taubin.
-- Squelette : paume, métacarpien du pouce (`CMC`), 3 phalanges par doigt. La base du doigt pivote à la tête du métacarpien, ½ largeur de doigt sous le pli de la racine (`DEEP8`). Articulations au milieu de l'épaisseur (`jz`).
+- Squelette : paume, métacarpien du pouce (`CMC`), 3 phalanges par doigt. La base du doigt pivote à la tête du métacarpien, sous le pli de la racine (`DEEP8`, voir piste P). Articulations au milieu de l'épaisseur (`jz`).
 - **Déformeur en arc** aux articulations charnières (MCP, IPP, IPD des doigts ; MCP et IP du pouce), dans `skinMesh` (script.js), données `mesh.arc` (rig3d.py) : dans la zone d'une articulation, la section d'abscisse `tau` tourne de `tau·θ` autour d'un centre qui glisse, chaque fibre de peau devient un arc de cercle et rejoint exactement l'os rigide aux bords de la zone (pas de repli, de fente noire ni de creux au pli). Demi-largeur de zone `h` : grande côté paume (`h ≥ 1,15·d·tan(θmax/2)`, le pli ne se replie jamais), petite côté dos (jointure nette). Chaque chaîne (pouce, doigt) ajoute son déplacement ; parts des doigts lissées dans les palmures. Seule la base du pouce (trapézo-métacarpienne) reste en quaternions duaux. Les anciens poids `bi`/`bw` sont encore exportés mais plus utilisés par la peau.
 - Une seule matière : dessin paume devant, dessin dos derrière, fondus sur la tranche.
 - Passe « identité » : une partie nette par triangle ; palmures et éminence = paume.
@@ -75,6 +75,35 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   identiques au pixel près.** Écarté : écarter les rides en décalant les UV (l'ongle glissait) — inutile, la peau
   porte sa texture et l'étirement du déformeur en arc écarte DÉJÀ les rides dessinées ; filtrer la texture dans le
   shader (min/max) — halo sur le bord de l'ombre franche, et un trait noir ne peut pas s'éclaircir en multipliant.
+- **Proportions et convergence des quatre doigts (piste P)** : comme pour le pouce, les CENTRES d'articulation
+  des doigts ne sont pas les plis dessinés. Trois corrections, toutes dans `mesh.chain` (le dessin ne bouge pas :
+  silhouette, textures, découpage et profils restent calés sur `CP`, donc `cas_0` et `cas_1` sont identiques au
+  pixel près aux rendus de référence — vérifié pixel à pixel).
+  1. **IPD glissée vers le bout** (`PHAL8`, rig3d.py). Mesuré sur le dessin : moyenne:distale = 1 : 1,30 (index),
+     1,10 (majeur), 1,31 (annulaire), 1,70 (auriculaire), alors que l'anatomie donne 1 : 0,88 / 0,81 / 0,86 / 1,09
+     (P2 contre P3 + ~4 mm de pulpe). Relevé aussi sur la photo 2354 (paume à plat), index : pli IPP → pli IPD
+     418 px, pli IPD → bout 410 px, soit 1 : 0,98 — le pli distal DESSINÉ est bien trop proximal. On garde
+     IPP → bout tel qu'il est dessiné et on le repartage P2 : (P3 + pulpe), doigt par doigt : l'IPD avance de
+     18,6 / 15,8 / 20,9 / 16,8 px. Elle glisse le long de la polyligne du dessin, donc la phalange distale garde
+     EXACTEMENT sa direction et l'IPP ne dévie que de 1,2° au plus.
+  2. **MCP enfoncée doigt par doigt** (`DEEP8`). Le pli digital palmaire est au TIERS PROXIMAL de la phalange
+     proximale, donc pli → IPP = ⅔ de P1 et le centre de la MCP est ½ de cette distance plus bas :
+     `DEEP8 = ½ · |CP[0] → CP[1]|` → 53,8 / 62,0 / 53,4 / 43,3 px au lieu des 38,5 / 41,2 / 38,9 / 38,2 px de
+     l'ancienne règle « ½ largeur de doigt » (la même pour les quatre, alors que les quatre doigts n'ont pas la
+     même longueur). Du coup `vis()` (collisions) cache exactement ⅓ de la phalange proximale.
+     Résultat mesuré, P1 : P2 : (P3 + pulpe) — index 1 : 0,632 : 0,559 (cible 1 : 0,563 : 0,497), majeur
+     1 : 0,623 : 0,507 (1 : 0,590 : 0,480), annulaire 1 : 0,670 : 0,576 (1 : 0,621 : 0,534), auriculaire
+     1 : 0,576 : 0,630 (1 : 0,554 : 0,606) ; avant la piste P l'écart sur la distale allait jusqu'à 0,25.
+  3. **Convergence `CONV` remise dans le bon sens** (script.js). Poing fermé, les bouts des quatre doigts
+     s'écartaient de 310 px alors que les MCP ne s'écartent que de 263 px : les doigts DIVERGEAIENT au lieu de
+     pointer vers le scaphoïde. `CONV` = 6 / 2 / −2 / −7 (au lieu de −16 / 3 / 10 / 14) ramène l'écartement des
+     bouts à 236 px (239 aux 3/4), le poing se ferme en entier sans pénétration (`cas_3` : 90/105/70 au lieu de
+     89/103/69) et le jour entre les bouts et la paume se referme en grande partie.
+  Vérifié aussi : les axes de flexion des doigts sont repris sur la chaîne corrigée (`segu` dans rig3d.py,
+  `AX[k]` dans script.js), l'arc transversal des têtes métacarpiennes est bien là dans `jz` (majeur le plus
+  dorsal à −2,4 px, auriculaire le plus palmaire à +1,6), aucune phalange ne s'allonge ni ne se raccourcit en
+  pliant (mesure sur 9 poses : os rigides à 100,00 %, peau du bout à 0,03 % près), et le temps de `refresh`
+  est inchangé (≈ 12 ms minimum en rendu logiciel).
 - Essayé et écarté à l'intégration : partage linéaire des palmures entre deux doigts (essai C) par-dessus le déformeur en arc (fente/pointe entre annulaire et majeur, poing d'un seul doigt) ; trait épais tiré de la passe identité pour le pouce devant la paume (taches sur le contour dos).
 - Les photos de la main de l'utilisateur (profil, poing, pince, O…) ont servi de référence de volumes ; elles ne sont pas dans le dépôt.
 
@@ -135,6 +164,10 @@ python3 tests/rendu.py             # rendus de contrôle → tests/out/planche.p
 2. La tranche de la main (profil) est déduite, pas dessinée.
 3. Quelques traits parasites possibles à la jointure pouce/paume selon l'angle.
 4. Le glisser est un peu lent sur machine modeste : `penetration` est appelée plusieurs dizaines de fois par mouvement.
+5. Poing vu de profil en très gros plan : il reste un petit jour entre les bouts des doigts et la paume, par lequel
+   on voit les doigts du fond ; la passe « identité » y empile des traits épais. La piste P l'a beaucoup réduit
+   (les bouts atteignent la paume, la boucle du doigt se referme) mais pas supprimé. Sur la vraie main (photo 2364)
+   il n'y a pas de jour du tout.
 
 ## Publication
 La version en ligne est un artifact claude.ai privé, publié depuis Claude. Pour le mettre à jour, republier `dist/atelier-mains-lsf.html` (sans doctype : claude.ai l'ajoute) avec les capacités `db`, `user`, `downloads`.

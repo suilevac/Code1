@@ -31,6 +31,10 @@ const typ=k=>k==='pouce'?'pouce':'doigt';
    ====================================================================== */
 const AX={};
 ALL.forEach(k=>{AX[k]=HD.segs[k].map(sg=>{const u=new THREE.Vector3(sg.u[0],-sg.u[1],0).normalize();return{u,lat:u.clone().cross(Z).normalize()}})});
+// doigts : axes repris sur la chaîne CORRIGÉE (l'IPD n'est pas au pli distal dessiné, voir rig3d.py).
+// Le segment de base garde exactement sa direction, donc PAR et l'éventail des doigts ne bougent pas.
+const chAx=C=>{const u=new THREE.Vector3(C[1][0]-C[0][0],-(C[1][1]-C[0][1]),0).normalize();return{u,lat:u.clone().cross(Z).normalize()}};
+FING.forEach(k=>{const C=HD.mesh.chain[k];AX[k]=[0,1,2].map(i=>chAx([C[i],C[i+1]]))});
 // pouce : chaîne corrigée [CMC, MCP, IP, bout] (le pli IP dessiné n'est pas le centre de l'articulation, voir rig3d.py).
 // Ses axes de flexion sont repris sur les OS corrigés, pas sur les segments du dessin.
 const TCH=HD.mesh.chain.pouce;
@@ -38,7 +42,12 @@ AX.pouce=[0,1].map(i=>{const a=TCH[i+1],b=TCH[i+2],u=new THREE.Vector3(b[0]-a[0]
 const ang=k=>Math.atan2(AX[k][0].u.y,AX[k][0].u.x);
 const PAR={};FING.forEach(k=>PAR[k]=-(ang('majeur')-ang(k))/D);
 const SPREAD={index:[-10,25],majeur:[-15,15],annulaire:[-20,12],auriculaire:[-45,15]}; // + = vers le pouce, 0 = parallèle au majeur
-const CONV={index:-16,majeur:3,annulaire:10,auriculaire:14};                       // convergence naturelle quand le doigt plie
+// Convergence : en pliant, les doigts se rapprochent (ils pointent vers le scaphoïde, à la base de l'éminence).
+// Mesuré : poing fermé, les bouts des quatre doigts s'écartaient de 310 px alors que les MCP ne s'écartent que de
+// 263 px — les doigts DIVERGEAIENT. Les signes étaient inversés : avec ces valeurs l'écartement des bouts tombe
+// à 236 px (et à 239 px aux 3/4), le poing se ferme en entier sans pénétration (cas_3 : 90/105/70 au lieu de
+// 89/103/69) et le jour entre les bouts et la paume se referme en bonne partie.
+const CONV={index:6,majeur:2,annulaire:-2,auriculaire:-7};
 const LIMF={mcp:[-20,90],pip:[0,105],dip:[-10,80]};
 const LIMT={av:[0,45],rap:[-20,40],mcp:[-10,55],ip:[-20,80]};
 const ENSLAVE=[['index','majeur',90],['majeur','annulaire',85],['annulaire','auriculaire',75]];
@@ -267,7 +276,7 @@ function makeHand(skeletonOnly){
   }
   const joints={};
   ALL.forEach(k=>{
-    const off=k==='pouce'?1:0,src=k==='pouce'?TCH.slice(1):HD.chains[k];
+    const off=k==='pouce'?1:0,src=k==='pouce'?TCH.slice(1):HD.mesh.chain[k];   // doigts : chaîne corrigée (IPD glissée)
     const J=src.map((p,i)=>toM(p[0],p[1],i<HD.segs[k].length?HD.mesh.jz[k][i+off]:0));if(DEEP[k])J[0]=MCPJ(k);joints[k]=[];joints[k].J=J;
     let parent=root,prev=new THREE.Vector3();
     if(k==='pouce'){const c=new THREE.Group();c.position.copy(CMC);root.add(c);joints.cmc=c;parent=c;prev=CMC.clone()}
@@ -400,7 +409,8 @@ function boneDQ1(h,g,J){
    Chaque chaîne (pouce, doigt) ajoute son déplacement ; la base du pouce (trapézo-métacarpienne) reste en quaternions duaux. */
 const ARC=MS.arc,ACH=b64arr(ARC.c,Uint8Array),AHM=b64arr(ARC.hm,Uint8Array),ASH=b64arr(ARC.s,Uint16Array),ATA=b64arr(ARC.t,Uint16Array),CHN=['pouce',...FING];
 const ARCJ={};CHN.forEach(k=>ARCJ[k]=ARC.joints[k].map((p,j)=>{
-  const C=k==='pouce'?toM(TCH[j+1][0],TCH[j+1][1],HD.mesh.jz.pouce[j+1]):(j===0?MCPJ(k):toM(HD.chains[k][j][0],HD.chains[k][j][1],HD.mesh.jz[k][j]));
+  const c=k==='pouce'?HD.mesh.chain.pouce[j+1]:HD.mesh.chain[k][j],z=k==='pouce'?HD.mesh.jz.pouce[j+1]:HD.mesh.jz[k][j];
+  const C=toM(c[0],c[1],z);
   return {C,u:new THREE.Vector3(...p.u),f0:new THREE.Vector3(...p.f),rp:p.rp/SC,rd:p.rd/SC,hp:p.hp/SC,hd:p.hd/SC,kf:p.kf}}));
 // demi-largeur de zone de chaque sommet (selon sa profondeur côté paume / côté dos) : chaîne principale (3 art.), MCP de la 2e
 const AH1=new Float32Array(3*MN),AH2=new Float32Array(MN);

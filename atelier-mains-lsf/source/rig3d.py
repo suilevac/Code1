@@ -406,12 +406,36 @@ def zmid(p):
     x, y = int(round(p[0])), int(round(p[1])); return float((front8[y, x] - back8[y, x]) / 2)
 def segw0(k):
     sg = segs[k][0]; w = [(a + b) / 2 for a, b in zip(sg['wl'], sg['wr']) if (a + b) / 2 > 4]; return float(np.mean(w))
-DEEP8 = {k: .5 * 2 * segw0(k) for k in FINGS}   # tête du métacarpien ≈ ½ largeur de doigt sous le pli de la racine
+# Tête du métacarpien : le pli digital palmaire (le pli de la racine du doigt, CP[k][0]) est au TIERS PROXIMAL
+# de la phalange proximale, pas à l'articulation. Donc pli -> IPP = ⅔ de P1 et le centre de la MCP est ½ de cette
+# distance plus bas. Mesuré doigt par doigt sur le dessin, ça donne 53,8 / 62,0 / 53,4 / 43,3 px, au lieu des
+# 38,5 / 41,2 / 38,9 / 38,2 px de l'ancienne règle « ½ largeur de doigt » (la même pour les quatre, alors que les
+# quatre doigts n'ont pas la même longueur). La phalange proximale était 4 % (auriculaire) à 13 % (majeur) trop
+# courte : le poing ne se fermait pas assez et la jointure manquait de relief.
+DEEP8 = {k: .5 * float(np.hypot(*(np.array(CP[k][1], float) - np.array(CP[k][0], float)))) for k in FINGS}
 CMC8 = np.array([652., 748.])
+# --- piste P : l'IPD des quatre doigts n'est pas au pli distal dessiné ---
+# Mesuré sur le dessin : moyenne:distale = 1 : 1,30 (index), 1,10 (majeur), 1,31 (annulaire), 1,70 (auriculaire),
+# alors que l'anatomie donne 1 : 0,88 / 0,81 / 0,86 / 1,09 (P2 contre P3 + ~4 mm de pulpe). Relevé aussi sur la
+# photo 2354 (paume à plat) : pli IPP -> pli IPD = 418 px, pli IPD -> bout = 410 px pour l'index, soit 1 : 0,98,
+# là où le dessin donne 1 : 1,30. Le pli distal dessiné est 16 à 21 px trop proximal : la phalange distale était
+# jusqu'à 70 % trop longue, le bout du doigt dépassait la paume dans le poing et la pulpe pliait trop haut.
+# On garde IPP -> bout tel qu'il est DESSINÉ et on le repartage P2 : (P3 + pulpe), doigt par doigt. Le centre
+# glisse le long de la polyligne du dessin : la phalange distale garde exactement sa direction, l'IPP dévie de
+# 1,2° au plus. Comme pour le pouce (piste T), le DESSIN ne bouge pas (silhouette, textures, découpage et profils
+# restent calés sur CP) : seule chain8 change, donc le repos est exact au pixel près.
+PHAL8 = {'index': (22.4, 19.8), 'majeur': (26.3, 21.4), 'annulaire': (25.7, 22.1), 'auriculaire': (18.1, 19.8)}
+def alongp(pts, d):
+    """point à la distance d du 1er point, le long de la polyligne"""
+    for i in range(len(pts) - 1):
+        L = np.hypot(*(pts[i + 1] - pts[i]))
+        if d <= L or i == len(pts) - 2: return pts[i] + (pts[i + 1] - pts[i]) / L * d
+        d -= L
 chain8 = {}
 for k in FINGS:
     p = np.array(CP[k], float); u = (p[1] - p[0]) / np.hypot(*(p[1] - p[0]))
-    chain8[k] = [p[0] - u * DEEP8[k], p[1], p[2], p[3]]
+    a, b = PHAL8[k]; T = np.hypot(*(p[2] - p[1])) + np.hypot(*(p[3] - p[2]))
+    chain8[k] = [p[0] - u * DEEP8[k], p[1], alongp([p[1], p[2], p[3]], T * a / (a + b)), p[3]]
 # --- colonne du pouce : les CENTRES d'articulation ne sont pas les plis dessinés ---
 # Mesuré sur le dessin : métacarpien 193,6 px, P1 100,5 px, P2 + pulpe 128,4 px, soit 1 : 0,52 : 0,66.
 # Anatomie (adulte) : 1er métacarpien 46 mm, P1 31 mm, P2 21 mm + ~4,5 mm de pulpe, soit 1 : 0,67 : 0,55.
@@ -496,7 +520,9 @@ Wb[:, 0] = np.clip(1 - Wb[:, 1:].sum(1), 0, 1)
 X8 = np.stack([V8[:, 0], -V8[:, 1], V8[:, 2]], 1)        # repère 3D du moteur (y en haut), en pixels
 nz = lambda v: np.asarray(v, float) / np.linalg.norm(v)
 Zj = np.array([0., 0., 1.])
-def segu(k, i): u = segs[k][i]['u']; return nz([u[0], -u[1], 0.])
+# directions d'os prises sur la chaîne CORRIGÉE (l'IPD a bougé) : l'axe de flexion reste perpendiculaire à la
+# phalange réelle. La distale garde exactement la direction dessinée, la moyenne dévie de 1,2° au plus.
+def segu(k, i): a, b = chain8[k][i], chain8[k][i + 1]; return nz([b[0] - a[0], -(b[1] - a[1]), 0.])
 def arcj(C, z, u, f0, tmax, mask, w, dr=.45):
     C = np.array([C[0], -C[1], z]); lat = np.cross(u, f0); rel = X8 - C
     t, d = rel @ u, rel @ f0
