@@ -35,6 +35,24 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
 - **Racines sans « col »** (essai A) : le volume du dessin a, à la racine de chaque doigt et du pouce, une gorge puis un bourrelet. Profil corrigé exporté en déplacement `mesh.dz`, appliqué progressivement dès que la pose quitte « Dessin » (`rootBlend`, part `gR`) : dessin au repos exact au pixel près. Au pouce : côté dos seulement (MCP sans cran) ; côté paume, combler la gorge contre l'éminence effaçait l'écart de profondeur qui fait le contour du pouce posé devant la paume (trait effiloché).
 - **Coque gardée** (`hullMatProto`) : hors pose « Dessin », main entière, un fragment de coque est jeté s'il est à moins de `HPUSH`(1,8) × épaisseur du trait devant la peau qu'il recouvre (profondeur de la passe identité), ET que les deux parties ne sont pas deux doigts différents (même partie, paume sous un doigt, pouce et paume/éminence) : les fentes en dents de scie et « confettis » des plis (pli de l'éminence et de la MCP du pouce, IP) disparaissent. Le vrai contour garde son poids : silhouette (aucune peau derrière), doigt sur doigt, pouce et doigt, et pouce posé devant la paume, qui en est toujours loin (écart ≥ 2 × HPUSH mesuré). Pas d'exception près du fond : elle laissait des éclats à l'embouchure des plis, et le contour n'y prend pas de cran.
 - **Ongles** (essai D, repris) : forme dessinée (enveloppe convexe, recoupée à `NAILM`=10 px de la tranche) en distance signée dans `texNail` (R) ; le shader trace l'aplat + le trait fin (`NAILLW`=2,4 px), nets à tout grossissement. Le trait est un « U » comme dans le dessin : il s'amincit jusqu'à rien au bord libre (`texNailE`), pas d'anneau noir « autocollant ». La texture dos reste celle d'avant (ses mipmaps lues en biais changeaient la vue paume au repos) ; la peau repeinte (sous l'ongle, son trait, bouts de trait étirés en taches) passe par `texNail` G/B, appliquée sur le dos franc au repos et partout hors pose (plus de points noirs sous l'ongle vus de côté). Bombé + repli de peau (`NDOME`, `NFOLD`) dans `mesh.dz` (hors pose seulement), éteint sur 12 px vers la tranche (pas de cran de silhouette au bord de l'ongle).
+- **Colonne du pouce (piste T)** : les CENTRES d'articulation du pouce ne sont plus les plis dessinés.
+  Mesuré sur le dessin : métacarpien 193,6 px, P1 100,5 px, P2 + pulpe 128,4 px → 1 : 0,52 : 0,66, alors que
+  l'anatomie donne 1 : 0,67 : 0,55 (46 / 31 / 21 mm + ~4,5 mm de pulpe). Le pli IP dessiné est ≈ 25 px trop
+  proximal : le pouce pliait trop tôt et traînait un boudin. `IP8` (rig3d.py) glisse le centre de l'IP à
+  (790, 465) le long de l'axe du pouce → 123,5 / 104,2 px, soit P1:P2 = 1 : 0,84 (anatomie 1 : 0,84). La CMC
+  (652, 748 : trapèze, au poignet, base de l'éminence) et la MCP (718, 566 : au niveau de l'apex de la
+  commissure) sont vérifiées et gardées. Le dessin ne bouge pas : silhouette, textures, découpage et profils
+  restent calés sur `CP`, la chaîne corrigée n'est exportée que dans `mesh.chain.pouce` (lue par script.js
+  pour les articulations, ARCJ et `AX.pouce`) → repos exact au pixel près.
+- **Base du pouce à deux axes (Hollister 1992, Imaeda 1994)** : la trapézo-métacarpienne n'a plus de centre de
+  rotation unique. Axe de flexion/extension (« rapprocher ») FIXE dans le TRAPÈZE, par `CMC` ; axe
+  d'abduction/adduction palmaire (« avancer ») FIXE dans la BASE DU 1er MÉTACARPIEN, décalé de `TOFF` = 0,30 le
+  long de l'os : les deux axes ne se croisent pas, la base du pouce glisse. Ils ne sont pas perpendiculaires
+  aux os (`TFT` = 20°, `TAT` = 15°), donc flexion et abduction entraînent déjà ≈ 25° de pronation ; l'axe de
+  flexion penche en plus de `FEV` = 15° vers la paume, donc en se rapprochant des doigts le pouce passe DEVANT
+  la paume au lieu de glisser dans son plan (colonne du pouce antérieure). La pronation explicite (`PRONA`)
+  suit l'OPPOSITION, pas « avancer » : elle démarre avec l'abduction palmaire et ne culmine qu'une fois le
+  pouce ramené vers les doigts (42° en abduction radiale → 99° en opposition). À (0, 0) : aucune pronation.
 - Essayé et écarté à l'intégration : partage linéaire des palmures entre deux doigts (essai C) par-dessus le déformeur en arc (fente/pointe entre annulaire et majeur, poing d'un seul doigt) ; trait épais tiré de la passe identité pour le pouce devant la paume (taches sur le contour dos).
 - Les photos de la main de l'utilisateur (profil, poing, pince, O…) ont servi de référence de volumes ; elles ne sont pas dans le dépôt.
 

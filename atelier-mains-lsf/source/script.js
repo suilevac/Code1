@@ -31,6 +31,10 @@ const typ=k=>k==='pouce'?'pouce':'doigt';
    ====================================================================== */
 const AX={};
 ALL.forEach(k=>{AX[k]=HD.segs[k].map(sg=>{const u=new THREE.Vector3(sg.u[0],-sg.u[1],0).normalize();return{u,lat:u.clone().cross(Z).normalize()}})});
+// pouce : chaîne corrigée [CMC, MCP, IP, bout] (le pli IP dessiné n'est pas le centre de l'articulation, voir rig3d.py).
+// Ses axes de flexion sont repris sur les OS corrigés, pas sur les segments du dessin.
+const TCH=HD.mesh.chain.pouce;
+AX.pouce=[0,1].map(i=>{const a=TCH[i+1],b=TCH[i+2],u=new THREE.Vector3(b[0]-a[0],-(b[1]-a[1]),0).normalize();return{u,lat:u.clone().cross(Z).normalize()}});
 const ang=k=>Math.atan2(AX[k][0].u.y,AX[k][0].u.x);
 const PAR={};FING.forEach(k=>PAR[k]=-(ang('majeur')-ang(k))/D);
 const SPREAD={index:[-10,25],majeur:[-15,15],annulaire:[-20,12],auriculaire:[-45,15]}; // + = vers le pouce, 0 = parallèle au majeur
@@ -38,9 +42,11 @@ const CONV={index:-16,majeur:3,annulaire:10,auriculaire:14};                    
 const LIMF={mcp:[-20,90],pip:[0,105],dip:[-10,80]};
 const LIMT={av:[0,45],rap:[-20,40],mcp:[-10,55],ip:[-20,80]};
 const ENSLAVE=[['index','majeur',90],['majeur','annulaire',85],['annulaire','auriculaire',75]];
-const CMC_IMG=[652,748],MCP_T=HD.chains.pouce[0];
+const CMC_IMG=TCH[0],MCP_T=TCH[1];
 const CMC=toM(CMC_IMG[0],CMC_IMG[1],HD.mesh.jz.pouce[0]);
-const UM=toM(MCP_T[0],MCP_T[1],0).sub(CMC).normalize(),LATM=UM.clone().cross(Z).normalize();
+// axe du 1er métacarpien pris d'une articulation à l'autre, à leur vraie profondeur (la colonne du pouce
+// est en avant du plan de la paume) ; LATM lui est perpendiculaire, dans le plan de la paume
+const UM=toM(MCP_T[0],MCP_T[1],HD.mesh.jz.pouce[1]).sub(CMC).normalize(),LATM=UM.clone().cross(Z).normalize();
 const convOf=(k,v)=>CONV[k]*clamp((Math.max(0,v.mcp)+.6*Math.max(0,v.pip))/150,0,1);
 
 function constrain(p,driver){
@@ -253,7 +259,8 @@ function makeHand(skeletonOnly){
   }
   const joints={};
   ALL.forEach(k=>{
-    const off=k==='pouce'?1:0,J=HD.chains[k].map((p,i)=>toM(p[0],p[1],i<HD.segs[k].length?HD.mesh.jz[k][i+off]:0));if(DEEP[k])J[0]=MCPJ(k);joints[k]=[];joints[k].J=J;
+    const off=k==='pouce'?1:0,src=k==='pouce'?TCH.slice(1):HD.chains[k];
+    const J=src.map((p,i)=>toM(p[0],p[1],i<HD.segs[k].length?HD.mesh.jz[k][i+off]:0));if(DEEP[k])J[0]=MCPJ(k);joints[k]=[];joints[k].J=J;
     let parent=root,prev=new THREE.Vector3();
     if(k==='pouce'){const c=new THREE.Group();c.position.copy(CMC);root.add(c);joints.cmc=c;parent=c;prev=CMC.clone()}
     HD.segs[k].forEach((sg,i)=>{const g=new THREE.Group();g.position.copy(J[i].clone().sub(prev));parent.add(g);joints[k].push(g);parent=g;prev=J[i]});
@@ -267,14 +274,41 @@ const qa=(axis,deg)=>new THREE.Quaternion().setFromAxisAngle(axis,deg*D);
 // pouce : le dessin montre sa pulpe ; MCP et IP plient vers l'avant et un peu en travers de la paume
 const tAxis=(i,beta)=>AX.pouce[i].lat.clone().multiplyScalar(Math.sin(beta*D)).add(Z.clone().multiplyScalar(Math.cos(beta*D))).normalize();
 const TFA=[tAxis(0,45),tAxis(1,55)];
-// opposition : le pouce tourne sur lui-même (pronation) pour présenter sa pulpe aux doigts
-let PRON=-1;const cmcQuat=t=>qa(Z,t.rap).multiply(qa(LATM,t.av)).multiply(qa(UM,PRON*t.av-.3*Math.max(0,t.rap)));
+/* ---------- base du pouce : trapézo-métacarpienne en selle (Hollister 1992, Imaeda 1994) ----------
+   Deux axes FIXES, ni perpendiculaires entre eux ni aux os, et qui NE SE CROISENT PAS :
+   - flexion/extension (« rapprocher », vers les doigts) dans le TRAPÈZE, donc par CMC ;
+   - abduction/adduction palmaire (« avancer », en avant de la paume) dans la BASE DU 1er MÉTACARPIEN,
+     donc décalée de TOFF vers le pouce. Le pouce n'a plus de centre de rotation unique : sa base glisse.
+   Chaque axe est incliné de TFT / TAT sur l'os : la flexion comme l'abduction entraînent déjà un peu de
+   pronation, comme l'articulation réelle (l'axe oblique en produit ≈ 25° à pleine opposition). */
+const TFT=20*D,TAT=15*D,FEV=15*D,TOFF=.30;
+// axe de flexion : incliné de TFT sur l'os (→ pronation) et de FEV vers la paume (→ en se rapprochant des
+// doigts, le pouce passe DEVANT la paume au lieu de glisser dans son plan : la colonne du pouce est antérieure)
+const E_FE=Z.clone().addScaledVector(LATM,Math.tan(FEV)).addScaledVector(UM,-Math.tan(TFT)).normalize();
+const E_AA=LATM.clone().multiplyScalar(Math.cos(TAT)).addScaledVector(UM,-Math.sin(TAT)).normalize();
+const P_FE=CMC,P_AA=CMC.clone().addScaledVector(UM,TOFF);
+// Pronation : elle suit l'OPPOSITION, pas « avancer ». Elle démarre avec l'abduction palmaire mais ne culmine
+// qu'une fois le pouce ramené vers les doigts (42° en abduction radiale → 99° en opposition, soit ≈ 57° d'écart ;
+// les axes obliques en donnent déjà ≈ 25°, PRONA fournit le reste). Au repos (0,0) : aucune pronation.
+let PRONA=34;
+const pronOf=t=>{const a=clamp(t.av/LIMT.av[1],0,1),r=clamp(Math.max(t.rap,0)/LIMT.rap[1],0,1);
+  return -PRONA*(a*(.35+.65*r)+.25*r*(1-a))};
+const _pv=new THREE.Vector3();
+function cmcPose(t,g){
+  const qp=qa(UM,pronOf(t)),qb=qa(E_AA,t.av),qf=qa(E_FE,t.rap);
+  g.quaternion.copy(qf).multiply(qb).multiply(qp);
+  // axes non sécants : on applique les trois rotations au point CMC, chacune autour de SON axe
+  _pv.copy(CMC).sub(P_AA).applyQuaternion(qp).add(P_AA);        // pronation, autour de l'axe du métacarpien
+  _pv.sub(P_AA).applyQuaternion(qb).add(P_AA);                   // abduction, axe dans la base du métacarpien
+  _pv.sub(P_FE).applyQuaternion(qf).add(P_FE);                   // flexion, axe dans le trapèze
+  g.position.copy(_pv);
+}
 function setJoints(h,p){
   FING.forEach(k=>{const v=p.f[k],A=AX[k],j=h.joints[k];
     j[0].quaternion.copy(qa(Z,-(v.ab+convOf(k,v)+PAR[k]))).multiply(qa(A[0].lat,v.mcp));
     j[1].quaternion.copy(qa(A[1].lat,v.pip));j[2].quaternion.copy(qa(A[2].lat,v.dip))});
   const t=p.f.pouce,j=h.joints.pouce;
-  h.joints.cmc.quaternion.copy(cmcQuat(t));j[0].quaternion.copy(qa(TFA[0],t.mcp));j[1].quaternion.copy(qa(TFA[1],t.ip));
+  cmcPose(t,h.joints.cmc);j[0].quaternion.copy(qa(TFA[0],t.mcp));j[1].quaternion.copy(qa(TFA[1],t.ip));
 }
 /* ---------- peau : mélange par quaternions duaux, anneau par anneau ---------- */
 const _inv=new THREE.Matrix4(),_m=new THREE.Matrix4(),_q=new THREE.Quaternion(),_t=new THREE.Vector3(),_s=new THREE.Vector3();
@@ -358,7 +392,7 @@ function boneDQ1(h,g,J){
    Chaque chaîne (pouce, doigt) ajoute son déplacement ; la base du pouce (trapézo-métacarpienne) reste en quaternions duaux. */
 const ARC=MS.arc,ACH=b64arr(ARC.c,Uint8Array),AHM=b64arr(ARC.hm,Uint8Array),ASH=b64arr(ARC.s,Uint16Array),ATA=b64arr(ARC.t,Uint16Array),CHN=['pouce',...FING];
 const ARCJ={};CHN.forEach(k=>ARCJ[k]=ARC.joints[k].map((p,j)=>{
-  const C=k==='pouce'?toM(HD.chains.pouce[j][0],HD.chains.pouce[j][1],HD.mesh.jz.pouce[j+1]):(j===0?MCPJ(k):toM(HD.chains[k][j][0],HD.chains[k][j][1],HD.mesh.jz[k][j]));
+  const C=k==='pouce'?toM(TCH[j+1][0],TCH[j+1][1],HD.mesh.jz.pouce[j+1]):(j===0?MCPJ(k):toM(HD.chains[k][j][0],HD.chains[k][j][1],HD.mesh.jz[k][j]));
   return {C,u:new THREE.Vector3(...p.u),f0:new THREE.Vector3(...p.f),rp:p.rp/SC,rd:p.rd/SC,hp:p.hp/SC,hd:p.hd/SC,kf:p.kf}}));
 // demi-largeur de zone de chaque sommet (selon sa profondeur côté paume / côté dos) : chaîne principale (3 art.), MCP de la 2e
 const AH1=new Float32Array(3*MN),AH2=new Float32Array(MN);
@@ -759,7 +793,7 @@ function cropAlpha(src){const c=document.createElement('canvas');c.width=src.wid
   if(x1<0)return c;const pad=Math.round(c.width*.02);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(c.width,x1+pad);y1=Math.min(c.height,y1+pad);
   const o=document.createElement('canvas');o.width=x1-x0;o.height=y1-y0;o.getContext('2d').drawImage(c,x0,y0,o.width,o.height,0,0,o.width,o.height);return o}
 
-window.__atelier={renderer,setPron:v=>{PRON=v;main.skin.key=''},S,refresh,main,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll};
+window.__atelier={renderer,setPron:v=>{PRONA=v;main.skin.key=''},S,refresh,main,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll};
 refresh();
 })();
 </script>

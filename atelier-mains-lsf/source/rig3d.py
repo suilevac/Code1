@@ -412,7 +412,15 @@ chain8 = {}
 for k in FINGS:
     p = np.array(CP[k], float); u = (p[1] - p[0]) / np.hypot(*(p[1] - p[0]))
     chain8[k] = [p[0] - u * DEEP8[k], p[1], p[2], p[3]]
-chain8['pouce'] = [CMC8, np.array(CP['pouce'][0], float), np.array(CP['pouce'][1], float), np.array(CP['pouce'][2], float)]
+# --- colonne du pouce : les CENTRES d'articulation ne sont pas les plis dessinés ---
+# Mesuré sur le dessin : métacarpien 193,6 px, P1 100,5 px, P2 + pulpe 128,4 px, soit 1 : 0,52 : 0,66.
+# Anatomie (adulte) : 1er métacarpien 46 mm, P1 31 mm, P2 21 mm + ~4,5 mm de pulpe, soit 1 : 0,67 : 0,55.
+# Le pli IP dessiné (et donc l'ancien centre) est ~25 px trop proximal : le pouce pliait trop tôt et traînait
+# un long boudin derrière lui. On glisse le seul centre de l'IP le long de l'axe du pouce, vers le bout.
+# Le DESSIN ne bouge pas : silhouette, textures, découpage et profils restent calés sur CP, donc le volume au
+# repos est inchangé au pixel près ; seule la place où la peau plie change.
+IP8 = np.array([790., 465.])
+chain8['pouce'] = [CMC8, np.array(CP['pouce'][0], float), IP8, np.array(CP['pouce'][2], float)]
 jointZ = {k: [zmid(q) for q in chain8[k][:3]] for k in chain8}
 
 def polyproj(P, pts):
@@ -511,8 +519,11 @@ for k in FINGS:
     ARC[k] = [J0, J1, J2]; TAU[k] = (lat8[k] * lin8(t0, h0), lin8(t1, h1), lin8(t2, h2)); HM[k] = h0
 # pouce : axes de flexion obliques (comme tAxis dans script.js : lat·sin β + Z·cos β), flexion vers f = n × u
 def tflex(u, beta): lat = np.cross(u, Zj); n = nz(lat * np.sin(np.radians(beta)) + Zj * np.cos(np.radians(beta))); return nz(np.cross(n, u))
-chT = chain8['pouce']; ownT = np.char.startswith(vown, 'pouce.'); uT0, uT1 = segu('pouce', 0), segu('pouce', 1)
-uM = nz([chT[1][0] - chT[0][0], -(chT[1][1] - chT[0][1]), 0])
+chT = chain8['pouce']; ownT = np.char.startswith(vown, 'pouce.')
+# directions d'os prises sur la chaîne CORRIGÉE (pas sur les segments du dessin) : l'axe de flexion reste
+# perpendiculaire à la phalange réelle, sinon l'IP déplacée plierait en travers de son propre os
+chu = lambda i: nz([chT[i + 1][0] - chT[i][0], -(chT[i + 1][1] - chT[i][1]), 0])
+uM, uT0, uT1 = chu(0), chu(1), chu(2)
 JM, tM_, hM_ = arcj(chT[1], jointZ['pouce'][1], nz(uM + uT0), tflex(uT0, 45), 55, ownT, 22, .8)   # MCP du pouce : articulation large, dos arrondi
 JI, tI_, hI_ = arcj(chT[2], jointZ['pouce'][2], nz(uT0 + uT1), tflex(uT1, 55), 80, ownT, 22, .6)
 tM_, tI_ = lin8(tM_, hM_), lin8(tI_, hI_)
