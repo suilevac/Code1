@@ -75,6 +75,49 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   identiques au pixel près.** Écarté : écarter les rides en décalant les UV (l'ongle glissait) — inutile, la peau
   porte sa texture et l'étirement du déformeur en arc écarte DÉJÀ les rides dessinées ; filtrer la texture dans le
   shader (min/max) — halo sur le bord de l'ombre franche, et un trait noir ne peut pas s'éclaircir en multipliant.
+- **Relief des jointures et tranche de la main (piste D)** : le déformeur en arc donne, à une articulation pliée, un
+  cylindre parfait ; une vraie main y montre la tête de l'os qui saille côté dos (quatre bosses des têtes
+  métacarpiennes dans le poing, marches entre phalanges repliées : photos 2357, 2364, 2374).
+  `script.js` ajoute donc, AVANT l'arc (le déplacement est ensuite porté par lui, comme `mesh.dz`), un relief local
+  centré sur chaque articulation, du côté DOS seulement : gaussienne le long de l'os, refermée de côté, hauteur
+  `KNK` = 0,14 × demi-largeur du segment (× 1,35 à la MCP, dont la tête est plus large et plus saillante ; × 0,7 à
+  l'IPD). Direction : −f0 de l'articulation (le côté extenseur), donc exactement −z pour les doigts et oblique pour
+  le pouce. Hauteur proportionnelle à la part de course parcourue, donc **nulle au repos : `cas_0` et `cas_1`
+  restent exacts au pixel près.** Les deux articulations qui commandent le plus chaque sommet sont retenues au
+  chargement, le rafraîchissement n'est qu'une somme de deux produits (+1,3 ms sur `skinMesh`, médiane 13,4 ms).
+  `x0`/`y0` de `skinMesh` sont désormais lus dans `pa` et plus dans `MREST`, pour que ce déplacement de base compte
+  sur les trois axes. Amplitude réglée AU BALAYAGE (ci-dessous) : à 0,21 et plus la peau du dos se froissait.
+- **Tranche de la main** (même piste) : l'épaisseur n'est pas dessinée, elle est déduite, et elle sortait trop
+  uniforme. `rig3d.py` ajoute à `mesh.dz` une dilatation de l'intervalle [−arrière, avant] : éminence hypothénar
+  (`TH_HYP` = 0,30 côté paume, 0,40 × côté dos, tache large centrée sur (330, 668)) et doigts (`TH_FIN` = 0,09 ;
+  un vrai doigt fait ≈ 16 mm d'épaisseur pour 18 de large, le volume n'en donnait que 0,81 × la largeur).
+  Comme tout `mesh.dz`, cela n'entre qu'une fois la pose quittée : le repos vu de face ne bouge pas.
+- **Poids du trait intérieur constant** (même piste) : le rayon du détecteur de la passe identité était figé en
+  pixels d'écran, si bien qu'en gros plan le trait intérieur n'était qu'un filet gris à côté du gros trait noir de
+  la coque (trait « fin et dédoublé » entre deux doigts repliés). Il suit maintenant l'épaisseur RÉELLE du contour
+  (`0,4 × HULL/SC ×` pixels par unité, plafonné à 5,5) et se fond avec elle. Interpolé par `rootBlend` (`gR`) comme
+  `mesh.dz`, donc « Dessin » reste exact au pixel près. `EDMAX` = 2,6 : au-delà de cette marche de profondeur, la
+  partie d'en face n'est pas « derrière » mais au fond d'une crevasse (creux du poing) et on n'y trace rien.
+- **Balayage anti-déformation** (`tests/balayage.py`) : parcourt ≈ 170 poses (chaque articulation seule à plusieurs
+  angles, combinaisons dans un même doigt, poses extrêmes, les 12 configurations de `PRESETS`) et mesure sur le
+  maillage, par rapport au repos : arêtes repliées (dièdre signé < −140°), arêtes froissées (dièdre changé de plus
+  de 100°), triangles pincés (< 12 % de leur aire) ou gonflés (> 320 %), variation de longueur des phalanges,
+  variation d'épaisseur des anneaux de peau loin des articulations. Sort le tableau des pires poses et, avec
+  `--images N`, les rend en PNG. `--knk 0` éteint le relief des jointures (comparaison A/B).
+  Le relevé de référence est gardé dans `tests/out/balayage.txt`.
+  **Relevé de référence (170 poses, relief à 0,14)** : replis 1 120, froissements 5 194, pincés 18 258, gonflés
+  3 720, allongement d'os max 0,0 %, variation d'épaisseur max 12,0 %. Sans le relief : 1 153 / 5 195 / 18 255 /
+  2 959 / 0,0 % / 8,8 %. Le relief ne crée donc NI repli NI froissement NI pincement de plus ; il étire seulement la
+  peau du dos, ce qu'une jointure fait vraiment. **L'os ne s'allonge jamais, dans aucune des 170 poses.**
+  Les pires poses sont toujours les flexions complètes (`tous.100/115/85`, `PRESET Poing serré`) et, pour une seule
+  articulation, la MCP du majeur et celle de l'auriculaire : c'est là que les palmures travaillent le plus.
+- Essayé et écarté sur la piste D : **bourrelets palmaires** (deux lobes de part et d'autre du pli, pour que la
+  chair chassée par la flexion remplisse le creux du poing) — même à 3 × l'amplitude ils ne comblent pas le tunnel
+  que laisse un doigt plié à 90/105/70, et le balayage les condamne (replis 1 153 → 1 631, froissements 5 195 →
+  7 269 pour 170 poses) ; **ombre franche automatique au fond des crevasses** (compte des voisins plus proches de
+  l'œil dans la passe identité) — le compteur n'atteint jamais le seuil, aucun effet visible, retiré ; **second
+  point de contrôle du trait intérieur** (refaire le test à FAR × rayon pour écarter les échardes) — cela amincit
+  et coupe aussi les vrais traits entre deux doigts repliés, retiré.
 - Essayé et écarté à l'intégration : partage linéaire des palmures entre deux doigts (essai C) par-dessus le déformeur en arc (fente/pointe entre annulaire et majeur, poing d'un seul doigt) ; trait épais tiré de la passe identité pour le pouce devant la paume (taches sur le contour dos).
 - Les photos de la main de l'utilisateur (profil, poing, pince, O…) ont servi de référence de volumes ; elles ne sont pas dans le dépôt.
 
@@ -127,12 +170,19 @@ dist/           page construite (+ .local.html ouvrable directement dans un navi
 pip install numpy scipy pillow playwright && playwright install chromium
 python3 build.py --rig --preview   # régénère la géométrie (≈10 s) + contrôle du recalage
 python3 tests/rendu.py             # rendus de contrôle → tests/out/planche.png
+python3 tests/balayage.py          # balayage anti-déformation (≈170 poses) → tableau des pires poses
 ```
 **Toujours regarder la planche** avant de livrer : repos face et dos = dessins exacts, majeur levé (doigts serrés, pouce cerné d'un trait), poing serré, pince, gros plan des ongles.
 
 ## Défauts connus (à traiter en priorité)
+0. **Creux du poing vu de profil** (`poing_cote`) : à pleine flexion, la boucle phalange 1 / 2 / 3 d'un doigt
+   enferme un tunnel, et par ce tunnel on aperçoit les doigts voisins, cernés de traits — cela se lit comme un trou
+   rectangulaire. Mesuré : pour l'index replié seul, le tunnel libre fait ≈ 78 × 31 px, alors qu'une vraie main n'en
+   laisse qu'une dizaine. Cause : les phalanges moyenne et distale sont trop longues (voir la mesure des doigts) et
+   le doigt est trop mince en profil. Le relief des jointures et la correction de tranche l'ont réduit, pas supprimé ;
+   il faudra rapprocher les longueurs de 1 : 0,56 : 0,50 pour le fermer.
 1. Stries légères sur l'ongle du pouce en pince : le dessin dos colle l'ongle du pouce au contour.
-2. La tranche de la main (profil) est déduite, pas dessinée.
+2. La tranche de la main (profil) est déduite, pas dessinée (corrigée en partie, piste D).
 3. Quelques traits parasites possibles à la jointure pouce/paume selon l'angle.
 4. Le glisser est un peu lent sur machine modeste : `penetration` est appelée plusieurs dizaines de fois par mouvement.
 

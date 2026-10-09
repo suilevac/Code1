@@ -608,6 +608,22 @@ DZ8 = np.where(ok8, -bc + (zz + bv) * (fc + bc) / np.maximum(fv + bv, 1e-3) - zz
 nearT = np.clip(1 - (ndimage.distance_transform_edt(~np.char.startswith(own8, 'pouce.')) - 30) / 30, 0, 1)
 DZ8 *= 1 - smp(nearT) * sstep(-8, 8, zz - (fv - bv) / 2)
 for _ in range(12): DZ8 = .5 * DZ8 + .5 * (Ln @ DZ8)
+# --- tranche de la main (piste D) : le dessin ne donne que la silhouette de face, l'épaisseur est DÉDUITE, et elle
+# sortait trop uniforme. Sur la photo de profil (IMG_2355) et de dessus (IMG_2366), le bord cubital (côté
+# auriculaire, éminence hypothénar) est nettement plus charnu que le bord radial, et un doigt est un peu plus épais
+# que le (DF8 + DB8) / 2 = 0,81 × largeur du volume (un vrai doigt fait ≈ 16 mm d'épaisseur pour 18 de large).
+# Facteur d'épaisseur appliqué comme les racines : l'intervalle [-arrière, avant] est dilaté, en dz, donc seulement
+# hors de la pose « Dessin » — le repos vu de face ne bouge pas d'un pixel.
+TH_HYP, TH_FIN = .30, .09                      # hypothénar (côté paume surtout), doigts
+hypo = gauss(330, 668, 100)
+tkF = 1 + TH_HYP * hypo + TH_FIN * wfin
+tkB = 1 + .40 * TH_HYP * hypo + .65 * TH_FIN * wfin
+fv2, bv2, kf2, kb2 = smp(front8), smp(back8), smp(tkF), smp(tkB)
+zz2 = V8[:, 2]
+DZt = np.where(fv2 + bv2 > 4, -bv2 * kb2 + (zz2 + bv2) * (fv2 * kf2 + bv2 * kb2) / np.maximum(fv2 + bv2, 1e-3) - zz2, 0)
+for _ in range(8): DZt = .5 * DZt + .5 * (Ln @ DZt)
+print('tranche : |dz| max %.1f px' % np.abs(DZt).max())
+DZ8 = DZ8 + DZt
 # + bombé des ongles et repli de peau autour (dos) : lui aussi hors pose du dessin seulement (dessin au repos exact)
 DZ8 = DZ8 - BUMP8
 mesh8['dz'] = base64.b64encode(np.round(DZ8 * 4).astype(np.int16).tobytes()).decode()
