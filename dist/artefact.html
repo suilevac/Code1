@@ -265,7 +265,6 @@ dialog::backdrop { background: rgba(16, 24, 40, .45); }
 }
 
 </style>
-<circle cx='9' cy='11' r='6' fill='%23D1282E'/><circle cx='22' cy='11' r='6' fill='%231878B4'/><circle cx='16' cy='23' r='6' fill='%231E9D4F'/></svg>">
 
 <header class="entete">
   <div>
@@ -1319,3 +1318,134 @@ function exporter() {
 <style>body{margin:0;padding:24px;background:#fff;color:#15161a}@page{margin:16mm}</style>
 </head><body>
 ${enHtml()}
+</body></html>`;
+  const url = URL.createObjectURL(new Blob([page], { type: 'text/html' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'texte-code.html';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function signaler(sel, texte) {
+  const b = $(sel); const avant = b.textContent;
+  b.textContent = texte;
+  setTimeout(() => { b.textContent = avant; }, 1400);
+}
+
+/* ---------- liste des corrections ---------- */
+function ouvrirCorrections() {
+  const liste = $('#liste-corrections');
+  const entrees = Object.entries(fixes);
+  if (!entrees.length) liste.innerHTML = '<p style="color:var(--doux)">Aucune correction enregistrée.</p>';
+  else liste.innerHTML = entrees.map(([k, v]) => {
+    const [mot, i] = k.split('#');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--trait)">
+      <strong style="min-width:9em">${mot}</strong>
+      <span style="color:var(--doux)">lettre ${Number(i) + 1} → ${v === '_' ? 'muette' : v === 's2' ? 'fait [s]' : v === 'noir' ? 'consonne' : v}</span>
+      <button class="bouton" data-suppr="${k}" style="margin-left:auto;padding:3px 9px">Retirer</button>
+    </div>`;
+  }).join('');
+  $('#dlg-corrections').showModal();
+}
+
+/* ---------- branchements ---------- */
+function brancher() {
+  const saisie = $('#saisie');
+  saisie.value = prefs.texte;
+
+  $('#police').value = prefs.police;
+  $('#taille').value = prefs.taille;
+  $('#interligne').value = prefs.interligne;
+  $('#espacement').value = prefs.espacement;
+  $('#opt-couleurs').checked = prefs.couleurs;
+  $('#opt-contraste').checked = prefs.contraste;
+  $('#opt-gestes').checked = prefs.gestes;
+  $('#opt-muettes').checked = prefs.muettes;
+  $('#opt-verifier').checked = prefs.verifier;
+  $('#opt-nombres').checked = prefs.nombres;
+
+  let minuteur;
+  saisie.addEventListener('input', () => {
+    prefs.texte = saisie.value;
+    clearTimeout(minuteur);
+    minuteur = setTimeout(() => { majTexte(); ecrire(PREFS, prefs); }, 120);
+  });
+
+  const lie = (sel, champ, transforme = (v) => v, style = false) => {
+    $(sel).addEventListener('input', (e) => {
+      prefs[champ] = transforme(e.target.type === 'checkbox' ? e.target.checked : e.target.value);
+      ecrire(PREFS, prefs);
+      if (style) majStyle(); else majTexte();
+    });
+  };
+  lie('#police', 'police', (v) => v, true);
+  lie('#taille', 'taille', Number, true);
+  lie('#interligne', 'interligne', Number, true);
+  lie('#espacement', 'espacement', Number, true);
+  lie('#opt-couleurs', 'couleurs');
+  lie('#opt-contraste', 'contraste');
+  lie('#opt-gestes', 'gestes');
+  lie('#opt-muettes', 'muettes');
+  lie('#opt-verifier', 'verifier');
+  lie('#opt-nombres', 'nombres');
+
+  $('#btn-exemple')?.addEventListener('click', () => {
+    saisie.value = prefs.texte = EXEMPLE; ecrire(PREFS, prefs); majTexte();
+  });
+  $('#btn-effacer')?.addEventListener('click', () => {
+    saisie.value = prefs.texte = ''; ecrire(PREFS, prefs); majTexte(); saisie.focus();
+  });
+  $('#btn-imprimer')?.addEventListener('click', () => window.print());
+  $('#btn-copier')?.addEventListener('click', copier);
+  $('#btn-exporter')?.addEventListener('click', exporter);
+
+  $('#btn-corrections').addEventListener('click', ouvrirCorrections);
+  $('#btn-fermer-corrections').addEventListener('click', () => $('#dlg-corrections').close());
+  $('#btn-vider').addEventListener('click', () => {
+    fixes = {}; ecrire(FIXES, fixes); majBoutonCorrections(); majTexte(); $('#dlg-corrections').close();
+  });
+  $('#liste-corrections').addEventListener('click', (e) => {
+    const k = e.target.dataset?.suppr;
+    if (!k) return;
+    delete fixes[k]; ecrire(FIXES, fixes); majBoutonCorrections(); majTexte(); ouvrirCorrections();
+  });
+
+  $('#lien-tableau')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const ref = $('#ref-tableau');
+    if (!ref.dataset.pret) { ref.innerHTML = buildTableau(); ref.dataset.pret = '1'; }
+    $('#dlg-tableau').showModal();
+  });
+  $('#btn-fermer-tableau')?.addEventListener('click', () => $('#dlg-tableau').close());
+  $('#lien-aide').addEventListener('click', (e) => { e.preventDefault(); $('#dlg-aide').showModal(); });
+  $('#btn-fermer-aide').addEventListener('click', () => $('#dlg-aide').close());
+
+  $('#sortie').addEventListener('click', (e) => {
+    const tk = e.target.closest('.tk');
+    if (!tk) { fermerMenu(); return; }
+    e.stopPropagation();
+    ouvrirMenu(tk);
+  });
+
+  $('#menu').addEventListener('click', (e) => {
+    const b = e.target.closest('.puce');
+    if (!b || !cible) return;
+    const mot = cible.closest('.mot').dataset.mot;
+    const i = cible.dataset.t;
+    const cle = b.dataset.cle;
+    if (cle === 'auto') delete fixes[`${mot}#${i}`];
+    else fixes[`${mot}#${i}`] = cle;
+    ecrire(FIXES, fixes); majBoutonCorrections(); fermerMenu(); majTexte();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#menu') && !e.target.closest('#sortie')) fermerMenu();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') fermerMenu(); });
+}
+
+majStyle();
+brancher();
+majBoutonCorrections();
+majTexte();
+</script>

@@ -29,7 +29,24 @@ function bundle() {
     }
     return `/* ---- ${nom}.js ---- */\n${code.trim()}`;
   });
-  return morceaux.join('\n\n');
+  // une chaîne du code ne doit pas pouvoir fermer la balise <script> de la page
+  return morceaux.join('\n\n').replace(/<\/script/gi, '<\\/script');
+}
+
+/* --- garde-fou : le script de la page doit être complet --- */
+function verifie(page, artefact) {
+  const ouvrantes = (page.match(/<script\b/gi) || []).length;
+  const fermantes = (page.match(/<\/script>/gi) || []).length;
+  if (ouvrantes !== fermantes) {
+    throw new Error(`Page incomplète : ${ouvrantes} <script> pour ${fermantes} </script>`);
+  }
+  for (const id of ['id="saisie"', 'id="sortie"', 'majTexte()']) {
+    if (!page.includes(id)) throw new Error(`Page incomplète : ${id} manquant`);
+  }
+  // dans la version en ligne, l'icône est retirée : rien ne doit en rester
+  if (artefact && page.includes('data:image/svg+xml')) {
+    throw new Error('Un morceau de la balise icône est resté dans la page');
+  }
 }
 
 /* --- enlève un élément HTML par son id ou sa classe --- */
@@ -57,7 +74,7 @@ function construire({ artefact }) {
   // le lien vers tableau.html n'existe pas dans un fichier unique
   html = enleve(html, ['class="bouton horsfichier"']);
 
-  if (!artefact) return html;
+  if (!artefact) { verifie(html, false); return html; }
 
   // Version en ligne : pas de doctype ni de <head>, et l'impression
   // n'est pas possible dans une page publiée.
@@ -71,10 +88,12 @@ function construire({ artefact }) {
   const tete = html.slice(html.indexOf('<head>') + 6, html.indexOf('</head>'))
     .replace(/<meta charset[^>]*>/, '')
     .replace(/<meta name="viewport"[^>]*>/, '')
-    .replace(/<link rel="icon"[^>]*>/, '')
+    .replace(/^[ \t]*<link rel="icon".*$/m, '')   // l'icône contient des « > » dans son SVG
     .trim();
-  const corps = html.slice(html.indexOf('<body>') + 6, html.indexOf('</body>')).trim();
-  return `${tete}\n\n${corps}\n`;
+  const corps = html.slice(html.indexOf('<body>') + 6, html.lastIndexOf('</body>')).trim();
+  const page = `${tete}\n\n${corps}\n`;
+  verifie(page, true);
+  return page;
 }
 
 mkdirSync(resolve(racine, 'dist'), { recursive: true });
