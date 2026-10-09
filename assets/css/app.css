@@ -1,0 +1,215 @@
+/* =============================================================
+   app.css — Lire en couleurs (méthode Aloé)
+   ============================================================= */
+
+:root {
+  --encre: #15161a;
+  --papier: #ffffff;
+  --fond: #f2f4f7;
+  --trait: #d9dee6;
+  --doux: #667085;
+  --accent: #1878B4;
+  --rayon: 14px;
+  --ombre: 0 1px 2px rgba(16, 24, 40, .06), 0 8px 24px rgba(16, 24, 40, .07);
+  --police-sortie: 'Andika', 'Verdana', system-ui, sans-serif;
+  --taille-sortie: 34px;
+  --interligne: 2;
+  --espace-lettres: 0.01em;
+  --espace-mots: 0.1em;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--fond);
+  color: var(--encre);
+  font-family: 'Andika', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--accent); }
+
+/* ---------- en-tête ---------- */
+.entete {
+  display: flex; flex-wrap: wrap; gap: 12px 20px;
+  align-items: baseline; justify-content: space-between;
+  padding: 18px 20px 14px;
+  background: var(--papier);
+  border-bottom: 1px solid var(--trait);
+}
+.entete h1 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
+.entete h1 .points span { display: inline-block; width: .52em; height: .52em; border-radius: 50%; margin-left: .12em; }
+.entete p { margin: 2px 0 0; color: var(--doux); font-size: 14px; }
+.entete nav { display: flex; gap: 14px; font-size: 14px; }
+
+/* ---------- barre d'outils ---------- */
+.outils {
+  display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+  padding: 12px 20px;
+  background: var(--papier);
+  border-bottom: 1px solid var(--trait);
+  position: sticky; top: 0; z-index: 20;
+}
+.groupe { display: flex; align-items: center; gap: 8px; }
+.groupe > label { font-size: 13px; color: var(--doux); }
+.sep { width: 1px; height: 26px; background: var(--trait); }
+
+select, input[type="range"] { font: inherit; font-size: 14px; }
+select {
+  padding: 6px 8px; border: 1px solid var(--trait); border-radius: 8px;
+  background: var(--papier); color: var(--encre);
+}
+input[type="range"] { width: 110px; accent-color: var(--accent); }
+
+.bascule { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; cursor: pointer; user-select: none; }
+.bascule input { width: 17px; height: 17px; accent-color: var(--accent); margin: 0; }
+
+.bouton {
+  font: inherit; font-size: 14px; cursor: pointer;
+  padding: 7px 14px; border-radius: 9px;
+  border: 1px solid var(--trait); background: var(--papier); color: var(--encre);
+}
+.bouton:hover { background: #f7f9fc; }
+.bouton--plein { background: var(--accent); border-color: var(--accent); color: #fff; }
+.bouton--plein:hover { background: #136498; }
+
+/* ---------- colonnes ---------- */
+.colonnes {
+  display: grid; grid-template-columns: minmax(280px, 400px) 1fr;
+  gap: 20px; padding: 20px; align-items: start;
+  max-width: 1600px; margin: 0 auto;
+}
+@media (max-width: 900px) { .colonnes { grid-template-columns: 1fr; } }
+
+.carte {
+  background: var(--papier); border: 1px solid var(--trait);
+  border-radius: var(--rayon); box-shadow: var(--ombre);
+}
+.carte h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); margin: 0; padding: 14px 16px 0; }
+
+#saisie {
+  display: block; width: 100%; min-height: 320px; resize: vertical;
+  border: 0; background: transparent; color: inherit;
+  font: inherit; font-size: 16px; line-height: 1.6;
+  padding: 12px 16px 16px;
+}
+#saisie:focus { outline: none; }
+
+.aide { padding: 0 16px 14px; font-size: 13px; color: var(--doux); }
+.aide kbd { font: inherit; font-size: 12px; background: var(--fond); border: 1px solid var(--trait); border-radius: 5px; padding: 1px 5px; }
+
+/* ---------- la feuille ---------- */
+.feuille {
+  padding: 28px 32px 40px; min-height: 420px;
+  border-radius: var(--rayon);
+}
+.sortie {
+  font-family: var(--police-sortie);
+  font-size: var(--taille-sortie);
+  line-height: var(--interligne);
+  letter-spacing: var(--espace-lettres);
+  word-spacing: var(--espace-mots);
+}
+.ligne { margin: 0 0 .25em; }
+.vide { color: var(--doux); font-family: inherit; font-size: 15px; }
+
+/* ---------- les graphèmes ---------- */
+.mot { white-space: nowrap; }
+.tk { position: relative; display: inline-block; line-height: 1; color: var(--encre); }
+.tk--vowel { color: var(--c, var(--encre)); }
+.out--mono .tk--vowel { color: var(--encre); }
+
+.tk__t { position: relative; }
+.tk--circle .tk__t { padding: 0 .13em; }
+.tk--tri .tk__t { padding: 0 .34em 0 .09em; }
+.tk--circle { margin: 0 .04em; }
+.tk--tri { margin: 0 .04em; }
+
+.tk--tri .tk__shape { top: -.3em; bottom: .19em; }
+.tk__shape {
+  position: absolute; left: 0; right: 0; top: .04em; bottom: .02em;
+  width: auto; height: auto; pointer-events: none; overflow: visible;
+}
+
+.tk--muette .tk__t {
+  text-decoration: underline;
+  text-decoration-thickness: .05em;
+  text-underline-offset: .14em;
+}
+.out--muettes-grises .tk--muette { color: #9aa1ad; }
+
+.tk--sifflante .tk__t {
+  text-decoration: underline double;
+  text-decoration-thickness: .045em;
+  text-underline-offset: .13em;
+}
+
+.tk--verifier::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -.18em; height: 0;
+  border-bottom: .06em dotted #e07a00;
+}
+.tk--manuel .tk__t { background: rgba(255, 221, 87, .3); border-radius: 3px; }
+
+/* clic pour corriger */
+.sortie--corrigeable .tk { cursor: pointer; border-radius: 4px; }
+.sortie--corrigeable .tk:hover { background: rgba(24, 120, 180, .12); }
+
+/* ---------- menu de correction ---------- */
+.menu {
+  position: absolute; z-index: 60; min-width: 230px;
+  background: var(--papier); border: 1px solid var(--trait);
+  border-radius: 12px; box-shadow: var(--ombre); padding: 10px;
+  font-size: 14px;
+}
+.menu[hidden] { display: none; }
+.menu h3 { margin: 2px 4px 8px; font-size: 13px; color: var(--doux); font-weight: 600; }
+.menu .rangee { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.puce {
+  font: inherit; font-size: 13px; cursor: pointer;
+  border: 1px solid var(--trait); background: var(--papier);
+  border-radius: 8px; padding: 5px 9px; display: inline-flex; align-items: center; gap: 6px;
+}
+.puce:hover { background: #f7f9fc; }
+.puce i { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+.puce--rond i { border-radius: 50%; }
+.puce--tri i { border-radius: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+
+/* ---------- gestes ---------- */
+.tk__geste {
+  position: absolute; left: 50%; bottom: 86%;
+  transform: translateX(-50%);
+  width: .62em; color: #4a5160; pointer-events: none;
+}
+.tk__geste .gst { display: block; width: 100%; height: auto; }
+.out--gestes .ligne { padding-top: .85em; }
+
+/* ---------- tableau de référence ---------- */
+.ref { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+.ref h2 { font-size: 17px; margin: 28px 0 10px; }
+.ref p.note { color: var(--doux); font-size: 14px; max-width: 70ch; }
+.grille { display: flex; flex-wrap: wrap; gap: 10px; }
+.case {
+  border: 1px solid var(--trait); border-radius: 10px; background: var(--papier);
+  padding: 10px 12px; min-width: 104px; text-align: center; box-shadow: var(--ombre);
+}
+.case .forme { height: 34px; display: flex; align-items: center; justify-content: center; }
+.case .forme svg { width: 26px; height: 34px; }
+.case .graphies { font-family: var(--police-sortie); font-size: 22px; line-height: 1.35; margin-top: 4px; }
+.case .nom { font-size: 12px; color: var(--doux); margin-top: 6px; }
+.case--cons .graphies { color: var(--encre); }
+
+/* ---------- impression ---------- */
+@media print {
+  .entete, .outils, .pane--saisie, .aide, .menu, .nonimprimable { display: none !important; }
+  body { background: #fff; }
+  .colonnes { display: block; padding: 0; }
+  .carte { border: 0; box-shadow: none; }
+  .feuille { padding: 0; }
+  .sortie--corrigeable .tk { cursor: auto; }
+  .tk--verifier::after { display: none; }
+  @page { margin: 16mm; }
+}

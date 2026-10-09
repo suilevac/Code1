@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lire en couleurs — le code de la méthode Aloé</title>
+<meta name="description" content="Transforme un texte en texte codé pour soutenir la lecture : une couleur par son-voyelle, nasales entourées, consonnes en noir, lettres muettes soulignées.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='9' cy='11' r='6' fill='%23D1282E'/><circle cx='22' cy='11' r='6' fill='%231878B4'/><circle cx='16' cy='23' r='6' fill='%231E9D4F'/></svg>">
+</head>
+<body>
+
+<header class="entete">
+  <div>
+    <h1>Lire en couleurs<span class="points"
+      ><span style="background:#D1282E"></span><span style="background:#1878B4"></span><span style="background:#D9BE00"></span><span style="background:#1E9D4F"></span></span></h1>
+    <p>Le texte que vous écrivez est codé avec le code de lecture de la classe (méthode Aloé).</p>
+  </div>
+  <nav>
+    <a href="tableau.html">Tableau des codes</a>
+    <a href="#" id="lien-aide">Mode d'emploi</a>
+  </nav>
+</header>
+
+<div class="outils">
+  <div class="groupe">
+    <label for="police">Police</label>
+    <select id="police">
+      <option value="'Andika', Verdana, sans-serif">Andika (lecture)</option>
+      <option value="'Comic Neue', 'Comic Sans MS', cursive">Comic Neue</option>
+      <option value="Verdana, sans-serif">Verdana</option>
+      <option value="Arial, Helvetica, sans-serif">Arial</option>
+      <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+      <option value="'Segoe Script', 'Bradley Hand', cursive">Cursive du système</option>
+    </select>
+  </div>
+  <div class="groupe">
+    <label for="taille">Taille</label>
+    <input type="range" id="taille" min="18" max="72" step="2" value="34">
+  </div>
+  <div class="groupe">
+    <label for="interligne">Interligne</label>
+    <input type="range" id="interligne" min="1.2" max="3.4" step="0.1" value="2">
+  </div>
+  <div class="groupe">
+    <label for="espacement">Espacement</label>
+    <input type="range" id="espacement" min="0" max="0.3" step="0.01" value="0.01">
+  </div>
+  <div class="sep"></div>
+  <label class="bascule"><input type="checkbox" id="opt-couleurs" checked> Couleurs</label>
+  <label class="bascule"><input type="checkbox" id="opt-contraste"> Couleurs foncées</label>
+  <label class="bascule"><input type="checkbox" id="opt-gestes"> Gestes</label>
+  <label class="bascule"><input type="checkbox" id="opt-muettes" checked> Muettes en gris</label>
+  <label class="bascule"><input type="checkbox" id="opt-verifier" checked> Signaler les mots à vérifier</label>
+  <label class="bascule"><input type="checkbox" id="opt-nombres"> Nombres en lettres</label>
+  <div class="sep"></div>
+  <button class="bouton" id="btn-corrections" type="button">Mes corrections (0)</button>
+  <button class="bouton" id="btn-copier" type="button">Copier</button>
+  <button class="bouton" id="btn-exporter" type="button">Exporter</button>
+  <button class="bouton bouton--plein" id="btn-imprimer" type="button">Imprimer</button>
+</div>
+
+<main class="colonnes">
+  <section class="carte pane--saisie">
+    <h2>Votre texte</h2>
+    <textarea id="saisie" spellcheck="true" placeholder="Écrivez ou collez votre texte ici…"></textarea>
+    <p class="aide">
+      Cliquez sur une lettre du texte codé pour corriger son code : la correction est gardée
+      pour toutes les fois où le mot revient. <kbd>Échap</kbd> ferme le menu.
+      <button class="bouton" id="btn-exemple" type="button" style="margin-top:8px">Texte d'exemple</button>
+      <button class="bouton" id="btn-effacer" type="button" style="margin-top:8px">Effacer</button>
+    </p>
+  </section>
+
+  <section class="carte feuille">
+    <div id="sortie" class="sortie sortie--corrigeable" aria-live="polite"></div>
+  </section>
+</main>
+
+<div class="menu" id="menu" hidden></div>
+
+<dialog id="dlg-corrections" class="carte" style="max-width:520px;padding:18px;border:0;border-radius:14px">
+  <h2 style="padding:0">Mes corrections</h2>
+  <div id="liste-corrections" style="margin:12px 0;max-height:50vh;overflow:auto"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="bouton" id="btn-vider" type="button">Tout effacer</button>
+    <button class="bouton bouton--plein" id="btn-fermer-corrections" type="button">Fermer</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-aide" class="carte" style="max-width:640px;padding:22px;border:0;border-radius:14px">
+  <h2 style="padding:0">Mode d'emploi</h2>
+  <div style="font-size:15px;line-height:1.6">
+    <p><strong>Le code.</strong> Une couleur par son-voyelle ; les consonnes restent noires.
+      Un son nasal est entouré d'un rond, dans la couleur de sa voyelle
+      (<em>an</em>, <em>en</em>, <em>on</em>, <em>in</em>, <em>ein</em>, <em>un</em>).
+      Un son avec yod est dans un triangle (<em>ill</em>, <em>ian</em>, <em>ion</em>, <em>ien</em>).</p>
+    <p><strong>Les traits.</strong> Un trait simple sous une lettre : elle ne se dit pas.
+      Un double trait : elle fait le son [s].</p>
+    <p><strong>Corriger.</strong> Le découpage est automatique : il se trompe parfois sur les mots rares,
+      sur <em>-ent</em> (verbe ou son [an] ?) et sur <em>ill</em>. Les endroits douteux sont soulignés
+      en pointillé orange. Cliquez sur la lettre pour choisir le bon code ; la correction est enregistrée
+      dans ce navigateur et réutilisée ensuite.</p>
+    <p><strong>Imprimer.</strong> Le bouton <em>Imprimer</em> n'imprime que la feuille de droite.
+      <em>Copier</em> met le texte en couleurs dans le presse-papier (collable dans un traitement de texte),
+      <em>Exporter</em> enregistre une page web autonome.</p>
+  </div>
+  <div style="display:flex;justify-content:flex-end"><button class="bouton bouton--plein" id="btn-fermer-aide" type="button">Fermer</button></div>
+</dialog>
+
+<script type="module" src="assets/js/app.js"></script>
+</body>
+</html>
