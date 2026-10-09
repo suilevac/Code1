@@ -94,21 +94,28 @@ const editable=()=>S.mode==='pose'?S.pose:(S.target==='debut'?S.debut:S.fin);
    Textures : dessin paume devant, dessin dos recalé derrière
    ====================================================================== */
 function tex(src){return new Promise(r=>{const t=new THREE.TextureLoader().load(src,()=>r(t));t.anisotropy=4})}
-const [TF,TB,TN,TE]=await Promise.all([tex(HD.texFront),tex(HD.texBack),tex(HD.texNail),tex(HD.texNailE)]);
+const [TF,TB,TN,TE,TC]=await Promise.all([tex(HD.texFront),tex(HD.texBack),tex(HD.texNail),tex(HD.texNailE),tex(HD.texCrease)]);
 [TN,TE].forEach(t=>{t.generateMipmaps=false;t.minFilter=THREE.LinearFilter});   // distance signée : pas de moyenne entre niveaux (elle déborderait sur la tranche)
 const NAILC=new THREE.Vector3(...HD.nail.col),NAILS=new THREE.Vector3(...HD.nail.skin);
 const LIGHT=new THREE.Vector3(-.45,.55,1).normalize();
-const VS=`attribute float part;attribute float rnz;uniform float hlPart;varying float vH;varying float vS;varying vec2 vUv;varying vec3 vN;void main(){vH=abs(part-hlPart)<.5?1.:0.;vS=smoothstep(-.3,.3,rnz);vUv=uv;vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
+const VS=`attribute float part;attribute float rnz;attribute vec2 crf;uniform float hlPart;varying float vH;varying float vS;varying vec2 vCr;varying vec2 vUv;varying vec3 vN;void main(){vH=abs(part-hlPart)<.5?1.:0.;vS=smoothstep(-.3,.3,rnz);vCr=crf;vUv=uv;vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
 // ongles (dos seulement) : texNail R = distance signée au bord (px) → aplat net + trait fin du dessin, nets à tout grossissement ;
 // G/B = peau repeinte (sous l'ongle, son trait, bouts de trait étirés en taches), sur le dos franc (vS≈0) ; texNailE = poids
 // du trait : il s'amincit jusqu'à rien au bord libre (« U » ouvert du dessin). Pose du dessin : rien sur la tranche ni vu en biais (vue paume = dessin exact) ; hors pose (npose) partout
-const FS=`uniform sampler2D nailTex;uniform sampler2D nailE;uniform float npose;uniform vec3 nailCol;uniform vec3 nailSkin;uniform float nailLW;uniform sampler2D colTex;uniform sampler2D colTex2;uniform sampler2D alphaTex;uniform float opacity;uniform float hl;uniform vec3 L;varying float vH;varying float vS;varying vec2 vUv;varying vec3 vN;
-void main(){if(texture2D(alphaTex,vUv).a<.35){gl_FragColor=vec4(.067,.067,.067,opacity);return;}vec3 cb=texture2D(colTex2,vUv).rgb;
+// plis et rides (piste R) : crTex = trait de la paume (R), le même élargi (G), aplat du dos (B) et masque des rides
+// du dos (A) ; vCr donne l'effacement du trait selon l'angle de l'articulation voisine (x paume, négatif = creusé ;
+// y dos, positif = effacé). Paume : le trait est gris, un multiplicateur (1-a(1-e))/(1-a) suffit. Dos : le trait est
+// NOIR, on le remplace par l'aplat voisin. Les deux valent exactement l'identité à e = 0 (dessin exact au repos).
+const FS=`uniform sampler2D nailTex;uniform sampler2D nailE;uniform float npose;uniform vec3 nailCol;uniform vec3 nailSkin;uniform float nailLW;uniform sampler2D colTex;uniform sampler2D colTex2;uniform sampler2D crTex;uniform sampler2D alphaTex;uniform float opacity;uniform float hl;uniform vec3 L;varying float vH;varying float vS;varying vec2 vCr;varying vec2 vUv;varying vec3 vN;
+void main(){if(texture2D(alphaTex,vUv).a<.35){gl_FragColor=vec4(.067,.067,.067,opacity);return;}vec3 cb=texture2D(colTex2,vUv).rgb,cf=texture2D(colTex,vUv).rgb;
+if(vCr.x!=0.||vCr.y!=0.){vec4 cr=texture2D(crTex,vUv);
+ cb=mix(cb,nailSkin*cr.b*255.,cr.a*vCr.y);
+ cf*=max(1.-cr.r*(1.-vCr.x),.08)/max(1.-cr.r,.15)*(1.-.22*max(-vCr.x,0.)*smoothstep(.13,.26,cr.g));}
 vec3 nt=texture2D(nailTex,vUv).rgb;cb=mix(cb,nailSkin*nt.b*255.,nt.g*max((1.-smoothstep(0.,.15,vS))*smoothstep(.15,.4,normalize(vN).z),npose));
 float sd=(nt.r*255.-128.)/12.,aw=clamp(fwidth(sd),.03,1.5),wn=max(1.-smoothstep(.5,.9,vS),npose);cb=mix(cb,nailCol,wn*clamp(.5-sd/aw,0.,1.));
-float lw=nailLW*texture2D(nailE,vUv).r;cb*=1.-wn*min(lw/aw,1.)*clamp(.5-(abs(sd+lw*.5)-lw*.5)/aw,0.,1.);vec3 c=mix(cb,texture2D(colTex,vUv).rgb,vS);
+float lw=nailLW*texture2D(nailE,vUv).r;cb*=1.-wn*min(lw/aw,1.)*clamp(.5-(abs(sd+lw*.5)-lw*.5)/aw,0.,1.);vec3 c=mix(cb,cf,vS);
 float s=clamp(.8+.26*max(dot(normalize(vN),L),0.),0.,1.);c*=s;c=mix(c,vec3(1.,.78,.1),hl*vH*.4);gl_FragColor=vec4(c,opacity);}`;
-const skinMat=back=>new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},colTex2:{value:TB},alphaTex:{value:TF},nailTex:{value:TN},nailE:{value:TE},npose:{value:0},nailCol:{value:NAILC},nailSkin:{value:NAILS},nailLW:{value:HD.nail.lw},opacity:{value:1},hl:{value:0},hlPart:{value:-10},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS,extensions:{derivatives:true}});
+const skinMat=back=>new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},colTex2:{value:TB},crTex:{value:TC},alphaTex:{value:TF},nailTex:{value:TN},nailE:{value:TE},npose:{value:0},nailCol:{value:NAILC},nailSkin:{value:NAILS},nailLW:{value:HD.nail.lw},opacity:{value:1},hl:{value:0},hlPart:{value:-10},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS,extensions:{derivatives:true}});
 const HULL=HD.outw+.6;
 
 function orient(geo,inside){
@@ -251,11 +258,12 @@ function makeHand(skeletonOnly){
       const gc=new THREE.BufferGeometry(),pc=MREST.slice();for(let i=0;i<MN;i++)pc[3*i+2]+=MDZ[i];gc.setAttribute('position',new THREE.BufferAttribute(pc,3));gc.setIndex(MINDEX);
       gc.computeVertexNormals();MRNZC=new Float32Array(MN);const nc=gc.attributes.normal.array;for(let i=0;i<MN;i++)MRNZC[i]=nc[3*i+2]}
     g.setAttribute('rnz',new THREE.BufferAttribute(MRNZ.slice(),1));
+    g.setAttribute('crf',new THREE.BufferAttribute(new Int8Array(2*MN),2,true));   // plis et rides (piste R)
     const hg=new THREE.BufferGeometry();hg.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));hg.setAttribute('part',MPARTA);hg.setIndex(MINDEX);
     const me=new THREE.Mesh(g,f),mh=new THREE.Mesh(hg,hullMat);me.frustumCulled=mh.frustumCulled=false;
     me.userData={hull:false,idMat:SKIN_ID};mh.userData={hull:true};root.add(me,mh);meshes.push(me,mh);
     const idg=new THREE.BufferGeometry();idg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9*NT),3));idg.setAttribute('color',MIDFA);
-    const idm=new THREE.Mesh(idg,SKIN_ID);idm.visible=false;idm.frustumCulled=false;root.add(idm);skin={g,hg,idg,idm,key:'',hm:hullMat,sm:f,gR:0};
+    const idm=new THREE.Mesh(idg,SKIN_ID);idm.visible=false;idm.frustumCulled=false;root.add(idm);skin={g,hg,idg,idm,key:'',hm:hullMat,sm:f,gR:0,crZ:true};
   }
   const joints={};
   ALL.forEach(k=>{
@@ -399,6 +407,45 @@ const AH1=new Float32Array(3*MN),AH2=new Float32Array(MN);
 {const hOf=(J,o)=>{const d=(MREST[o]-J.C.x)*J.f0.x+(MREST[o+1]-J.C.y)*J.f0.y+(MREST[o+2]-J.C.z)*J.f0.z;return Math.max(J.hd+(J.hp-J.hd)*smooth(-J.rd,J.rp,d),J.kf*d)};
   for(let i=0;i<MN;i++){const c1=ACH[2*i],c2=ACH[2*i+1];
     if(c1)ARCJ[CHN[c1-1]].forEach((J,j)=>AH1[3*i+j]=hOf(J,3*i));if(c1>1)AH1[3*i]=AHM[2*i]/2/SC;if(c2>1)AH2[i]=AHM[2*i+1]/2/SC}}
+
+/* ---------- piste R : les rides et les plis suivent la flexion ----------
+   Côté DOS la peau s'étire quand l'articulation plie (+0,35 %/° à l'IPP, 0,29 à la MCP, 0,20 à l'IPD, ≈30 % en tout) :
+   les rides dessinées s'écartent (la peau porte sa texture) puis s'effacent, et la phalange pliée a le dos lisse et
+   tendu (photos 2374, 2375, 2360). Côté PAUME le pli de flexion se creuse, s'assombrit et s'élargit ; en
+   hyperextension c'est l'inverse des deux côtés. Le pli thénar suit le pouce qui se rapproche ou s'oppose.
+   On envoie au shader, par sommet, l'effacement e du trait du dessin : crf.x côté paume (< 0 : creusé), crf.y côté
+   dos (> 0 : effacé) ; texCrease dit OÙ sont les traits. Au repos tous les angles valent 0, donc e = 0 partout et le
+   multiplicateur vaut exactement 1 : le dessin reste exact au pixel près.
+   Chaque sommet retient les DEUX articulations qui le commandent le plus (bosse le long de l'os, refermée de côté). */
+// Le dos s'étire de 0,29 %/° à la MCP, 0,35 à l'IPP, 0,20 à l'IPD (≈30 % en tout). La réserve de peau plissée d'une
+// jointure est à la mesure de ce qu'elle doit rendre : l'effacement est donc la part de course parcourue, ×1,1
+// (le dos est lisse un peu avant la butée, comme sur les photos 2374 et 2375).
+const CRMX=[95,110,85],CRMXT=[55,80];     // flexion maximale : MCP / IPP / IPD, puis MCP / IP du pouce (°)
+const CRJ=[],crAdd=(C,u,f0,sp,sq,sd,wp,wd,drv)=>{const U=u.clone().normalize();
+  CRJ.push({C,u:U,lat:U.clone().cross(f0).normalize(),sp:sp/SC,sq:sq/SC,sd:sd/SC,wp:wp/SC,wd:wd/SC,drv})};
+FING.forEach(k=>ARCJ[k].forEach((J,j)=>{
+  const g=HD.segs[k][j],n=g.wl.length,hw=g.wl.reduce((s,v,i)=>s+(v+g.wr[i])/2,0)/n;   // demi-largeur du doigt (px)
+  const key=['mcp','pip','dip'][j];
+  crAdd(J.C,J.u,J.f0,1.7*hw,1.25*hw,1.15*hw,j?1.3*hw:2.2*hw,1.3*hw,
+    f=>{const a=f?f[k][key]||0:0,t=1.1*a/CRMX[j];return [clamp(t,-.6,1),-clamp(t,-.5,1)]})}));
+['mcp','ip'].forEach((key,j)=>{const J=ARCJ.pouce[j],g=HD.segs.pouce[j],
+   hw=g.wl.reduce((s,v,i)=>s+(v+g.wr[i])/2,0)/g.wl.length;
+  crAdd(J.C,J.u,J.f0,1.6*hw,1.2*hw,1.1*hw,1.4*hw,1.3*hw,
+    f=>{const a=f?f.pouce[key]||0:0,t=1.1*a/CRMXT[j];return [clamp(t,-.6,1),-clamp(t,-.5,1)]})});
+// pli thénar : le plus constant de la paume (grande mobilité de la CMC). Son arc passe à ≈0,95 × la longueur du
+// métacarpien du pouce sur le côté ulnaire de celui-ci : on centre là une tache large, menée par « rapprocher » et « avancer ».
+{const n=LATM.clone().multiplyScalar(LATM.dot(toM(500,560,0).clone().sub(CMC))>0?1:-1);
+ crAdd(CMC.clone().addScaledVector(UM,.45*193.6/SC).addScaledVector(n,.95*193.6/SC),UM,Z,170,170,170,120,120,
+   f=>[0,-clamp((Math.max(f?f.pouce.rap:0,0)*.9+Math.max(f?f.pouce.av:0,0)*.45)/55,0,1)])}
+const CRN=CRJ.length,CRA=new Float32Array(2*CRN);
+const CRIP=new Uint8Array(2*MN),CRWP=new Uint8Array(2*MN),CRID=new Uint8Array(2*MN),CRWD=new Uint8Array(2*MN);
+{const bump=(J,x,y,z,dor)=>{const rx=x-J.C.x,ry=y-J.C.y,rz=z-J.C.z;
+   const t=rx*J.u.x+ry*J.u.y+rz*J.u.z,l=rx*J.lat.x+ry*J.lat.y+rz*J.lat.z,s=dor?J.sd:(t<0?J.sp:J.sq),q=t/s,w=dor?J.wd:J.wp;
+   return q*q>9?0:Math.exp(-q*q)*(1-smooth(w,1.9*w,Math.abs(l)))};
+ for(let i=0;i<MN;i++){const x=MREST[3*i],y=MREST[3*i+1],z=MREST[3*i+2];
+   for(let d=0;d<2;d++){let b0=0,i0=0,b1=0,i1=0;
+     for(let j=0;j<CRN;j++){const v=bump(CRJ[j],x,y,z,d===1);if(v>b0){b1=b0;i1=i0;b0=v;i0=j}else if(v>b1){b1=v;i1=j}}
+     const I=d?CRID:CRIP,W=d?CRWD:CRWP;I[2*i]=i0;I[2*i+1]=i1;W[2*i]=255*Math.min(b0,1);W[2*i+1]=255*Math.min(b1,1)}}}
 const gArc=x=>Math.abs(x)<1e-3?x/6+x*x*x/360:2/x-1/Math.tan(x/2);
 function arcState(J,q){ // décomposition « pivot + torsion » autour de l'axe u du doigt
   const u=J.u,tw=q.x*u.x+q.y*u.y+q.z*u.z,tn=Math.hypot(tw,q.w)||1;
@@ -444,6 +491,13 @@ function skinMesh(h,key,f){
       else if(ch===1)dqApply(BC,sh,p);else arcApply(S[0],sh,AH2[i],p);
       dx+=p[0]-x0;dy+=p[1]-y0;dz+=p[2]-z0}
     pa[o]=x0+dx;pa[o+1]=y0+dy;pa[o+2]=z0+dz}
+  // plis et rides (piste R) : effacement du trait dessiné, côté paume et côté dos, pour chaque sommet
+  let crAny=false;for(let j=0;j<CRN;j++){const v=CRJ[j].drv(f);CRA[2*j]=v[0];CRA[2*j+1]=v[1];if(v[0]||v[1])crAny=true}
+  if(crAny||!S_.crZ){S_.crZ=!crAny;const cf=S_.g.attributes.crf.array;
+    for(let i=0;i<MN;i++){const q=2*i;
+      const pp=(CRWP[q]*CRA[2*CRIP[q]+1]+CRWP[q+1]*CRA[2*CRIP[q+1]+1])*.498,dd=(CRWD[q]*CRA[2*CRID[q]]+CRWD[q+1]*CRA[2*CRID[q+1]])*.498;
+      cf[q]=pp<-127?-127:pp>127?127:pp;cf[q+1]=dd<-127?-127:dd>127?127:dd}
+    S_.g.attributes.crf.needsUpdate=true}
   S_.g.attributes.position.needsUpdate=true;S_.g.computeVertexNormals();
   const nn=S_.g.attributes.normal.array,hp=S_.hg.attributes.position.array,e=HULL/SC;for(let i=0;i<3*MN;i++)hp[i]=pa[i]+nn[i]*e;
   S_.hg.attributes.position.needsUpdate=true;

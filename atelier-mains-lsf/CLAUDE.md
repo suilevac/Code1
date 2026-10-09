@@ -53,6 +53,28 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   la paume au lieu de glisser dans son plan (colonne du pouce antérieure). La pronation explicite (`PRONA`)
   suit l'OPPOSITION, pas « avancer » : elle démarre avec l'abduction palmaire et ne culmine qu'une fois le
   pouce ramené vers les doigts (42° en abduction radiale → 99° en opposition). À (0, 0) : aucune pronation.
+- **Rides et plis qui suivent la flexion (piste R)** : les traits du dessin ne sont plus figés.
+  `rig3d.py` range les plis dans `texCrease`. Un pli ou une ride est un trait FIN plus sombre que l'aplat voisin,
+  l'ombre franche est une plage LARGE : une fermeture morphologique de rayon `CRR` = 5 px efface les traits et garde
+  l'ombre, donc `a = 1 - luminance dessinée / luminance fermée` isole le SEUL trait (0 sur l'aplat comme dans
+  l'ombre ; plancher `CRA0` = 0,07, sinon le grain JPEG du dessin paume se creuserait et la paume se salirait).
+  Canaux : R = trait de la paume, G = le même dilaté (pli élargi), B = aplat du dos (teinte du vert × clarté, comme
+  la peau des ongles), A = masque large des rides du dos. Ongle, trait d'ongle et taches exclus du dos.
+  `script.js` envoie au shader, par sommet, l'effacement `crf` du trait : x côté paume (< 0 : pli creusé et élargi),
+  y côté dos (> 0 : ride effacée) ; `vS` choisit le côté. Côté paume le trait est gris, un multiplicateur
+  `(1 - a(1-e))/(1-a)` suffit ; côté dos il est NOIR, donc on le remplace par l'aplat voisin (`mix`, qui va aussi
+  dans l'autre sens en hyperextension : la ride se marque). Les deux valent exactement l'identité à e = 0.
+  Le champ `crf` vient de deux articulations par sommet (bosse gaussienne le long de l'os, refermée sur les côtés,
+  plus large et biaisée vers le proximal côté paume) ; poids calculés une fois au chargement, le rafraîchissement
+  n'est qu'une somme de deux produits (attribut Int8 normalisé, non ré-envoyé quand tous les angles sont nuls).
+  Amplitude : le dos s'étire de 0,29 %/° à la MCP, 0,35 à l'IPP, 0,20 à l'IPD (≈30 % en tout) ; la réserve de peau
+  plissée d'une jointure étant à la mesure de ce qu'elle doit rendre, l'effacement est la part de course parcourue
+  (`CRMX` = 95/110/85°, ×1,1 : le dos est lisse un peu avant la butée, comme sur les photos 2374 et 2375).
+  Le pli thénar suit « rapprocher » et « avancer » du pouce ; les plis palmaires transversaux suivent les MCP.
+  **Au repos tous les angles valent 0, donc e = 0 et le multiplicateur vaut exactement 1 : `cas_0` et `cas_1` sont
+  identiques au pixel près.** Écarté : écarter les rides en décalant les UV (l'ongle glissait) — inutile, la peau
+  porte sa texture et l'étirement du déformeur en arc écarte DÉJÀ les rides dessinées ; filtrer la texture dans le
+  shader (min/max) — halo sur le bord de l'ombre franche, et un trait noir ne peut pas s'éclaircir en multipliant.
 - Essayé et écarté à l'intégration : partage linéaire des palmures entre deux doigts (essai C) par-dessus le déformeur en arc (fente/pointe entre annulaire et majeur, poing d'un seul doigt) ; trait épais tiré de la passe identité pour le pouce devant la paume (taches sur le contour dos).
 - Les photos de la main de l'utilisateur (profil, poing, pince, O…) ont servi de référence de volumes ; elles ne sont pas dans le dépôt.
 

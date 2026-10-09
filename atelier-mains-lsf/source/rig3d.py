@@ -614,11 +614,41 @@ mesh8['dz'] = base64.b64encode(np.round(DZ8 * 4).astype(np.int16).tobytes()).dec
 print('racines : |dz| max %.1f, sommets %d' % (np.abs(DZ8).max(), int((np.abs(DZ8) > .5).sum())))
 print('peau v8 : sommets', nV, 'triangles', len(ff))
 
+# ---------- piste R : carte des plis et des rides du dessin ----------
+# Dans les deux dessins, une ride ou un pli est un trait FIN plus sombre que l'aplat voisin ; l'ombre franche, elle,
+# est une plage LARGE. Une fermeture morphologique de rayon CRR efface les traits fins et garde l'ombre :
+# a = 1 - luminance dessinée / luminance fermée est la part de noir du SEUL trait (0 sur l'aplat comme dans l'ombre).
+# Le shader module ce trait avec l'angle de l'articulation voisine : dos étiré → le trait s'efface (a → 0) ;
+# paume pliée → il se creuse et s'élargit (canal B : le même trait dilaté). Au repos l'effacement vaut 0, donc le
+# multiplicateur vaut exactement 1 : le dessin ne bouge pas d'un pixel.
+# Seuil CRA0 : le dessin paume est un JPEG, son aplat a du grain ; sans plancher, tout le grain se creuserait
+# en pliant (la paume se salirait) et la carte ne se compresserait pas.
+CRR, CRAMAX, CRA0 = 5, .85, .07
+def crease_map(RGB, keep):
+    L = RGB[..., :3].mean(-1)
+    Lc = ndimage.grey_closing(L, size=(2 * CRR + 1, 2 * CRR + 1))
+    a = (1 - L / np.maximum(Lc, 1e-3) - CRA0) / (1 - CRA0)
+    return np.where(keep, np.clip(a, 0, CRAMAX), 0), Lc
+crkeep = M8 & (d8 > 5)                      # ni hors de la main, ni dans le dégradé laissé par le contour retiré
+crF, _ = crease_map(P_tex, crkeep)          # paume : plis de flexion (doigts, paume, thénar, poignet)
+# dos : l'ongle, son trait et les taches de trait à sa base ne sont pas des rides (le shader les trace lui-même)
+crB, LcB = crease_map(DA, crkeep & (sdN > 18) & ~ndimage.binary_dilation(erase | ticks, iterations=10))
+crW = ndimage.gaussian_filter(ndimage.grey_dilation(crF, size=(7, 7)), 2.0)   # pli creusé : trait élargi
+# Côté dos, la ride est un trait NOIR : l'éclaircir en multipliant ne donnerait qu'un pointillé (0 × k = 0). On la
+# remplace par l'aplat voisin, rangé comme la peau des ongles (teinte du vert × clarté, canal B) sous un masque large
+# (canal A) : hors de la ride l'aplat voisin EST le dessin, donc un masque trop large ne change rien.
+crBM = ndimage.gaussian_filter(np.clip(3.0 * ndimage.grey_dilation(crB, size=(7, 7)), 0, 1), 1.2)
+crBL = np.clip(200 * LcB / (GREEN.mean() / 255), 0, 255)
+print('plis : pixels de trait paume %d, dos %d (masque %d), a max %.2f/%.2f'
+      % ((crF > .05).sum(), (crB > .05).sum(), (crBM > .05).sum(), crF.max(), crB.max()))
+
 def png_b64(arr):
     img = Image.fromarray((np.clip(arr, 0, 1) * 255).round().astype(np.uint8), 'RGBA')
     b = io.BytesIO(); img.save(b, 'PNG', optimize=True); return 'data:image/png;base64,' + base64.b64encode(b.getvalue()).decode()
 def png_rgb(arr):
     b = io.BytesIO(); Image.fromarray(arr.astype(np.uint8), 'RGB').save(b, 'PNG', optimize=True); return 'data:image/png;base64,' + base64.b64encode(b.getvalue()).decode()
+def png_rgba(arr):
+    b = io.BytesIO(); Image.fromarray(arr.astype(np.uint8), 'RGBA').save(b, 'PNG', optimize=True); return 'data:image/png;base64,' + base64.b64encode(b.getvalue()).decode()
 b64 = lambda a: base64.b64encode(np.ascontiguousarray(a).tobytes()).decode()
 data = {'W': W, 'H': H, 'chains': CP, 'segs': segs,
         'palm': {'n': int(len(verts)), 'xy': b64(verts.astype(np.int16)), 'zf': b64(np.round(zf * 8).astype(np.int16)), 'zb': b64(np.round(zb * 8).astype(np.int16)), 'idx': b64(tris), 'zscale': 8},
@@ -626,6 +656,8 @@ data = {'W': W, 'H': H, 'chains': CP, 'segs': segs,
         # ongles : R = distance signée au bord (px, codée 128 + 12·d), G/B = bouts de trait à effacer ; couleur de l'aplat, trait
         'texNail': png_rgb(np.clip(np.round(np.stack([128 + 12 * sdN, 255 * tickW, 200 * tickB], -1)), 0, 255)),
         'texNailE': png_rgb(np.repeat(np.clip(np.round(255 * nailE), 0, 255)[..., None], 3, -1)),   # poids du trait de l'ongle
+        # plis et rides : R = trait de la paume, G = le même élargi (pli creusé), B = aplat du dos, A = masque des rides du dos
+        'texCrease': png_rgba(np.clip(np.round(np.stack([255 * crF, 255 * crW, crBL, 255 * crBM], -1)), 0, 255)),
         'nail': {'col': [float(x) for x in NAILC], 'lw': NAILLW, 'skin': [float(x) for x in GREEN / 255 / 200]},
         'mesh': mesh8,
         # carte d'épaisseur de la paume (collisions : un doigt ne traverse pas la paume)
