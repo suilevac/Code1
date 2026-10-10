@@ -253,6 +253,7 @@ const HULL_FS=`uniform float opacity;uniform float push;uniform sampler2D tId;un
 const hullMatProto=()=>new THREE.ShaderMaterial({uniforms:{opacity:{value:1},push:{value:0},tId:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2(1,1)},cn:{value:.5},cf:{value:500}},
   vertexShader:HULL_VS,fragmentShader:HULL_FS,side:THREE.BackSide,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:4});
 const HPUSH=1.8;   // recul de la coque (× épaisseur du contour)
+let EDMAX=2.6;     // marche de profondeur au-delà de laquelle on ne trace plus de trait intérieur (unités)
 function makeHand(skeletonOnly){
   const root=new THREE.Group(),mats=[],chainMats={},hullMat=hullMatProto(),meshes=[];mats.push(hullMat);
   const addSkin=(geos,key)=>{const f=skinMat(false),b=skinMat(true);mats.push(f,b);chainMats[key]=[f,b];if(key==='paume')[f,b].forEach(m=>m.side=THREE.DoubleSide);
@@ -456,6 +457,33 @@ const CRIP=new Uint8Array(2*MN),CRWP=new Uint8Array(2*MN),CRID=new Uint8Array(2*
    for(let d=0;d<2;d++){let b0=0,i0=0,b1=0,i1=0;
      for(let j=0;j<CRN;j++){const v=bump(CRJ[j],x,y,z,d===1);if(v>b0){b1=b0;i1=i0;b0=v;i0=j}else if(v>b1){b1=v;i1=j}}
      const I=d?CRID:CRIP,W=d?CRWD:CRWP;I[2*i]=i0;I[2*i+1]=i1;W[2*i]=255*Math.min(b0,1);W[2*i+1]=255*Math.min(b1,1)}}}
+/* ---------- relief des jointures (piste D) : la bosse dorsale sort avec la flexion ----------
+   Sur une vraie main pliée, le dos d'une articulation n'est pas un tuyau lisse : la tête de l'os saille et la peau
+   s'y tend. Dans le poing, les quatre têtes métacarpiennes font quatre bosses nettes et les phalanges repliées font
+   des marches (photos 2357, 2364, 2374). Le déformeur en arc, lui, donne un cylindre parfait : on ajoute donc un
+   relèvement local de la peau du CÔTÉ DOS, centré sur l'articulation, dont la hauteur suit l'angle de flexion.
+   Le déplacement est posé AVANT l'arc (comme mesh.dz), donc porté par lui : la bosse reste sur la jointure quand
+   le doigt tourne. Au repos tous les angles valent 0 : hauteur nulle, le dessin ne bouge pas d'un pixel.
+   Direction : −f0 de l'articulation (le côté extenseur), donc exactement −z pour les doigts. */
+const KNK=.14;                 // hauteur de la bosse à flexion maximale (× demi-largeur du segment)
+const KNQ=.25/255;             // pas de quantification de la hauteur (unités moteur)
+let KNG=1;                     // multiplicateur global (mise au point : window.__atelier.setKnk)
+const KNJ=[],knAdd=(C,u,f0,s,w,rd,amp,drv)=>{const U=u.clone().normalize(),F=f0.clone().normalize();
+  KNJ.push({C,u:U,f:F,lat:U.clone().cross(F).normalize(),s,w,rd,amp,drv})};
+const hwOf=g=>g.wl.reduce((a,v,i)=>a+(v+g.wr[i])/2,0)/g.wl.length/SC;
+FING.forEach(k=>ARCJ[k].forEach((J,j)=>{const hw=hwOf(HD.segs[k][j]),key=['mcp','pip','dip'][j];
+  // la tête du métacarpien est plus large et plus saillante que celles des phalanges
+  knAdd(J.C,J.u,J.f0,(j?1:1.35)*hw,1.2*hw,J.rd,KNK*(j===0?1.35:j===1?1:.7)*hw,
+    f=>clamp((f?f[k][key]||0:0)/CRMX[j],0,1))}));
+['mcp','ip'].forEach((key,j)=>{const J=ARCJ.pouce[j],hw=hwOf(HD.segs.pouce[j]);
+  knAdd(J.C,J.u,J.f0,hw,1.2*hw,J.rd,KNK*.8*hw,f=>clamp((f?f.pouce[key]||0:0)/CRMXT[j],0,1))});
+const KNN=KNJ.length,KNA=new Float32Array(KNN),KNI=new Uint8Array(2*MN),KNW=new Uint8Array(2*MN);
+{const bump=(J,x,y,z)=>{const rx=x-J.C.x,ry=y-J.C.y,rz=z-J.C.z,q=(rx*J.u.x+ry*J.u.y+rz*J.u.z)/J.s;
+   if(q*q>9)return 0;const d=rx*J.f.x+ry*J.f.y+rz*J.f.z,l=rx*J.lat.x+ry*J.lat.y+rz*J.lat.z;
+   return Math.exp(-q*q)*(1-smooth(J.w,1.7*J.w,Math.abs(l)))*smooth(0,.55*J.rd,-d)};   // côté dos seulement
+ for(let i=0;i<MN;i++){const x=MREST[3*i],y=MREST[3*i+1],z=MREST[3*i+2];let b0=0,i0=0,b1=0,i1=0;
+   for(let j=0;j<KNN;j++){const v=bump(KNJ[j],x,y,z)*KNJ[j].amp;if(v>b0){b1=b0;i1=i0;b0=v;i0=j}else if(v>b1){b1=v;i1=j}}
+   KNI[2*i]=i0;KNI[2*i+1]=i1;KNW[2*i]=Math.min(255,b0/KNQ);KNW[2*i+1]=Math.min(255,b1/KNQ)}}
 const gArc=x=>Math.abs(x)<1e-3?x/6+x*x*x/360:2/x-1/Math.tan(x/2);
 function arcState(J,q){ // décomposition « pivot + torsion » autour de l'axe u du doigt
   const u=J.u,tw=q.x*u.x+q.y*u.y+q.z*u.z,tn=Math.hypot(tw,q.w)||1;
@@ -492,8 +520,13 @@ function skinMesh(h,key,f){
   const ST={};CHN.forEach(k=>ST[k]=ARCJ[k].map((J,j)=>arcState(J,h.joints[k][j].quaternion)));
   const BC=boneDQ1(h,h.joints.cmc,CMC),pa=S_.g.attributes.position.array,p=[0,0,0],K=1/65535;
   pa.set(MREST);if(gR)for(let i=0;i<MN;i++)pa[3*i+2]+=gR*MDZ[i];   // racines sans col (voir MDZ)
+  // relief des jointures : bosse dorsale proportionnelle à la flexion, posée avant l'arc qui la transporte
+  {let knAny=false;for(let j=0;j<KNN;j++){const v=KNG*KNJ[j].drv(f);KNA[j]=v;if(v>0)knAny=true}
+   if(knAny)for(let i=0;i<MN;i++){const q=2*i,a=KNW[q]*KNA[KNI[q]],b=KNW[q+1]*KNA[KNI[q+1]];if(!(a||b))continue;
+     const o=3*i;if(a){const F=KNJ[KNI[q]].f,v=a*KNQ;pa[o]-=F.x*v;pa[o+1]-=F.y*v;pa[o+2]-=F.z*v}
+     if(b){const F=KNJ[KNI[q+1]].f,v=b*KNQ;pa[o]-=F.x*v;pa[o+1]-=F.y*v;pa[o+2]-=F.z*v}}}
   for(let i=0;i<MN;i++){const c1=ACH[2*i];if(!c1)continue;
-    const o=3*i,c2=ACH[2*i+1],x0=MREST[o],y0=MREST[o+1],z0=pa[o+2];let dx=0,dy=0,dz=0;
+    const o=3*i,c2=ACH[2*i+1],x0=pa[o],y0=pa[o+1],z0=pa[o+2];let dx=0,dy=0,dz=0;
     for(let c=0;c<2;c++){const ch=c?c2:c1;if(!ch)continue;const S=ST[CHN[ch-1]],sh=ASH[2*i+c]*K;p[0]=x0;p[1]=y0;p[2]=z0;
       if(c===0){const ta=ATA[2*i]*K,tb=ATA[2*i+1]*K;
         if(ch===1){arcApply(S[1],tb,AH1[o+1],p);arcApply(S[0],ta,AH1[o],p);dqApply(BC,sh,p)}
@@ -616,20 +649,19 @@ let idRT=null;
 function ensureRT(w,h){if(idRT&&idRT.width===w&&idRT.height===h)return;if(idRT){idRT.depthTexture.dispose();idRT.dispose()}
   idRT=new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true});idRT.depthTexture=new THREE.DepthTexture(w,h);idRT.depthTexture.type=THREE.UnsignedIntType}
 const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-  uniforms:{tId:{value:null},tDepth:{value:null},texel:{value:new THREE.Vector2()},cn:{value:.5},cf:{value:500},rad:{value:2}},
+  uniforms:{tId:{value:null},tDepth:{value:null},texel:{value:new THREE.Vector2()},cn:{value:.5},cf:{value:500},rad:{value:2},emax:{value:EDMAX}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
-  fragmentShader:`uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 texel;uniform float cn;uniform float cf;uniform float rad;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 texel;uniform float cn;uniform float cf;uniform float rad;uniform float emax;varying vec2 vUv;
   float lin(float d){float z=d*2.-1.;return 2.*cn*cf/(cf+cn-z*(cf-cn));}
+  // un trait intérieur là où la partie d'en face passe derrière
+  bool sep(vec4 c,float d0,vec2 p){vec4 q=texture2D(tId,p);if(q.a<.5)return false;
+    float dn=lin(texture2D(tDepth,p).r);
+    if(abs(q.r-c.r)>.02){bool fingers=c.g>.5&&q.g>.5;float thr=fingers?.12:.3;
+      // au-delà de emax, la partie d'en face n'est pas « derrière » mais au fond d'une crevasse : rien à tracer
+      return dn-d0<emax&&(dn-d0>thr||(fingers&&(dn-d0>.02||(abs(dn-d0)<=.02&&c.r<q.r))));}
+    return c.g>.5&&dn-d0>.7&&dn-d0<emax;}                 // un doigt replié devant lui-même
   void main(){vec4 c=texture2D(tId,vUv);if(c.a<.5)discard;float d0=lin(texture2D(tDepth,vUv).r);float e=0.;
-    for(int i=0;i<12;i++){float a=float(i)*.5235988;vec2 o=vec2(cos(a),sin(a))*rad*texel;vec4 q=texture2D(tId,vUv+o);if(q.a<.5)continue;
-      float dn=lin(texture2D(tDepth,vUv+o).r);
-      if(abs(q.r-c.r)>.02){
-        // deux parties différentes : trait du côté de celle qui passe devant
-        bool fingers=c.g>.5&&q.g>.5;
-        float thr=(c.g>.5&&q.g>.5)?.12:.3;   // doigt sur paume : seulement s'il passe vraiment devant (pas à la jointure)
-        if(dn-d0>thr||(fingers&&(dn-d0>.02||(abs(dn-d0)<=.02&&c.r<q.r))))e=1.;
-      }else if(c.g>.5&&dn-d0>.7)e=1.; // un doigt replié devant lui-même
-    }
+    for(int i=0;i<12;i++){float a=float(i)*.5235988;if(sep(c,d0,vUv+vec2(cos(a),sin(a))*rad*texel))e=1.;}
     if(e<.5)discard;gl_FragColor=vec4(.067,.067,.067,1.);}`});
 const edgeQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),edgeMat),edgeScene=new THREE.Scene(),edgeCam=new THREE.Camera();edgeScene.add(edgeQuad);
 function renderAll(){
@@ -647,7 +679,14 @@ function renderAll(){
   hu.res.value.set(size.x,size.y);hu.cn.value=camera.near;hu.cf.value=camera.far;
   renderer.render(scene,camera);
   edgeMat.uniforms.tId.value=idRT.texture;edgeMat.uniforms.tDepth.value=idRT.depthTexture;edgeMat.uniforms.texel.value.set(1/size.x,1/size.y);
-  edgeMat.uniforms.rad.value=1.6*renderer.getPixelRatio();edgeMat.uniforms.cn.value=camera.near;edgeMat.uniforms.cf.value=camera.far;
+  // poids de trait CONSTANT : le rayon du détecteur suit l'épaisseur RÉELLE du contour (la coque, épaisse de HULL
+  // en unités du modèle) au lieu d'être figé en pixels d'écran. De près, le trait intérieur n'est plus un filet gris
+  // posé à côté du gros trait noir de la coque (trait « fin et dédoublé ») : les deux se rejoignent en un seul trait.
+  // Comme mesh.dz, la correction n'entre qu'une fois la pose quittée (gR) : « Dessin » reste exact au pixel près.
+  const hd=Math.max(camera.position.distanceTo(controls.target),1e-3),r0=1.6*renderer.getPixelRatio();
+  const ppu=size.y/2/(hd*Math.tan(camera.fov*Math.PI/360));          // pixels de rendu par unité du modèle
+  edgeMat.uniforms.rad.value=r0+main.skin.gR*(clamp(.4*HULL/SC*ppu,r0,5.5)-r0);
+  edgeMat.uniforms.emax.value=EDMAX;edgeMat.uniforms.cn.value=camera.near;edgeMat.uniforms.cf.value=camera.far;
   renderer.autoClear=false;renderer.render(edgeScene,edgeCam);renderer.autoClear=true;
 }
 let playing=null;
@@ -857,7 +896,9 @@ function cropAlpha(src){const c=document.createElement('canvas');c.width=src.wid
   if(x1<0)return c;const pad=Math.round(c.width*.02);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(c.width,x1+pad);y1=Math.min(c.height,y1+pad);
   const o=document.createElement('canvas');o.width=x1-x0;o.height=y1-y0;o.getContext('2d').drawImage(c,x0,y0,o.width,o.height,0,0,o.width,o.height);return o}
 
-window.__atelier={renderer,setPron:v=>{PRONA=v;main.skin.key=''},S,refresh,main,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll};
+window.__atelier={renderer,setPron:v=>{PRONA=v;main.skin.key=''},setKnk:v=>{KNG=v;main.skin.key=''},setEdmax:v=>{EDMAX=v;edgeMat.uniforms.emax.value=v},S,refresh,main,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll,
+  // surface de mise au point (balayage anti-déformation, mesures) : rien de tout cela n'est utilisé par l'interface
+  applyPose,settle,lerpF,palmH,SC,HD,MN,NT,MREST,MINDEX,ALL,FING,SEGW,probe,thumbReach,REACH};
 refresh();
 })();
 </script>
