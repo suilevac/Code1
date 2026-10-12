@@ -1,0 +1,1594 @@
+<title>Le rituel des nombres</title>
+<meta name="description" content="Rituel quotidien de numération pour le Dispositif 1 : lire et écrire les nombres avec le code de lecture de la classe, puis travailler la droite graduée.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   Mise en page : bandeau collant (rituel + onglets) ; une scène
+   blanche unique au centre (la « feuille »), qui garde le papier
+   clair dans les deux thèmes pour que les couleurs du code
+   restent justes ; les actions du maître sous la scène.
+   ============================================================ */
+:root{
+  --fond:#e9edef; --fond-2:#dde4e8; --papier:#ffffff;
+  --encre:#1b2127; --doux:#5b6a75; --trait:#ccd5da;
+  --accent:#1878b4; --accent-fonce:#0f5880; --accent-pale:#e3f0f8;
+  --or:#9a6508; --or-pale:#f8e8c0;
+  --vert:#178944; --vert-pale:#dff2e5;
+  --rouge:#c92d33; --rouge-pale:#fbe4e4;
+  --rayon:16px;
+  --ombre:0 1px 2px rgba(14,30,40,.06), 0 10px 30px rgba(14,30,40,.08);
+  --titre:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --lecture:'Andika',Verdana,system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --fond:#101619; --fond-2:#182026; --papier:#1a2228;
+    --encre:#e7edf1; --doux:#9bacb7; --trait:#2d3a42;
+    --accent:#5cb0e4; --accent-fonce:#8acdf5; --accent-pale:#16313f;
+    --or:#e0ab4a; --or-pale:#3a2d12;
+    --vert:#54c483; --vert-pale:#14301f;
+    --rouge:#ef7b7f; --rouge-pale:#331618;
+    --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 30px rgba(0,0,0,.4);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --fond:#101619; --fond-2:#182026; --papier:#1a2228;
+  --encre:#e7edf1; --doux:#9bacb7; --trait:#2d3a42;
+  --accent:#5cb0e4; --accent-fonce:#8acdf5; --accent-pale:#16313f;
+  --or:#e0ab4a; --or-pale:#3a2d12;
+  --vert:#54c483; --vert-pale:#14301f;
+  --rouge:#ef7b7f; --rouge-pale:#331618;
+  --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 30px rgba(0,0,0,.4);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--fond); color:var(--encre);
+  font-family:var(--lecture); font-size:16px; line-height:1.5;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,.titre{font-family:var(--titre); text-wrap:balance}
+button{font:inherit}
+:focus-visible{outline:3px solid var(--accent); outline-offset:2px; border-radius:6px}
+
+/* ---------- bandeau ---------- */
+.tete{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:30;
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+  padding:12px 20px; background:var(--papier);
+  border-bottom:1px solid var(--trait);
+}
+.tete__id{flex:1 1 220px; min-width:0}
+.tete h1{margin:0; font-size:19px; letter-spacing:-.01em}
+.tete__sous{margin:1px 0 0; font-size:13px; color:var(--doux)}
+
+.compteur{display:flex; align-items:center; gap:8px}
+.compteur__corps{
+  display:flex; flex-direction:column; align-items:center; line-height:1;
+  min-width:74px; padding:4px 8px; border-radius:12px; background:var(--fond-2);
+}
+.compteur__corps label{font-family:var(--titre); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--doux)}
+.compteur input{
+  width:68px; border:0; background:transparent; color:inherit; text-align:center;
+  font-family:var(--titre); font-size:28px; font-weight:700; padding:2px 0;
+  -moz-appearance:textfield;
+}
+.compteur input::-webkit-outer-spin-button,.compteur input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+.rond{
+  width:38px; height:38px; border-radius:50%; cursor:pointer;
+  border:1px solid var(--trait); background:var(--papier); color:var(--encre);
+  font-size:20px; line-height:1; display:grid; place-items:center;
+}
+.rond:hover{background:var(--fond-2)}
+
+.onglets{display:flex; gap:6px; flex:1 1 100%; width:100%; min-width:0; order:3}
+.onglets button{
+  flex:1 1 0; min-width:0; cursor:pointer; padding:10px 14px;
+  border:1px solid var(--trait); background:var(--papier); color:var(--doux);
+  border-radius:12px; font-family:var(--titre); font-size:15px; font-weight:500;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.onglets button[aria-selected="true"]{
+  background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700;
+}
+.reglages{display:flex; align-items:center; gap:14px; font-size:13px; color:var(--doux)}
+.bascule{display:inline-flex; align-items:center; gap:6px; cursor:pointer; user-select:none}
+.bascule input{width:16px; height:16px; accent-color:var(--accent); margin:0}
+.court{display:none}
+@media (max-width:620px){ .long{display:none} .court{display:inline} }
+
+/* ---------- corps ---------- */
+main{padding:18px 20px 28px; max-width:1060px; margin:0 auto}
+.palier{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px;
+  margin:0 0 14px;
+}
+.palier__etiq{
+  font-family:var(--titre); font-size:11px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--accent-fonce);
+  background:var(--accent-pale); border-radius:999px; padding:4px 10px;
+}
+.palier__nom{font-family:var(--titre); font-size:17px; font-weight:700; margin:0}
+.palier__note{flex:1 1 100%; margin:2px 0 0; font-size:13.5px; color:var(--doux); max-width:72ch}
+
+.pastilles{display:flex; gap:7px; margin:0 0 12px; flex-wrap:wrap}
+.pastille{
+  width:26px; height:26px; border-radius:50%; cursor:pointer; padding:0;
+  border:2px solid var(--trait); background:var(--papier); color:var(--doux);
+  font-family:var(--titre); font-size:12px; font-weight:700; display:grid; place-items:center;
+}
+.pastille[aria-current="true"]{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-pale)}
+.pastille[data-etat="ok"]{background:var(--vert); border-color:var(--vert); color:#fff}
+.pastille[data-etat="revoir"]{background:var(--rouge-pale); border-color:var(--rouge); color:var(--rouge)}
+
+/* ---------- la scène (feuille blanche, toujours claire) ---------- */
+.scene{
+  /* la feuille garde le papier clair dans les deux thèmes : les couleurs du code doivent rester justes */
+  --papier:#fff; --encre:#171c21; --trait:#dde3e8; --doux:#5f6d78; --fond-2:#f1f4f6;
+  --accent:#1878b4; --accent-fonce:#0f5880; --accent-pale:#e3f0f8;
+  --or:#9a6508; --or-pale:#f8e8c0;
+  --vert:#178944; --vert-pale:#dff2e5; --rouge:#c92d33; --rouge-pale:#fbe4e4;
+  color-scheme:light;
+  background:var(--papier); color:var(--encre);
+  border:1px solid var(--trait); border-radius:var(--rayon); box-shadow:var(--ombre);
+  padding:22px 24px 26px; position:relative; overflow:hidden;
+}
+.consigne{
+  margin:0 0 18px; font-family:var(--titre); font-size:clamp(16px,2.4vw,21px); font-weight:700;
+  color:var(--encre);
+}
+.consigne em{color:var(--accent); font-style:normal}
+
+/* le nombre écrit en lettres, codé */
+.mot{
+  font-family:var(--lecture); line-height:1.9; letter-spacing:.01em; word-spacing:.12em;
+  font-size:clamp(30px,7.2vw,68px); margin:0 0 34px; text-align:center;
+}
+.seg{position:relative; display:inline-block; white-space:nowrap; border-radius:10px; padding:0 .06em; transition:background .3s}
+.seg--vu{background:#fff8e3}
+.seg__val{
+  position:absolute; left:50%; top:100%; transform:translate(-50%,2px);
+  font-family:var(--titre); font-size:.26em; font-weight:700; color:var(--or);
+  background:var(--or-pale); border-radius:999px; padding:.1em .5em; white-space:nowrap;
+}
+.sep{display:inline-block; white-space:pre}
+
+.tk{position:relative; display:inline-block; line-height:1}
+.tk--v{color:var(--c)}
+.tk--rond .tk__t{padding:0 .13em}
+.tk--rond{margin:0 .04em}
+.tk__forme{position:absolute; left:0; right:0; top:.05em; bottom:.03em; overflow:visible; pointer-events:none}
+.tk--muette .tk__t{text-decoration:underline; text-decoration-thickness:.05em; text-underline-offset:.14em; color:#8c959f}
+.tk--siff .tk__t{text-decoration:underline double; text-decoration-thickness:.045em; text-underline-offset:.13em}
+
+/* la décomposition */
+.decomp{
+  display:flex; flex-wrap:wrap; gap:6px 10px; justify-content:center; align-items:center;
+  margin:22px 0 4px; font-family:var(--titre); font-size:clamp(17px,2.6vw,24px); font-weight:700; color:var(--doux);
+}
+.decomp b{color:var(--encre); font-weight:700}
+.decomp .plus{color:var(--doux); font-weight:500}
+
+/* les cases c / d / u */
+.cases{display:flex; gap:10px; justify-content:center; margin:26px 0 0}
+.case{display:flex; flex-direction:column; align-items:center; gap:6px}
+.case__nom{font-family:var(--titre); font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--doux)}
+.case__boite{
+  width:clamp(58px,13vw,96px); height:clamp(72px,16vw,116px);
+  border:3px solid var(--trait); border-radius:12px; background:var(--fond-2);
+  display:grid; place-items:center; position:relative;
+}
+.case__boite input{
+  width:100%; height:100%; border:0; background:transparent; text-align:center;
+  font-family:var(--lecture); font-weight:700; font-size:clamp(38px,9vw,70px);
+  color:var(--encre); padding:0; border-radius:10px;
+}
+.case__boite input:focus{outline:none; background:#eef7fd}
+.case--pleine .case__boite{border-color:var(--accent); background:#fff}
+.case--juste .case__boite{border-color:var(--vert); background:#f3fbf6}
+.case--faux .case__boite{border-color:var(--rouge); background:#fdf2f2}
+.chif{font-family:var(--lecture); font-weight:700; font-size:clamp(38px,9vw,70px); line-height:1; display:inline-block}
+.case--secret .case__boite{border-color:#b5790a; background:#fffaf0}
+.case__secret{
+  font-family:var(--titre); font-size:13px; font-weight:700; color:var(--or);
+  background:var(--or-pale); border-radius:999px; padding:2px 9px; margin-top:-2px;
+}
+
+/* le secret du 7 et du 9 */
+.secret{
+  margin:20px auto 0; max-width:62ch; text-align:center;
+  background:#fffaf0; border:1px dashed #d9ad53; border-radius:14px; padding:12px 16px;
+}
+.secret h3{margin:0 0 4px; font-size:14px; letter-spacing:.06em; text-transform:uppercase; color:var(--or)}
+.secret p{margin:0; font-size:clamp(15px,2.2vw,18px)}
+.secret .gold{color:#8a5a06; font-weight:700; background:var(--or-pale); border-radius:6px; padding:0 .25em}
+
+/* la règle du s */
+.regle{
+  margin:18px auto 0; max-width:66ch;
+  background:var(--accent-pale); border:1px solid #bcdcf0; border-radius:14px; padding:12px 16px;
+}
+.regle h3{margin:0 0 4px; font-size:14px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent-fonce)}
+.regle p{margin:0; font-size:clamp(15px,2.2vw,18px)}
+.regle .ess{color:#b1182a; font-weight:700; background:#fde7ea; border-radius:6px; padding:0 .2em}
+.regle .pass{color:var(--doux); text-decoration:line-through}
+
+/* la saisie de la réponse en lettres */
+.reponse{margin:22px auto 0; max-width:52ch; display:flex; flex-direction:column; gap:6px}
+.reponse label{font-family:var(--titre); font-size:13px; font-weight:700; color:var(--doux)}
+.reponse input{
+  font-family:var(--lecture); font-size:clamp(18px,3.2vw,26px); padding:10px 12px;
+  border:2px solid var(--trait); border-radius:12px; background:var(--fond-2); color:var(--encre);
+}
+.reponse input:focus{outline:none; border-color:var(--accent); background:#fff}
+.verdict{margin:14px 0 0; text-align:center; font-family:var(--titre); font-weight:700; font-size:clamp(15px,2.3vw,19px)}
+.verdict--ok{color:var(--vert)} .verdict--presque{color:var(--or)} .verdict--non{color:var(--rouge)}
+
+/* ---------- droite graduée ---------- */
+.droite{margin:14px 0 0}
+.droite svg{display:block; width:100%; height:auto; overflow:visible}
+.encadre{
+  display:flex; align-items:center; justify-content:center; gap:clamp(8px,2vw,18px);
+  font-family:var(--lecture); font-size:clamp(28px,6.5vw,56px); font-weight:700; margin:8px 0 0;
+}
+.encadre .trou{
+  min-width:clamp(70px,15vw,120px); border-bottom:4px solid var(--trait); border-radius:3px;
+  text-align:center; color:var(--accent); padding:0 .1em;
+}
+.encadre .trou--plein{border-color:var(--accent)}
+.encadre .signe{color:var(--doux); font-size:.8em}
+.etiq-nbs{display:flex; flex-wrap:wrap; gap:clamp(8px,2vw,16px); justify-content:center; margin:10px 0 0}
+.etiq{
+  font-family:var(--lecture); font-weight:700; font-size:clamp(24px,5.4vw,46px);
+  background:var(--fond-2); border:3px solid var(--trait); border-radius:14px;
+  padding:.1em .45em; transition:background .25s, border-color .25s;
+}
+.etiq--range{background:#fff; border-color:var(--accent)}
+.etiq--piege{border-style:dashed}
+.ordre{display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:clamp(6px,1.6vw,14px); margin:18px 0 0}
+.ordre .signe{font-family:var(--titre); font-size:clamp(22px,4.6vw,38px); font-weight:700; color:var(--accent)}
+
+/* ---------- actions ---------- */
+.actions{display:flex; flex-wrap:wrap; gap:10px; margin:18px 0 0; align-items:center}
+.btn{
+  cursor:pointer; padding:12px 20px; border-radius:13px; border:1px solid var(--trait);
+  background:var(--papier); color:var(--encre); font-family:var(--titre); font-weight:700; font-size:16px;
+}
+.btn:hover{background:var(--fond-2)}
+.btn--plein{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn--plein:hover{background:var(--accent-fonce)}
+.btn--ok{background:var(--vert); border-color:var(--vert); color:#fff}
+.btn--ok:hover{filter:brightness(.94)}
+.btn--non{background:var(--rouge-pale); border-color:var(--rouge); color:var(--rouge)}
+.btn--non:hover{filter:brightness(.97)}
+.btn--fin{margin-left:auto}
+.btn[disabled]{opacity:.45; cursor:default}
+
+/* ---------- bilan ---------- */
+.bilan{
+  background:var(--papier); border:1px solid var(--trait); border-radius:var(--rayon);
+  box-shadow:var(--ombre); padding:26px; text-align:center;
+}
+.bilan h2{margin:0 0 6px; font-size:clamp(20px,3.4vw,28px)}
+.bilan__score{font-family:var(--titre); font-size:clamp(34px,8vw,62px); font-weight:700; color:var(--vert); line-height:1.1}
+.bilan p{margin:6px auto 0; color:var(--doux); max-width:52ch}
+.bilan .actions{justify-content:center}
+
+/* ---------- pied ---------- */
+.pied{
+  max-width:1060px; margin:0 auto; padding:0 20px 34px;
+  display:flex; flex-wrap:wrap; gap:12px 20px; align-items:center;
+  font-size:13px; color:var(--doux);
+}
+.journal{display:flex; align-items:center; gap:5px}
+.journal i{
+  width:12px; height:12px; border-radius:50%; background:var(--trait); display:inline-block;
+}
+.journal i[data-note="3"]{background:var(--vert)}
+.journal i[data-note="2"]{background:#9cc96f}
+.journal i[data-note="1"]{background:#e2b23c}
+.journal i[data-note="0"]{background:var(--rouge)}
+.liens{display:flex; gap:14px; margin-left:auto; flex-wrap:wrap}
+.liens button{background:none; border:0; color:var(--accent); cursor:pointer; padding:0; font-size:13px; text-decoration:underline}
+
+/* ---------- applaudissements ---------- */
+.bravo{
+  position:fixed; inset:0; z-index:60; display:grid; place-items:center; pointer-events:none;
+}
+.bravo__mot{
+  font-family:var(--titre); font-weight:700; font-size:clamp(44px,12vw,120px); color:#fff;
+  background:var(--vert); border-radius:24px; padding:.08em .4em;
+  box-shadow:0 18px 50px rgba(0,0,0,.25); transform:scale(.5); opacity:0;
+}
+.main-qui-applaudit{position:fixed; font-size:40px; z-index:59; pointer-events:none; will-change:transform}
+.fantome{
+  position:fixed; z-index:61; pointer-events:none;
+  font-family:var(--lecture); font-weight:700; font-size:44px; color:var(--accent);
+}
+.fantome--or{color:#9a6508}
+
+/* ---------- fenêtres ---------- */
+dialog{
+  background:var(--papier); color:var(--encre); border:1px solid var(--trait);
+  border-radius:16px; padding:0; box-shadow:var(--ombre); max-width:min(760px,94vw); width:94vw;
+}
+dialog::backdrop{background:rgba(10,20,26,.5)}
+.dlg__barre{
+  position:sticky; top:0; display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:14px 18px; background:var(--papier); border-bottom:1px solid var(--trait);
+}
+.dlg__barre strong{font-family:var(--titre); font-size:17px}
+.dlg__corps{padding:16px 18px 22px; max-height:70vh; overflow:auto}
+.dlg__corps h3{margin:18px 0 6px; font-size:15px}
+.dlg__corps h3:first-child{margin-top:0}
+.dlg__corps p,.dlg__corps li{font-size:14.5px; max-width:70ch}
+.dlg__corps ol,.dlg__corps ul{padding-left:20px}
+.memo{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 0}
+.memo__case{
+  border:1px solid var(--trait); border-radius:10px; padding:8px 10px; min-width:92px; text-align:center;
+  background:#fff; color:#171c21;
+}
+.memo__case .gr{font-family:var(--lecture); font-size:24px; font-weight:700; line-height:1.2}
+.memo__case .nom{font-size:11.5px; color:#5f6d78; margin-top:2px}
+.echelle{width:100%; border-collapse:collapse; font-size:14px; margin-top:6px}
+.echelle th,.echelle td{text-align:left; padding:6px 8px; border-bottom:1px solid var(--trait); vertical-align:top}
+.echelle th{font-family:var(--titre); font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--doux)}
+.echelle td:first-child{white-space:nowrap; font-family:var(--titre); font-weight:700; color:var(--accent-fonce)}
+
+@media (max-width:620px){
+  .tete{padding:10px 16px}
+  main{padding:14px 16px 24px}
+  .pied{padding:0 16px 28px}
+  .scene{padding:18px 14px 20px}
+  .btn{padding:11px 15px; font-size:15px}
+  .onglets button{font-size:13.5px; padding:9px 8px}
+  .reglages{order:4; flex:1 1 100%}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001s !important; transition-duration:.001s !important}
+}
+
+/* ---------- la droite graduée (SVG) ---------- */
+.axe{stroke:var(--encre); stroke-width:4; stroke-linecap:round}
+.pointe{fill:var(--encre)}
+.grad{stroke:var(--doux); stroke-width:3}
+.grad--fort{stroke:var(--encre); stroke-width:4}
+.etiquette{font-family:var(--lecture); font-size:30px; font-weight:700; fill:var(--encre); text-anchor:middle}
+.fleche__t{fill:var(--accent)}
+.fleche__tige{stroke:var(--accent); stroke-width:5; stroke-linecap:round}
+.fleche__nb{font-family:var(--lecture); font-size:42px; font-weight:700; fill:var(--accent); text-anchor:middle}
+.fleche__nb--vide{fill:var(--doux)}
+.fleche--entre{animation:arrivee .6s ease-out}
+@keyframes arrivee{from{opacity:0} to{opacity:1}}
+.droite--propose .fleche__t{fill:#9a6508}
+.droite--propose .fleche__tige{stroke:#9a6508}
+.droite--propose .fleche__nb{fill:#9a6508}
+.encadre .nb{color:var(--encre)}
+.motbout{white-space:nowrap}
+</style>
+
+<header class="tete">
+  <div class="tete__id">
+    <h1>Le rituel des nombres</h1>
+    <p class="tete__sous">Dispositif 1 · ardoise et correction collective</p>
+  </div>
+
+  <div class="compteur">
+    <button class="rond" id="rituel-moins" type="button" aria-label="Rituel précédent">−</button>
+    <div class="compteur__corps">
+      <label for="rituel-num">Rituel</label>
+      <input id="rituel-num" type="number" min="1" max="200" step="1" value="1" aria-label="Numéro du rituel">
+    </div>
+    <button class="rond" id="rituel-plus" type="button" aria-label="Rituel suivant">+</button>
+  </div>
+
+  <div class="reglages">
+    <label class="bascule"><input type="checkbox" id="opt-son" checked> Applaudissements</label>
+    <label class="bascule" for="opt-nb">Nombres :
+      <select id="opt-nb" style="font:inherit;padding:3px 6px;border:1px solid var(--trait);border-radius:8px;background:var(--papier);color:var(--encre)">
+        <option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option>
+      </select>
+    </label>
+  </div>
+
+  <nav class="onglets" role="tablist" aria-label="Les deux rituels du jour">
+    <button role="tab" id="tab-nombres" aria-selected="true" aria-controls="panneau-nombres" type="button"><span class="long">1 · Lire et écrire les nombres</span><span class="court">1 · Les nombres</span></button>
+    <button role="tab" id="tab-droite" aria-selected="false" aria-controls="panneau-droite" type="button"><span class="long">2 · La droite graduée</span><span class="court">2 · La droite</span></button>
+  </nav>
+</header>
+
+<main>
+  <section id="panneau-nombres" role="tabpanel" aria-labelledby="tab-nombres">
+    <div class="palier">
+      <span class="palier__etiq" id="nb-palier-etiq">Palier 1</span>
+      <h2 class="palier__nom" id="nb-palier-nom">—</h2>
+      <p class="palier__note" id="nb-palier-note"></p>
+    </div>
+    <div class="pastilles" id="nb-pastilles" aria-label="Avancement du rituel"></div>
+    <div id="nb-zone"></div>
+  </section>
+
+  <section id="panneau-droite" role="tabpanel" aria-labelledby="tab-droite" hidden>
+    <div class="palier">
+      <span class="palier__etiq" id="dr-palier-etiq">Palier 1</span>
+      <h2 class="palier__nom" id="dr-palier-nom">—</h2>
+      <p class="palier__note" id="dr-palier-note"></p>
+    </div>
+    <div class="pastilles" id="dr-pastilles" aria-label="Avancement du rituel"></div>
+    <div id="dr-zone"></div>
+  </section>
+</main>
+
+<footer class="pied">
+  <div class="journal" id="journal" title="Les dix derniers rituels">Journal :</div>
+  <div class="liens">
+    <button type="button" id="lien-memo">Mémo du code</button>
+    <button type="button" id="lien-progression">La progression de l’année</button>
+    <button type="button" id="lien-aide">Mode d’emploi</button>
+  </div>
+</footer>
+
+<dialog id="dlg-memo">
+  <div class="dlg__barre"><strong>Mémo du code de la classe</strong>
+    <button class="btn" type="button" data-ferme="dlg-memo">Fermer</button></div>
+  <div class="dlg__corps">
+    <p>Les sons-voyelles des mots-nombres, avec la couleur de la classe. Les consonnes restent noires.</p>
+    <h3>Les sons-voyelles</h3>
+    <div class="memo" id="memo-voyelles"></div>
+    <h3>Les sons nasaux (entourés d’un rond)</h3>
+    <div class="memo" id="memo-nasales"></div>
+    <h3>Les traits</h3>
+    <p><strong>Trait simple</strong> sous une lettre : elle ne se dit pas — le <em>p</em> de <em>sept</em>,
+      le <em>g</em> et le <em>t</em> de <em>vingt</em>, le <em>s</em> de <em>quatre-vingts</em>.<br>
+      <strong>Double trait</strong> : la lettre fait le son [s] — le <em>c</em> de <em>cinq</em> et de <em>cent</em>,
+      le <em>x</em> de <em>six</em>, <em>dix</em> et <em>soixante</em>.</p>
+    <p>Le codage des mots-nombres est celui de l’affichage de la classe, repris de <em>Lire en couleurs</em> :
+      dans <em>vingt-deux</em>, le <em>t</em> garde son trait de lettre muette, comme sur l’affiche.</p>
+  </div>
+</dialog>
+
+<dialog id="dlg-progression">
+  <div class="dlg__barre"><strong>La progression de l’année</strong>
+    <button class="btn" type="button" data-ferme="dlg-progression">Fermer</button></div>
+  <div class="dlg__corps">
+    <p>Un rituel par jour. Les deux onglets avancent ensemble : le numéro du rituel commande les deux
+      progressions. Les nombres d’un rituel sont toujours les mêmes — le rituel 14 donnera demain
+      exactement les nombres du rituel 14.</p>
+    <h3>Onglet 1 — Lire et écrire les nombres</h3>
+    <table class="echelle"><thead><tr><th>Rituels</th><th>Ce qu’on travaille</th></tr></thead>
+      <tbody id="echelle-nb"></tbody></table>
+    <h3>Onglet 2 — La droite graduée</h3>
+    <table class="echelle"><thead><tr><th>Rituels</th><th>Ce qu’on travaille</th></tr></thead>
+      <tbody id="echelle-dr"></tbody></table>
+  </div>
+</dialog>
+
+<dialog id="dlg-aide">
+  <div class="dlg__barre"><strong>Mode d’emploi</strong>
+    <button class="btn" type="button" data-ferme="dlg-aide">Fermer</button></div>
+  <div class="dlg__corps">
+    <h3>Le déroulé</h3>
+    <ol>
+      <li>Le nombre s’affiche écrit en lettres, codé comme sur l’affichage de la classe. Les élèves l’écrivent
+        en chiffres sur l’ardoise.</li>
+      <li>On lève les ardoises, puis <strong>Correction</strong> : les mots glissent dans les cases et deviennent
+        des chiffres. Un élève peut aussi venir écrire dans les cases avant la correction — si c’est juste,
+        les applaudissements partent tout seuls.</li>
+      <li><strong>Bien écrit 👏</strong> ou <strong>À revoir</strong>, puis le nombre suivant.</li>
+      <li>À partir du rituel 30, un nombre sur deux part des chiffres : les élèves l’écrivent en lettres.
+        La case « ce que la classe a écrit » compare la réponse et repère les erreurs de <em>s</em>.</li>
+    </ol>
+    <h3>Le 1 secret</h3>
+    <p>Pour 70 et 90, la correction ouvre le chiffre des dizaines : <em>soixante-dix</em>, c’est 6 dizaines
+      <strong>et encore 1</strong> → 7 dizaines. Le 1 caché arrive en or dans la case. Même chose pour le 9 de
+      <em>quatre-vingt-dix</em> (8 + 1), et <em>quatre-vingts</em> s’explique par 4 paquets de 20.</p>
+    <h3>Le s</h3>
+    <p>Dès qu’un nombre contient <em>vingt</em>, <em>cent</em> ou <em>mille</em>, la règle du <em>s</em> s’affiche
+      à la correction, avec le <em>s</em> en évidence quand il en faut un et barré quand il n’en faut pas.</p>
+    <h3>Garder sa place</h3>
+    <p>Le numéro du rituel et les résultats sont gardés dans ce navigateur. Si la mémoire est perdue
+      (navigation privée, autre ordinateur), il suffit de retaper le numéro du jour dans le bandeau.</p>
+    <h3>Ce que la page ne peut pas faire</h3>
+    <p>L’impression n’est pas possible depuis une page publiée : le rituel se mène à l’écran, au vidéoprojecteur
+      ou au TNI.</p>
+  </div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+
+/* =============================================================
+   1. Petits outils
+   ============================================================= */
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> [...(r||document).querySelectorAll(s)];
+const el = (tag,cls,txt)=>{ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; };
+const doux = ()=> window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function graine(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const tire   = (rnd,min,max)=> min+Math.floor(rnd()*(max-min+1));
+const choix  = (rnd,arr)=> arr[Math.floor(rnd()*arr.length)];
+function brasser(arr,rnd){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
+
+let minuteurs=[];
+function plusTard(ms,fn){ minuteurs.push(window.setTimeout(fn, doux()?0:ms)); }
+function stopMinuteurs(){ minuteurs.forEach(window.clearTimeout); minuteurs=[]; }
+
+/* =============================================================
+   2. Le code de lecture de la classe (méthode Aloé)
+   Relevé de « Lire en couleurs » : une couleur par son-voyelle,
+   consonnes noires, nasales entourées, trait simple = muette,
+   double trait = la lettre fait [s].
+   ============================================================= */
+const FAMILLES = { a:'#D1282E', o:'#1878B4', i:'#D9BE00', e2:'#1E9D4F', u:'#C1884B', oi:'#4C3D93', ou:'#E0A116', e:'#D45C96' };
+const NOMS_FAM = { a:'[a]', o:'[o]', i:'[i]', e2:'[é] [è]', u:'[u]', oi:'[oi]', ou:'[ou]', e:'[e] [eu]' };
+const SONS = {
+  a:{f:'a',forme:'rect'}, o:{f:'o',forme:'rect'}, i:{f:'i',forme:'rect'}, e2:{f:'e2',forme:'rect'},
+  u:{f:'u',forme:'rect'}, oi:{f:'oi',forme:'rect'}, ou:{f:'ou',forme:'rect'}, e:{f:'e',forme:'rect'},
+  an:{f:'a',forme:'rond'}, en:{f:'e',forme:'rond'}, on:{f:'o',forme:'rond'}, in:{f:'i',forme:'rond'}, un:{f:'u',forme:'rond'}
+};
+const DEFAUT = {
+  a:'a', o:'o', i:'i', é:'e2', è:'e2', ê:'e2', ei:'e2', ai:'e2', u:'u', oi:'oi', ou:'ou', e:'e', eu:'e',
+  an:'an', am:'an', en:'en', em:'en', on:'on', om:'on', in:'in', im:'in', un:'un',
+  z:'z', r:'r', d:'d', t:'t', s:'s', qu:'k', q:'k', p:'p', n:'n', f:'f', g:'g', v:'v', m:'m', l:'l', ll:'l', c:'k', ch:'ch'
+};
+/* Le code de chaque mot-nombre. « = » donne le son ; « _ » = lettre muette ; « s2 » = la lettre fait [s]. */
+const MOTS = {
+  'zéro':'z|é|r|o', 'un':'un', 'deux':'d|eu|x=_', 'trois':'t|r|oi|s=_', 'quatre':'qu|a|t|r|e=_',
+  'cinq':'c=s2|in|q=k', 'six':'s|i|x=s2', 'sept':'s|e=e2|p=_|t', 'huit':'h=_|u|i|t', 'neuf':'n|eu|f',
+  'dix':'d|i|x=s2', 'dixz':'d|i|x=z', 'onze':'on|z|e=_', 'douze':'d|ou|z|e=_', 'treize':'t|r|ei|z|e=_',
+  'quatorze':'qu|a|t|o|r|z|e=_', 'quinze':'qu|in|z|e=_', 'seize':'s|ei|z|e=_',
+  'vingt':'v|in|g=_|t=_', 'vingts':'v|in|g=_|t=_|s=_', 'trente':'t|r|en|t|e=_',
+  'quarante':'qu|a|r|an|t|e=_', 'cinquante':'c=s2|in|qu|an|t|e=_', 'soixante':'s|oi|x=s2|an|t|e=_',
+  'cent':'c=s2|en|t=_', 'cents':'c=s2|en|t=_|s=_', 'mille':'m|i|ll|e=_', 'et':'e=e2|t=_'
+};
+
+function jeton(src,cle){
+  const t={src:src, k:'c', fam:null, forme:null, mark:'none'};
+  if(cle==='_'){ t.k='m'; }
+  else if(cle==='s2'){ t.k='c'; t.mark='double'; }
+  else if(SONS[cle]){ t.k='v'; t.fam=SONS[cle].f; t.forme=SONS[cle].forme; }
+  return t;
+}
+function jetonsMot(cle){
+  const code = MOTS[cle];
+  if(code){
+    const out=[]; let pos=0;
+    for(const part of code.split('|')){
+      const m=part.split('=');
+      const lettres = (cle==='dixz' ? 'dix' : cle).substr(pos, m[0].length);
+      pos += m[0].length;
+      out.push(jeton(lettres, m[1] || DEFAUT[m[0]] || m[0]));
+    }
+    return out;
+  }
+  return [...cle].map(ch=> jeton(ch, DEFAUT[ch] || ch));   /* filet de sécurité */
+}
+function formeRond(){
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.createElementNS(NS,'svg');
+  svg.setAttribute('class','tk__forme'); svg.setAttribute('viewBox','0 0 100 100');
+  svg.setAttribute('preserveAspectRatio','none'); svg.setAttribute('aria-hidden','true');
+  const e=document.createElementNS(NS,'ellipse');
+  e.setAttribute('cx','50'); e.setAttribute('cy','50'); e.setAttribute('rx','48'); e.setAttribute('ry','46');
+  e.setAttribute('fill','none'); e.setAttribute('stroke','currentColor');
+  e.setAttribute('stroke-width','2'); e.setAttribute('vector-effect','non-scaling-stroke');
+  svg.appendChild(e); return svg;
+}
+function elJetons(jetons){
+  const f=document.createDocumentFragment();
+  for(const tk of jetons){
+    const sp=el('span','tk');
+    if(tk.k==='v'){
+      sp.classList.add('tk--v');
+      sp.style.setProperty('--c', FAMILLES[tk.fam]);
+      if(tk.forme==='rond'){ sp.classList.add('tk--rond'); sp.appendChild(formeRond()); }
+    }
+    if(tk.k==='m') sp.classList.add('tk--muette');
+    if(tk.mark==='double') sp.classList.add('tk--siff');
+    const t=el('span','tk__t',tk.src); sp.appendChild(t);
+    f.appendChild(sp);
+  }
+  return f;
+}
+/* Un texte (mots séparés par espaces et traits d’union) → éléments codés */
+function elTexteCode(txt){
+  const f=document.createDocumentFragment();
+  const bouts = txt.split(/([ -])/).filter(s=>s!=='');
+  for(let i=0;i<bouts.length;i++){
+    const p=bouts[i];
+    if(p===' '||p==='-'){ f.appendChild(el('span','sep', p===' '?' ':'-')); continue; }
+    let cle=p.toLowerCase();
+    if(cle==='dix'){
+      const suiv=(bouts[i+2]||'').toLowerCase();
+      if(suiv==='huit'||suiv==='neuf') cle='dixz';
+    }
+    const m=el('span','motbout'); m.appendChild(elJetons(jetonsMot(cle)));
+    f.appendChild(m);
+  }
+  return f;
+}
+
+/* =============================================================
+   3. Les nombres en lettres, découpés en segments
+   ============================================================= */
+const U=['zéro','un','deux','trois','quatre','cinq','six','sept','huit','neuf','dix','onze','douze',
+  'treize','quatorze','quinze','seize','dix-sept','dix-huit','dix-neuf'];
+const T=['','','vingt','trente','quarante','cinquante','soixante','soixante','quatre-vingt','quatre-vingt'];
+
+function segCent(r){
+  if(r===0) return [];
+  if(r<20) return [{txt:U[r], val:r, role:(r>=10?'dix-x':'unite')}];
+  const d=Math.floor(r/10), u=r%10;
+  if(d===7||d===9){
+    const base = d===7 ? {txt:'soixante',val:60} : {txt:'quatre-vingt',val:80};
+    base.role='dizaine';
+    return [base, {txt:U[10+u], val:10+u, role:'dix-x', sep:(d===7&&u===1)?' et ':'-'}];
+  }
+  if(u===0) return [{txt:(d===8?'quatre-vingts':T[d]), val:d*10, role:'dizaine'}];
+  if(u===1&&d!==8) return [{txt:T[d],val:d*10,role:'dizaine'},{txt:'un',val:1,role:'unite',sep:' et '}];
+  return [{txt:(d===8?'quatre-vingt':T[d]),val:d*10,role:'dizaine'},{txt:U[u],val:u,role:'unite',sep:'-'}];
+}
+function segments(n){
+  if(n===0) return [{txt:'zéro',val:0,role:'unite'}];
+  if(n>=1000) return [{txt:'mille',val:1000,role:'mille'}];
+  const out=[], c=Math.floor(n/100), r=n%100;
+  if(c>=1){
+    if(c===1) out.push({txt:'cent',val:100,role:'centaine-mult'});
+    else{
+      out.push({txt:U[c],val:c,role:'centaine-nb'});
+      out.push({txt:(r===0?'cents':'cent'),val:100,role:'centaine-mult',sep:' '});
+    }
+    if(r===0) return out;
+  }
+  const sc=segCent(r);
+  sc.forEach((s,i)=>{ if(i===0 && c>=1) s.sep=' '; out.push(s); });
+  return out;
+}
+const enLettres = n => segments(n).map((s,i)=> (i? (s.sep||' ') : '') + s.txt).join('');
+
+const casesPour = n => n>=1000 ? ['m','c','d','u'] : n>=100 ? ['c','d','u'] : n>=10 ? ['d','u'] : ['u'];
+
+/* Le plan de la correction : quelle case reçoit quoi, et d’où ça part */
+function planCorrection(n, segs){
+  const chiffres=[...String(n)].map(Number);
+  const noms=casesPour(n);
+  const cases=noms.map((nom,i)=>({nom, chiffre:chiffres[i]}));
+  const vols=[];
+  const ix = f => segs.findIndex(f);
+  const c = n>=100 && n<1000 ? Math.floor(n/100) : 0;
+  const r = n%100;
+  if(n>=1000) vols.push({si:ix(s=>s.role==='mille'), cible:'m', txt:'1'});
+  if(c){
+    const si = c===1 ? ix(s=>s.role==='centaine-mult') : ix(s=>s.role==='centaine-nb');
+    vols.push({si, cible:'c', txt:String(c)});
+  }
+  const sDiz=ix(s=>s.role==='dizaine'), sDix=ix(s=>s.role==='dix-x'), sUn=ix(s=>s.role==='unite');
+  if(sDiz>=0) vols.push({si:sDiz, cible:'d', txt:String(Math.floor(segs[sDiz].val/10))});
+  if(sDix>=0){
+    vols.push({si:sDix, cible:'d', txt:'1', or:true, secret:true});
+    vols.push({si:sDix, cible:'u', txt:String(segs[sDix].val%10)});
+  }
+  if(sUn>=0 && n>0) vols.push({si:sUn, cible:'u', txt:String(segs[sUn].val)});
+  return {cases, vols, r};
+}
+
+/* Le secret du 7 et du 9 */
+function secret(n){
+  const r=n%100, d=Math.floor(r/10), u=r%10, motDix=U[10+u];
+  if(d===7) return {titre:'Le 1 secret du 7',
+    html:`<b>soixante</b>, c’est 6 dizaines. Et <b>${motDix}</b> cache <span class="gold">encore 1 dizaine</span>.
+          6 + 1 = <span class="gold">7 dizaines</span> → on écrit un <span class="gold">7</span>.`};
+  if(d===9) return {titre:'Le 1 secret du 9',
+    html:`<b>quatre-vingt</b>, c’est 8 dizaines. Et <b>${motDix}</b> cache <span class="gold">encore 1 dizaine</span>.
+          8 + 1 = <span class="gold">9 dizaines</span> → on écrit un <span class="gold">9</span>.`};
+  if(d===8) return {titre:'Quatre-vingts',
+    html:`<b>quatre-vingts</b>, c’est 4 paquets de 20 : 20 + 20 + 20 + 20 = 80 → <span class="gold">8 dizaines</span>.`};
+  if(d===6) return {titre:'Soixante',
+    html:`<b>soixante</b>, c’est 6 dizaines → on écrit un <span class="gold">6</span>, et rien ne se cache.`};
+  if(r>=11&&r<=19) return {titre:'Le 1 caché',
+    html:`<b>${U[r]}</b>, c’est <span class="gold">1 dizaine</span> et ${r-10} unité${r-10>1?'s':''} → on écrit <span class="gold">1</span> puis ${r-10}.`};
+  if(r===10) return {titre:'Dix',
+    html:`<b>dix</b>, c’est <span class="gold">1 dizaine</span> et 0 unité → <span class="gold">1</span> puis <span class="gold">0</span>.`};
+  return null;
+}
+
+/* La règle du s */
+function regleS(n){
+  const r=n%100, c=(n>=100&&n<1000)?Math.floor(n/100):0, d=Math.floor(r/10), u=r%10;
+  const lignes=[];
+  if(n>=1000) lignes.push('<b>mille</b> ne prend <em>jamais</em> de s.');
+  if(c===1) lignes.push('<b>cent</b> tout seul : jamais de s.');
+  if(c>=2) lignes.push(r===0
+    ? `on écrit <b>${U[c]} cent<span class="ess">s</span></b> : plusieurs centaines et <em>rien derrière</em> → cent prend un s.`
+    : `on écrit <b>${U[c]} cent<span class="pass">s</span></b> : un nombre vient derrière → cent ne prend <em>pas</em> de s.`);
+  if(r===80) lignes.push('on écrit <b>quatre-vingt<span class="ess">s</span></b> : rien ne vient derrière → un s.');
+  else if(d===8) lignes.push(`on écrit <b>quatre-vingt<span class="pass">s</span>-${U[u]}</b> : un nombre vient derrière → pas de s.`);
+  else if(d===9) lignes.push(`on écrit <b>quatre-vingt<span class="pass">s</span>-${U[10+u]}</b> : un nombre vient derrière → pas de s.`);
+  else if(d===2) lignes.push('<b>vingt</b> ne prend un s que dans <b>quatre-vingts</b>.');
+  return lignes;
+}
+
+const normal = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+  .replace(/[-–—’']/g,' ').replace(/\s+/g,' ').trim();
+const sansS = s => normal(s).replace(/s(?=\s|$)/g,'');
+
+/* =============================================================
+   4. La progression — onglet 1
+   ============================================================= */
+const PALIERS_NB=[
+ {de:1,  nom:'Les nombres jusqu’à 16', pool:[1,16], vedettes:[11,12,13,14,15,16], inverse:0,
+  note:'Lire et écrire les petits nombres, avec les mots qui ne s’entendent pas : onze, douze, treize, quatorze, quinze, seize.'},
+ {de:4,  nom:'Jusqu’à 19, et les dizaines entières', pool:[1,19], fixes:[[20,30,40,50,60,70,80,90]],
+  vedettes:[60,70,80,90], inverse:0,
+  note:'Les dizaines entières entrent tout de suite, soixante-dix, quatre-vingts et quatre-vingt-dix comprises : on les lit comme des mots, et la correction ouvre leur secret.'},
+ {de:7,  nom:'De 20 à 39, et le « et un »', pool:[20,39], rappel:[10,19], fixes:[[40,50,60,70,80,90]],
+  vedettes:[21,31,60,70], inverse:0,
+  note:'Vingt et un, trente et un : faire entendre le petit mot « et ». On garde les dizaines-pièges en vue.'},
+ {de:10, nom:'De 40 à 69', pool:[40,69], rappel:[20,39], vedettes:[60,62,65,69,70,80], inverse:0,
+  note:'Soixante et toute sa famille : soixante-deux, soixante-neuf… Le 6 des dizaines s’entend dans le mot.'},
+ {de:13, nom:'Le secret du 7 : de 70 à 79', pool:[70,79], rappel:[60,69], vedettes:[70,71,72,76,79], inverse:0,
+  note:'Soixante-dix, c’est 60 et encore 10. Faire verbaliser : « 6 dizaines et encore 1 → le 1 se cache dans le 7. »'},
+ {de:17, nom:'Quatre-vingts, et le secret du 9', pool:[80,99], rappel:[60,79], vedettes:[80,81,90,91,99], inverse:0,
+  note:'Quatre-vingts = 4 paquets de 20, et son s quand rien ne suit. Quatre-vingt-dix = 80 et encore 10 → le 1 se cache dans le 9.'},
+ {de:20, nom:'Les centaines arrivent', pool:[100,199], fixes:[[100,200,300,400,500,600,700,800,900]],
+  rappel:[60,99], vedettes:[160,170,180,190], inverse:0, piege:true,
+  note:'Trois cases : centaines, dizaines, unités. On repart des dizaines-pièges, maintenant derrière un « cent ».'},
+ {de:25, nom:'De 100 à 299, et le s de « cents »', pool:[100,299], rappel:[60,99], vedettes:[200,270,280,290],
+  inverse:0, piege:true,
+  note:'Deux cents prend un s ; deux cent huit n’en prend pas. La règle s’affiche à chaque correction.'},
+ {de:30, nom:'Dans les deux sens', pool:[0,399], rappel:[60,99], inverse:0.4, piege:true,
+  note:'Un nombre sur deux part maintenant des chiffres : les élèves l’écrivent en lettres sur l’ardoise. La case « ce que la classe a écrit » repère les erreurs de s.'},
+ {de:35, nom:'Jusqu’à 499, dans les deux sens', pool:[0,499], rappel:[60,99], inverse:0.4, piege:true,
+  note:'Même travail, le domaine s’élargit. Toujours un nombre avec 60, 70, 80 ou 90.'},
+ {de:40, nom:'Jusqu’à 699, dans les deux sens', pool:[0,699], rappel:[60,99], inverse:0.4, piege:true,
+  note:'On écrit de plus en plus vite ; la lecture des dizaines reste le point de vigilance.'},
+ {de:45, nom:'Jusqu’à 799, dans les deux sens', pool:[0,799], rappel:[60,99], inverse:0.5, piege:true,
+  note:'Moitié-moitié entre les deux sens.'},
+ {de:50, nom:'De 0 à 999', pool:[0,999], rappel:[60,99], inverse:0.5, piege:true,
+  note:'Tout le domaine du CE1, avec les pièges réunis : les dizaines 60 à 90 et le s de cents.'},
+ {de:60, nom:'De 0 à mille', pool:[0,999], fixes:[[1000]], rappel:[60,99], inverse:0.5, piege:true,
+  note:'Mille entre en scène : quatre cases, et un mot qui ne prend jamais de s.'}
+];
+function palier(table,n){ let p=table[0]; for(const q of table) if(n>=q.de) p=q; return p; }
+function rangPalier(table,n){ let r=0; table.forEach((q,i)=>{ if(n>=q.de) r=i; }); return r; }
+
+function pieger(v,rnd,max){
+  if(v<20) return v;
+  const c=Math.floor(v/100)*100, u=v%10;
+  const v2=c+choix(rnd,[6,7,8,9])*10+u;
+  return v2<=max ? v2 : v;
+}
+function genNombres(n,k){
+  const p=palier(PALIERS_NB,n), rnd=graine(n*7919+101);
+  const vus=new Set(), liste=[];
+  const pose=v=>{ if(v==null||vus.has(v)) return false; vus.add(v); liste.push(v); return true; };
+  if(p.vedettes) pose(choix(rnd,p.vedettes));
+  if(p.fixes) p.fixes.forEach(f=>{ if(liste.length<k) pose(choix(rnd,f)); });
+  if(p.rappel && liste.length<k) pose(tire(rnd,p.rappel[0],p.rappel[1]));
+  if(p.vedettes && k>=5 && liste.length<k) pose(choix(rnd,p.vedettes));
+  let garde=0;
+  while(liste.length<k && garde++<400){
+    let v=tire(rnd,p.pool[0],p.pool[1]);
+    if(p.piege && rnd()<0.45) v=pieger(v,rnd,p.pool[1]);
+    pose(v);
+  }
+  brasser(liste,rnd);
+  const items=liste.slice(0,k).map(v=>({nb:v, sens:(p.inverse>0 && rnd()<p.inverse)?'chiffres':'lettres'}));
+  if(p.inverse>0){
+    if(!items.some(i=>i.sens==='chiffres')) items[items.length-1].sens='chiffres';
+    if(!items.some(i=>i.sens==='lettres'))  items[0].sens='lettres';
+  }
+  return items;
+}
+
+/* =============================================================
+   5. La progression — onglet 2 (droite graduée)
+   ============================================================= */
+const PALIERS_DR=[
+ {de:1, nom:'La droite de 0 à 10', items:3, max:10, enc:[1], rangerN:3, sens:['croissant'],
+  lignes:[{a:0,b:10,pas:1,lab:1}], types:['fleche','encadrer','ranger'],
+  note:'Lire ce que montre la flèche, encadrer un nombre entre ses deux voisins, ranger trois nombres du plus petit au plus grand.'},
+ {de:5, nom:'La droite de 0 à 20', items:3, max:20, enc:[1], rangerN:3, sens:['croissant'],
+  lignes:[{a:0,b:20,pas:1,lab:2},{a:0,b:10,pas:1,lab:1}], types:['fleche','encadrer','ranger','placer'],
+  note:'La droite s’allonge et toutes les graduations ne sont plus écrites : il faut compter de deux en deux.'},
+ {de:9, nom:'Jusqu’à 30, encadrer à la dizaine', items:3, max:30, enc:[1,10], rangerN:4,
+  sens:['croissant','decroissant'], lignes:[{a:0,b:30,pas:1,lab:5},{a:10,b:20,pas:1,lab:2}],
+  types:['fleche','encadrer','ranger','placer'],
+  note:'Nouveauté : encadrer entre deux dizaines, et ranger aussi du plus grand au plus petit.'},
+ {de:13, nom:'Jusqu’à 60, de 5 en 5', items:3, max:60, enc:[10], rangerN:4, sens:['croissant','decroissant'],
+  lignes:[{a:0,b:60,pas:5,lab:10},{a:0,b:30,pas:1,lab:5}], types:['fleche','encadrer','ranger','placer'],
+  note:'Les graduations valent 5 : on ne compte plus un par un, on s’appuie sur les dizaines.'},
+ {de:17, nom:'Jusqu’à 100, de 10 en 10', items:3, max:100, enc:[10], rangerN:4, sens:['croissant','decroissant'],
+  lignes:[{a:0,b:100,pas:10,lab:10},{a:0,b:100,pas:5,lab:20},{a:50,b:70,pas:1,lab:5}],
+  types:['fleche','encadrer','ranger','placer'],
+  note:'Toute la droite du CP jusqu’à 100. Les nombres entre 60 et 99 reviennent exprès très souvent.'},
+ {de:21, nom:'Les nombres entre les dizaines', items:4, max:100, enc:[10], rangerN:5,
+  sens:['croissant','decroissant'], lignes:[{a:0,b:100,pas:5,lab:10},{a:40,b:60,pas:1,lab:5},{a:60,b:80,pas:1,lab:5}],
+  types:['fleche','encadrer','ranger','placer'],
+  note:'Quatre exercices. Il faut lire une graduation qui n’a pas d’étiquette : on part du repère le plus proche.'},
+ {de:27, nom:'Des droites qui ne commencent pas à 0', items:4, max:100, enc:[1,10], rangerN:5,
+  sens:['croissant','decroissant'], lignes:[{a:60,b:80,pas:1,lab:5},{a:70,b:90,pas:2,lab:10},{a:0,b:100,pas:5,lab:20}],
+  types:['fleche','encadrer','ranger','placer'],
+  note:'La droite démarre à 60 ou à 70 : impossible de compter depuis zéro. On encadre aussi entre deux nombres voisins.'},
+ {de:33, nom:'Jusqu’à 200', items:4, max:200, enc:[10,100], rangerN:5, sens:['croissant','decroissant'],
+  lignes:[{a:0,b:200,pas:10,lab:50},{a:100,b:140,pas:2,lab:10},{a:120,b:160,pas:5,lab:20}],
+  types:['fleche','encadrer','ranger','placer'],
+  note:'Nouveauté : encadrer à la centaine. Les nombres passent cent.'},
+ {de:41, nom:'Jusqu’à 500', items:4, max:500, enc:[10,100], rangerN:5, sens:['croissant','decroissant'],
+  lignes:[{a:0,b:500,pas:50,lab:100},{a:200,b:300,pas:10,lab:50},{a:300,b:340,pas:2,lab:10}],
+  types:['fleche','encadrer','ranger','placer'],
+  note:'Des graduations de 50, de 10, puis de 2 : on choisit son repère avant de compter.'},
+ {de:49, nom:'Jusqu’à 1000', items:4, max:1000, enc:[10,100], rangerN:6, sens:['croissant','decroissant'],
+  lignes:[{a:0,b:1000,pas:100,lab:200},{a:300,b:400,pas:10,lab:50},{a:600,b:700,pas:25,lab:100}],
+  types:['fleche','encadrer','ranger','placer'],
+  note:'Toute la droite du CE1. Six nombres à ranger.'},
+ {de:59, nom:'Tout ce qu’on sait, de 0 à 1000', items:4, max:1000, enc:[1,10,100], rangerN:6,
+  sens:['croissant','decroissant'], lignes:[{a:0,b:1000,pas:50,lab:200},{a:400,b:500,pas:10,lab:50},
+  {a:700,b:800,pas:5,lab:25},{a:890,b:900,pas:1,lab:5}],
+  types:['fleche','encadrer','ranger','placer'],
+  note:'Mélange complet : encadrer au nombre, à la dizaine ou à la centaine, lire n’importe quelle graduation, ranger six nombres.'}
+];
+
+function nbPiege(rnd,max){
+  /* un nombre du domaine, en visant souvent les dizaines 60, 70, 80 et 90 */
+  if(max<=20) return tire(rnd,2,max-1);
+  const centMax = Math.floor((max-1)/100);
+  const cent = centMax>0 ? tire(rnd,0,centMax)*100 : 0;
+  const d = rnd()<0.6 ? choix(rnd,[6,7,8,9]) : tire(rnd,1,9);
+  const v = cent + d*10 + tire(rnd,0,9);
+  return v>=max ? Math.max(2, max-1-tire(rnd,0,9)) : Math.max(2,v);
+}
+function genDroite(n){
+  const p=palier(PALIERS_DR,n), rnd=graine(n*104729+7);
+  const k=p.items;
+  const types=[];
+  types.push('encadrer'); types.push('ranger');
+  types.push((n%2===0 && p.types.includes('placer')) ? 'placer' : 'fleche');
+  if(k>3) types.push(p.sens.length>1 ? 'ranger-bis' : 'encadrer');
+  brasser(types,rnd);
+
+  const items=[]; const dejaEnc=new Set();
+  for(const type of types){
+    if(type==='encadrer'){
+      let pas=choix(rnd,p.enc), nb, garde=0;
+      do{ nb=nbPiege(rnd,p.max); garde++; }
+      while((nb%pas===0 || nb<pas || dejaEnc.has(nb)) && garde<80);
+      if(nb%pas===0) nb=nb+1;
+      if(nb<pas) nb=pas+Math.max(1,nb%pas);
+      dejaEnc.add(nb);
+      items.push({type:'encadrer', nb, pas});
+    }else if(type==='ranger'||type==='ranger-bis'){
+      const vus=new Set(), nbs=[];
+      const mettre=v=>{ if(v>0 && v<=p.max && !vus.has(v)){ vus.add(v); nbs.push(v); } };
+      mettre(nbPiege(rnd,p.max));
+      /* un piège de chiffres retournés : 47 et 74, 78 et 87 */
+      const base=nbs[0];
+      if(p.max>=100 || base>=21){
+        const d=Math.floor((base%100)/10), u=base%10;
+        if(d!==u && u!==0) mettre(Math.floor(base/100)*100 + u*10 + d);
+      }
+      let garde=0;
+      while(nbs.length<p.rangerN && garde++<200) mettre(nbPiege(rnd,p.max));
+      brasser(nbs,rnd);
+      const dejaSens=(items.find(i=>i.type==='ranger')||{}).sens;
+      const sens = type==='ranger-bis' && dejaSens
+        ? (dejaSens==='croissant'?'decroissant':'croissant')
+        : choix(rnd,p.sens);
+      items.push({type:'ranger', nbs, sens});
+    }else{
+      const L=choix(rnd,p.lignes);
+      const pasTotal=Math.round((L.b-L.a)/L.pas);
+      let k2=tire(rnd,1,pasTotal-1);
+      /* à partir du palier 5, viser une graduation sans étiquette */
+      if(rangPalier(PALIERS_DR,n)>=4){
+        let garde=0;
+        while(((L.a+k2*L.pas)%L.lab===0) && garde++<40) k2=tire(rnd,1,pasTotal-1);
+      }
+      items.push({type, ligne:L, cible:L.a+k2*L.pas});
+    }
+  }
+  return items;
+}
+
+/* =============================================================
+   6. La droite graduée en SVG
+   ============================================================= */
+const NS='http://www.w3.org/2000/svg';
+function sv(tag,attrs){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); return e; }
+function dessinerDroite(L,opts){
+  opts=opts||{};
+  const g0=60, g1=1140, y=130;
+  const svg=sv('svg',{viewBox:'0 0 1200 210', role:'img',
+    'aria-label':`Droite graduée de ${L.a} à ${L.b}, graduations de ${L.pas} en ${L.pas}`});
+  const pos = v => g0 + (v-L.a)/(L.b-L.a)*(g1-g0);
+  svg.appendChild(sv('line',{x1:g0-40,y1:y,x2:g1+26,y2:y,class:'axe'}));
+  svg.appendChild(sv('path',{d:`M${g1+26} ${y} l-16 -8 v16 z`, class:'pointe'}));
+  for(let v=L.a; v<=L.b+0.001; v+=L.pas){
+    const x=pos(v), fort=((v-L.a)%L.lab===0);
+    svg.appendChild(sv('line',{x1:x,y1:y-(fort?22:12),x2:x,y2:y+(fort?22:12),class:fort?'grad grad--fort':'grad'}));
+    if(fort){
+      const t=sv('text',{x:x,y:y+62,class:'etiquette'}); t.textContent=v; svg.appendChild(t);
+    }
+  }
+  if(opts.fleche!=null){
+    const x=pos(opts.fleche);
+    const g=sv('g',{class:'fleche'+(opts.anime?' fleche--entre':''), transform:`translate(${x} 0)`});
+    g.appendChild(sv('path',{d:`M0 ${y-26} l-15 -32 h30 z`, class:'fleche__t'}));
+    g.appendChild(sv('line',{x1:0,y1:y-58,x2:0,y2:y-86,class:'fleche__tige'}));
+    if(opts.etiquette!=null){
+      const t=sv('text',{x:0,y:y-98,class:'fleche__nb'}); t.textContent=opts.etiquette; g.appendChild(t);
+    }else{
+      const t=sv('text',{x:0,y:y-98,class:'fleche__nb fleche__nb--vide'}); t.textContent='?'; g.appendChild(t);
+    }
+    svg.appendChild(g);
+  }
+  const boite=el('div','droite'); boite.appendChild(svg);
+  return boite;
+}
+
+/* =============================================================
+   7. L’état du rituel
+   ============================================================= */
+const CLE='rituel.nombres.v1';
+const ETAT={ rituel:1, onglet:'nombres', son:true, nbNombres:5,
+  idx:{nombres:0,droite:0}, items:{nombres:[],droite:[]}, res:{nombres:[],droite:[]},
+  histo:{nombres:{},droite:{}} };
+
+function charger(){
+  try{
+    const o=JSON.parse(localStorage.getItem(CLE));
+    if(!o || typeof o!=='object') return;
+    if(Number.isFinite(o.rituel)) ETAT.rituel=Math.min(200,Math.max(1,o.rituel|0));
+    if(o.onglet==='droite'||o.onglet==='nombres') ETAT.onglet=o.onglet;
+    if(typeof o.son==='boolean') ETAT.son=o.son;
+    if(Number.isFinite(o.nbNombres)) ETAT.nbNombres=Math.min(7,Math.max(3,o.nbNombres|0));
+    if(o.histo&&o.histo.nombres) ETAT.histo=o.histo;
+    if(o.enCours===ETAT.rituel && o.idx && o.res){ ETAT.idx=o.idx; ETAT.res=o.res; ETAT.reprise=true; }
+  }catch(e){}
+}
+function sauver(){
+  try{
+    localStorage.setItem(CLE, JSON.stringify({ rituel:ETAT.rituel, onglet:ETAT.onglet, son:ETAT.son,
+      nbNombres:ETAT.nbNombres, histo:ETAT.histo, enCours:ETAT.rituel, idx:ETAT.idx, res:ETAT.res }));
+  }catch(e){}
+}
+function preparer(reset){
+  ETAT.items.nombres=genNombres(ETAT.rituel, ETAT.nbNombres);
+  ETAT.items.droite=genDroite(ETAT.rituel);
+  if(reset || !ETAT.reprise){
+    ETAT.idx={nombres:0,droite:0};
+    ETAT.res={nombres:[],droite:[]};
+  }
+  ETAT.reprise=false;
+  if(ETAT.res.nombres.length!==ETAT.items.nombres.length) ETAT.res.nombres=ETAT.items.nombres.map(()=>null);
+  if(ETAT.res.droite.length!==ETAT.items.droite.length)  ETAT.res.droite=ETAT.items.droite.map(()=>null);
+  ETAT.idx.nombres=Math.min(ETAT.idx.nombres, ETAT.items.nombres.length);
+  ETAT.idx.droite=Math.min(ETAT.idx.droite, ETAT.items.droite.length);
+}
+
+/* =============================================================
+   8. Applaudissements
+   ============================================================= */
+let audio=null;
+function sonApplaudissements(){
+  if(!ETAT.son) return;
+  try{
+    audio = audio || new (window.AudioContext||window.webkitAudioContext)();
+    if(audio.state==='suspended') audio.resume();
+    const t0=audio.currentTime, sr=audio.sampleRate, len=Math.floor(sr*0.05);
+    const buf=audio.createBuffer(1,len,sr), d=buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.4);
+    for(let k=0;k<30;k++){
+      const s=audio.createBufferSource(); s.buffer=buf; s.playbackRate.value=0.75+Math.random()*0.6;
+      const f=audio.createBiquadFilter(); f.type='bandpass';
+      f.frequency.value=1100+Math.random()*2200; f.Q.value=0.7;
+      const g=audio.createGain(); g.gain.value=0.10+Math.random()*0.12;
+      s.connect(f); f.connect(g); g.connect(audio.destination);
+      s.start(t0+0.02+Math.random()*1.5);
+    }
+  }catch(e){}
+}
+function applaudir(){
+  sonApplaudissements();
+  const nappe=el('div','bravo');
+  const mot=el('div','bravo__mot','Bravo !');
+  nappe.appendChild(mot); document.body.appendChild(nappe);
+  if(!doux()){
+    mot.animate([{transform:'scale(.4) rotate(-6deg)',opacity:0},{transform:'scale(1.08) rotate(2deg)',opacity:1},
+      {transform:'scale(1) rotate(0)',opacity:1},{transform:'scale(1.02)',opacity:0}],
+      {duration:1800, easing:'cubic-bezier(.2,.9,.2,1)'});
+    for(let i=0;i<18;i++){
+      const m=el('div','main-qui-applaudit', i%2?'👏':'🙌');
+      m.style.left=(5+Math.random()*90)+'vw'; m.style.top='100vh';
+      document.body.appendChild(m);
+      const a=m.animate([{transform:'translateY(0) rotate(0) scale(.6)',opacity:0},
+        {transform:`translateY(-${50+Math.random()*45}vh) rotate(${-40+Math.random()*80}deg) scale(1.2)`,opacity:1},
+        {transform:`translateY(-${80+Math.random()*25}vh) rotate(${-60+Math.random()*120}deg) scale(.9)`,opacity:0}],
+        {duration:1500+Math.random()*700, delay:Math.random()*500, easing:'ease-out'});
+      a.onfinish=()=>m.remove();
+      plusTard(2600,()=>m.remove());
+    }
+  }else{ mot.style.opacity='1'; mot.style.transform='scale(1)'; }
+  plusTard(1900,()=>nappe.remove());
+}
+/* un chiffre qui s’envole d’un mot vers sa case */
+function vol(src,dst,txt,cls){
+  if(doux()) return;
+  const a=src.getBoundingClientRect(), b=dst.getBoundingClientRect();
+  const f=el('div','fantome'+(cls?' '+cls:''),txt);
+  f.style.left=(a.left+a.width/2)+'px'; f.style.top=(a.top+a.height/2)+'px';
+  f.style.transform='translate(-50%,-50%)';
+  document.body.appendChild(f);
+  const dx=(b.left+b.width/2)-(a.left+a.width/2), dy=(b.top+b.height/2)-(a.top+a.height/2);
+  const an=f.animate([
+    {transform:'translate(-50%,-50%) scale(.7)',opacity:0},
+    {transform:`translate(calc(-50% + ${dx*0.45}px), calc(-50% + ${dy*0.45 - 36}px)) scale(1.5)`,opacity:1,offset:.55},
+    {transform:`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1)`,opacity:0}],
+    {duration:620, easing:'cubic-bezier(.3,.7,.3,1)'});
+  an.onfinish=()=>f.remove();
+}
+
+/* =============================================================
+   9. Onglet 1 — lire et écrire les nombres
+   ============================================================= */
+const NOM_CASE={m:'milliers',c:'centaines',d:'dizaines',u:'unités'};
+
+function blocMot(n, vide){
+  const segs=segments(n), mot=el('div','mot');
+  if(vide){ mot.hidden=true; }
+  segs.forEach((s,i)=>{
+    if(i){
+      if(s.sep===' et '){
+        mot.appendChild(document.createTextNode(' '));
+        const l=el('span','seg'); l.dataset.liaison='1'; l.appendChild(elTexteCode('et'));
+        mot.appendChild(l);
+        mot.appendChild(document.createTextNode(' '));
+      }else{
+        mot.appendChild(document.createTextNode(s.sep||' '));
+      }
+    }
+    const sp=el('span','seg'); sp.dataset.i=String(i); sp.dataset.val=String(s.val);
+    sp.appendChild(elTexteCode(s.txt));
+    mot.appendChild(sp);
+  });
+  return mot;
+}
+function blocCases(n, saisie){
+  const noms=casesPour(n), chiffres=String(n).split('');
+  const w=el('div','cases');
+  noms.forEach((nom,i)=>{
+    const c=el('div','case'); c.dataset.nom=nom;
+    c.appendChild(el('div','case__nom', NOM_CASE[nom]));
+    const b=el('div','case__boite');
+    if(saisie){
+      const inp=document.createElement('input');
+      inp.type='text'; inp.inputMode='numeric'; inp.autocomplete='off';
+      inp.maxLength=1; inp.id='case-'+nom; inp.setAttribute('aria-label','chiffre des '+NOM_CASE[nom]);
+      b.appendChild(inp);
+    }else{
+      b.appendChild(el('span','chif',chiffres[i]));
+      c.classList.add('case--pleine');
+    }
+    c.appendChild(b); w.appendChild(c);
+  });
+  return w;
+}
+function texteBulle(s,n){
+  if(s.role==='centaine-nb') return s.val+' centaine'+(s.val>1?'s':'');
+  if(s.role==='centaine-mult') return Math.floor(n/100)===1 ? '1 centaine' : '× 100';
+  if(s.role==='mille') return '1 millier';
+  return String(s.val);
+}
+function htmlDecomp(segs,n){
+  const parts=[];
+  for(const s of segs){
+    if(s.role==='centaine-nb') continue;
+    if(s.role==='centaine-mult'){ const c=Math.floor(n/100)%10 || 1; parts.push(String(c*100)); continue; }
+    if(s.role==='mille'){ parts.push('1000'); continue; }
+    parts.push(String(s.val));
+  }
+  if(parts.length<2) return '';
+  return parts.map(p=>'<b>'+p+'</b>').join('<span class="plus"> + </span>')+'<span class="plus"> = </span><b>'+n+'</b>';
+}
+
+function barre(sc, boutons){
+  let b=$('.actions',sc);
+  if(!b){ b=el('div','actions'); sc.appendChild(b); }
+  b.textContent='';
+  boutons.forEach(def=>{
+    if(!def) return;
+    const btn=el('button',def.cls||'btn',def.txt); btn.type='button';
+    btn.addEventListener('click',def.fn); b.appendChild(btn);
+  });
+  return b;
+}
+
+function rendreNombres(){
+  stopMinuteurs();
+  const z=$('#nb-zone'); z.textContent='';
+  const items=ETAT.items.nombres, i=ETAT.idx.nombres;
+  majPastilles('nombres');
+  if(i>=items.length){ z.appendChild(bilan('nombres')); return; }
+  const it=items[i];
+  const sc=el('section','scene');
+
+  if(it.sens==='lettres'){
+    const cg=el('p','consigne'); cg.innerHTML='Lis ce nombre, puis écris-le <em>en chiffres</em> sur ton ardoise.';
+    sc.appendChild(cg);
+    sc.appendChild(blocMot(it.nb));
+    const dec=el('div','decomp'); dec.hidden=true; sc.appendChild(dec);
+    sc.appendChild(blocCases(it.nb,true));
+    const sec=el('div','secret'); sec.hidden=true; sc.appendChild(sec);
+    const rg=el('div','regle'); rg.hidden=true; sc.appendChild(rg);
+    const vd=el('p','verdict'); vd.hidden=true; vd.setAttribute('aria-live','polite'); sc.appendChild(vd);
+    const entrees=$$('.case__boite input',sc);
+    entrees.forEach((inp,k)=>{
+      inp.addEventListener('input',()=>{
+        inp.value=inp.value.replace(/[^0-9]/g,'').slice(0,1);
+        if(inp.value && entrees[k+1]) entrees[k+1].focus();
+      });
+      inp.addEventListener('keydown',e=>{ if(e.key==='Enter') lancer(); });
+    });
+    const lancer=()=>corrigerLettres(sc,it);
+    barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:lancer}]);
+  }else{
+    const cg=el('p','consigne'); cg.innerHTML='Lis ce nombre, puis écris-le <em>en lettres</em> sur ton ardoise.';
+    sc.appendChild(cg);
+    sc.appendChild(blocCases(it.nb,false));
+    const rep=el('div','reponse');
+    const lab=el('label','', 'Ce que la classe a écrit (facultatif)'); lab.htmlFor='saisie-lettres';
+    const inp=document.createElement('input');
+    inp.type='text'; inp.id='saisie-lettres'; inp.autocomplete='off';
+    inp.placeholder='par exemple : quatre-vingts';
+    rep.appendChild(lab); rep.appendChild(inp); sc.appendChild(rep);
+    const mot=blocMot(it.nb,true); sc.appendChild(mot);
+    const rg=el('div','regle'); rg.hidden=true; sc.appendChild(rg);
+    const vd=el('p','verdict'); vd.hidden=true; vd.setAttribute('aria-live','polite'); sc.appendChild(vd);
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') lancer(); });
+    const lancer=()=>corrigerChiffres(sc,it);
+    barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:lancer}]);
+  }
+  z.appendChild(sc);
+}
+
+function finBoutons(sc,onglet,juste){
+  const suite=etat=>{
+    ETAT.res[onglet][ETAT.idx[onglet]]=etat;
+    if(etat==='ok') applaudir();
+    plusTard(etat==='ok'?900:0, ()=>{
+      ETAT.idx[onglet]=ETAT.idx[onglet]+1; sauver();
+      onglet==='nombres'?rendreNombres():rendreDroite();
+    });
+  };
+  barre(sc,[
+    {txt:'Bien écrit 👏', cls:'btn btn--ok', fn:()=>suite('ok')},
+    {txt:'À revoir', cls:'btn btn--non', fn:()=>suite('revoir')},
+    {txt:'Passer', cls:'btn btn--fin', fn:()=>{ ETAT.idx[onglet]=ETAT.idx[onglet]+1; sauver();
+      onglet==='nombres'?rendreNombres():rendreDroite(); }}
+  ]);
+  if(juste) applaudir();
+}
+
+function corrigerLettres(sc,it){
+  stopMinuteurs();
+  const n=it.nb, segs=segments(n), plan=planCorrection(n,segs);
+  const saisi=$$('.case__boite input',sc).map(i=>i.value.trim());
+  const attendu=String(n).split('');
+  const complet=saisi.length===attendu.length && saisi.every(v=>v!=='');
+  const juste=complet && saisi.join('')===attendu.join('');
+  const aDiz=segs.some(s=>s.role==='dizaine');
+  barre(sc,[{txt:'Correction en cours…',cls:'btn',fn:()=>{}}]);
+  $$('.actions .btn',sc).forEach(b=>b.disabled=true);
+
+  let t=0;
+  segs.forEach((s,i)=>{
+    plusTard(t,()=>{
+      const e=sc.querySelector('.seg[data-i="'+i+'"]');
+      if(!e) return;
+      e.classList.add('seg--vu');
+      if(!$('.seg__val',e)) e.appendChild(el('span','seg__val',texteBulle(s,n)));
+    });
+    t+=170;
+  });
+  t+=260;
+  const dec=htmlDecomp(segs,n);
+  if(dec) plusTard(t,()=>{ const d=$('.decomp',sc); d.hidden=false; d.innerHTML=dec; });
+  t+=620;
+
+  plan.vols.forEach(v=>{
+    plusTard(t,()=>{
+      const src=sc.querySelector('.seg[data-i="'+v.si+'"]');
+      const dst=sc.querySelector('.case[data-nom="'+v.cible+'"] .case__boite');
+      if(src&&dst) vol(src,dst,v.txt,v.or?'fantome--or':'');
+    });
+    plusTard(t+560,()=>poserChiffre(sc,v,n,aDiz));
+    t+=320;
+  });
+  t+=460;
+  plusTard(t,()=>{
+    completerCases(sc,n);
+    if(complet){
+      const vd=$('.verdict',sc); vd.hidden=false;
+      vd.className='verdict '+(juste?'verdict--ok':'verdict--non');
+      vd.textContent=juste?'C’est juste : '+enLettres(n)+' = '+n+' 👏':'Ce n’était pas tout à fait ça : '+enLettres(n)+' = '+n+'.';
+      marquerCases(sc,saisi,attendu);
+    }
+  });
+  t+=320;
+  const sec=secret(n);
+  if(sec){
+    plusTard(t,()=>{ const b=$('.secret',sc); b.hidden=false; b.innerHTML='<h3>'+sec.titre+'</h3><p>'+sec.html+'</p>'; });
+    t+=340;
+  }
+  const rs=regleS(n);
+  if(rs.length){
+    plusTard(t,()=>{ const b=$('.regle',sc); b.hidden=false;
+      b.innerHTML='<h3>Le s, on le met ou pas ?</h3><p>'+rs.join('<br>')+'</p>'; });
+    t+=300;
+  }
+  plusTard(t+200,()=>finBoutons(sc,'nombres',juste));
+}
+function poserChiffre(sc,v,n,aDiz){
+  const c=sc.querySelector('.case[data-nom="'+v.cible+'"]');
+  if(!c) return;
+  const b=$('.case__boite',c);
+  let chiffre=v.txt;
+  if(v.secret){
+    const dz=Math.floor((n%100)/10);
+    chiffre=String(dz);
+    c.classList.add('case--secret');
+    if(aDiz && !$('.case__secret',c)) c.appendChild(el('div','case__secret',(dz-1)+' + 1'));
+  }
+  b.textContent='';
+  const sp=el('span','chif',chiffre); b.appendChild(sp);
+  c.classList.add('case--pleine');
+  if(!doux()) sp.animate([{transform:'scale(.2)',opacity:0},{transform:'scale(1.25)',opacity:1},{transform:'scale(1)',opacity:1}],
+    {duration:420,easing:'cubic-bezier(.2,1.1,.3,1)'});
+}
+function completerCases(sc,n){
+  const chiffres=String(n).split('');
+  $$('.case',sc).forEach((c,i)=>{
+    const b=$('.case__boite',c);
+    if($('.chif',b)) return;
+    b.textContent=''; b.appendChild(el('span','chif',chiffres[i]));
+    c.classList.add('case--pleine');
+  });
+}
+function marquerCases(sc,saisi,attendu){
+  $$('.case',sc).forEach((c,i)=>{ c.classList.add(saisi[i]===attendu[i]?'case--juste':'case--faux'); });
+}
+
+function corrigerChiffres(sc,it){
+  stopMinuteurs();
+  const n=it.nb, segs=segments(n);
+  const saisie=($('#saisie-lettres',sc)||{}).value||'';
+  const bon=enLettres(n);
+  const etat = !saisie.trim() ? 'vide' : (normal(saisie)===normal(bon) ? 'ok' : (sansS(saisie)===sansS(bon) ? 'presque' : 'non'));
+  barre(sc,[{txt:'Correction en cours…',cls:'btn',fn:()=>{}}]);
+  $$('.actions .btn',sc).forEach(b=>b.disabled=true);
+
+  const mot=$('.mot',sc);
+  mot.hidden=false;
+  const segEls=$$('.seg',mot);
+  segEls.forEach(e=>{ e.style.opacity=doux()?'1':'0'; });
+  let t=0;
+  segEls.forEach(e=>{
+    plusTard(t,()=>{
+      e.style.opacity='1';
+      if(!doux()) e.animate([{transform:'translateY(14px)',opacity:0},{transform:'translateY(0)',opacity:1}],
+        {duration:380,easing:'ease-out'});
+    });
+    t+=220;
+  });
+  t+=300;
+  const rs=regleS(n);
+  if(rs.length){
+    plusTard(t,()=>{ const b=$('.regle',sc); b.hidden=false;
+      b.innerHTML='<h3>Le s, on le met ou pas ?</h3><p>'+rs.join('<br>')+'</p>'; });
+    t+=340;
+  }
+  plusTard(t,()=>{
+    if(etat==='vide') return;
+    const vd=$('.verdict',sc); vd.hidden=false;
+    if(etat==='ok'){ vd.className='verdict verdict--ok'; vd.textContent='C’est juste : '+bon+' 👏'; }
+    else if(etat==='presque'){ vd.className='verdict verdict--presque';
+      vd.textContent='Presque : tout est là, c’est le s qui n’est pas au bon endroit. On écrit : '+bon+'.'; }
+    else{ vd.className='verdict verdict--non'; vd.textContent='On écrit : '+bon+'.'; }
+  });
+  plusTard(t+260,()=>finBoutons(sc,'nombres',etat==='ok'));
+}
+
+/* =============================================================
+   10. Onglet 2 — la droite graduée
+   ============================================================= */
+function motEnc(pas){
+  if(pas===1) return 'entre les deux nombres voisins';
+  if(pas===10) return 'entre deux dizaines';
+  return 'entre deux centaines';
+}
+function rendreDroite(){
+  stopMinuteurs();
+  const z=$('#dr-zone'); z.textContent='';
+  const items=ETAT.items.droite, i=ETAT.idx.droite;
+  majPastilles('droite');
+  if(i>=items.length){ z.appendChild(bilan('droite')); return; }
+  const it=items[i];
+  const sc=el('section','scene');
+
+  if(it.type==='encadrer'){
+    const cg=el('p','consigne');
+    cg.innerHTML='Encadre <em>'+it.nb+'</em> '+motEnc(it.pas)+', sur ton ardoise.';
+    sc.appendChild(cg);
+    const row=el('div','encadre');
+    const t1=el('span','trou','?'), t2=el('span','trou','?');
+    row.appendChild(t1); row.appendChild(el('span','signe','<'));
+    row.appendChild(el('span','nb',String(it.nb)));
+    row.appendChild(el('span','signe','<')); row.appendChild(t2);
+    sc.appendChild(row);
+    const zone=el('div','zone-droite'); sc.appendChild(zone);
+    barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>corrigerEncadrer(sc,it)}]);
+  }
+  else if(it.type==='ranger'){
+    const cg=el('p','consigne');
+    cg.innerHTML='Range ces nombres <em>'+(it.sens==='croissant'?'du plus petit au plus grand':'du plus grand au plus petit')+'</em> sur ton ardoise.';
+    sc.appendChild(cg);
+    const w=el('div','etiq-nbs');
+    it.nbs.forEach(v=>{ const e=el('span','etiq',String(v)); e.dataset.v=String(v); w.appendChild(e); });
+    sc.appendChild(w);
+    const ordre=el('div','ordre'); ordre.hidden=true; sc.appendChild(ordre);
+    barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>corrigerRanger(sc,it)}]);
+  }
+  else if(it.type==='fleche'){
+    const cg=el('p','consigne');
+    cg.innerHTML='Quel nombre montre la flèche ? Écris-le <em>en chiffres</em> sur ton ardoise.';
+    sc.appendChild(cg);
+    sc.appendChild(dessinerDroite(it.ligne,{fleche:it.cible}));
+    barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>corrigerFleche(sc,it)}]);
+  }
+  else{
+    const cg=el('p','consigne');
+    cg.innerHTML='Où se place <em>'+it.cible+'</em> sur cette droite ? Clique sur la graduation, ou montre-la au tableau.';
+    sc.appendChild(cg);
+    const d=dessinerDroite(it.ligne,{});
+    sc.appendChild(d);
+    const aide=el('p','palier__note','La droite va de '+it.ligne.a+' à '+it.ligne.b+', les graduations avancent de '+it.ligne.pas+' en '+it.ligne.pas+'.');
+    aide.style.textAlign='center'; sc.appendChild(aide);
+    clicPourPlacer(d,it);
+    barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>corrigerPlacer(sc,it)}]);
+  }
+  z.appendChild(sc);
+}
+function clicPourPlacer(boite,it){
+  const svg=$('svg',boite);
+  svg.style.cursor='pointer';
+  svg.addEventListener('click',ev=>{
+    const r=svg.getBoundingClientRect();
+    const xu=(ev.clientX-r.left)/r.width*1200;
+    const L=it.ligne;
+    let v=L.a+(xu-60)/(1140-60)*(L.b-L.a);
+    v=Math.round(v/L.pas)*L.pas;
+    v=Math.min(L.b,Math.max(L.a,v));
+    it.propose=v;
+    const neuf=dessinerDroite(L,{fleche:v,etiquette:v});
+    $('svg',neuf).classList.add('droite--propose');
+    boite.replaceChildren(...neuf.childNodes);
+    clicPourPlacer(boite,it);
+  });
+}
+function corrigerEncadrer(sc,it){
+  stopMinuteurs();
+  const lo=Math.floor(it.nb/it.pas)*it.pas, hi=lo+it.pas;
+  const trous=$$('.trou',sc);
+  plusTard(0,()=>{ trous[0].textContent=lo; trous[0].classList.add('trou--plein');
+    if(!doux()) trous[0].animate([{transform:'scale(.4)',opacity:0},{transform:'scale(1)',opacity:1}],{duration:360,easing:'ease-out'}); });
+  plusTard(420,()=>{ trous[1].textContent=hi; trous[1].classList.add('trou--plein');
+    if(!doux()) trous[1].animate([{transform:'scale(.4)',opacity:0},{transform:'scale(1)',opacity:1}],{duration:360,easing:'ease-out'}); });
+  plusTard(900,()=>{
+    const pasMini=it.pas===100?10:1;
+    const a=it.pas===1?Math.max(0,lo-2):lo, b=it.pas===1?hi+2:hi;
+    const L={a:a,b:b,pas:pasMini,lab:it.pas===100?50:(it.pas===10?5:1)};
+    $('.zone-droite',sc).appendChild(dessinerDroite(L,{fleche:it.nb,etiquette:it.nb,anime:true}));
+  });
+  plusTard(1500,()=>finBoutons(sc,'droite',false));
+}
+function corrigerRanger(sc,it){
+  stopMinuteurs();
+  const tri=[...it.nbs].sort((a,b)=> it.sens==='croissant'? a-b : b-a);
+  const ordre=$('.ordre',sc); ordre.hidden=false; ordre.textContent='';
+  let t=0;
+  tri.forEach((v,k)=>{
+    plusTard(t,()=>{
+      if(k){ const s=el('span','signe', it.sens==='croissant'?'<':'>'); ordre.appendChild(s); }
+      const e=el('span','etiq etiq--range',String(v)); ordre.appendChild(e);
+      const src=sc.querySelector('.etiq-nbs .etiq[data-v="'+v+'"]');
+      if(src) src.classList.add('etiq--range');
+      if(!doux()) e.animate([{transform:'translateY(-18px) scale(.6)',opacity:0},{transform:'translateY(0) scale(1)',opacity:1}],
+        {duration:420,easing:'cubic-bezier(.2,1.1,.3,1)'});
+    });
+    t+=380;
+  });
+  plusTard(t+300,()=>finBoutons(sc,'droite',false));
+}
+function corrigerFleche(sc,it){
+  stopMinuteurs();
+  const boite=$('.droite',sc);
+  const neuf=dessinerDroite(it.ligne,{fleche:it.cible,etiquette:it.cible});
+  boite.replaceChildren(...neuf.childNodes);
+  const nb=$('.fleche__nb',boite);
+  if(nb && !doux()) nb.animate([{opacity:0},{opacity:1}],{duration:500});
+  const info=el('div','secret');
+  info.innerHTML='<h3>On vérifie</h3><p>La flèche est sur <b>'+it.cible+'</b> : '+enLettres(it.cible)+'.</p>';
+  sc.insertBefore(info,$('.actions',sc));
+  plusTard(700,()=>finBoutons(sc,'droite',false));
+}
+function corrigerPlacer(sc,it){
+  stopMinuteurs();
+  const boite=$('.droite',sc);
+  const juste = it.propose===it.cible;
+  const neuf=dessinerDroite(it.ligne,{fleche:it.cible,etiquette:it.cible,anime:true});
+  boite.replaceChildren(...neuf.childNodes);
+  if(it.propose!=null){
+    const info=el('div','secret');
+    info.innerHTML = juste
+      ? '<h3>On vérifie</h3><p>C’était bien là : <b>'+it.cible+'</b> 👏</p>'
+      : '<h3>On vérifie</h3><p>La classe avait montré <b>'+it.propose+'</b> ; '+it.cible+' se place ici.</p>';
+    sc.insertBefore(info,$('.actions',sc));
+  }
+  plusTard(900,()=>finBoutons(sc,'droite',juste));
+}
+
+/* =============================================================
+   11. Pastilles, bilan, journal
+   ============================================================= */
+function majPastilles(onglet){
+  const boite=$(onglet==='nombres'?'#nb-pastilles':'#dr-pastilles');
+  boite.textContent='';
+  const items=ETAT.items[onglet];
+  items.forEach((it,k)=>{
+    const b=el('button','pastille',String(k+1)); b.type='button';
+    if(k===ETAT.idx[onglet]) b.setAttribute('aria-current','true');
+    const r=ETAT.res[onglet][k];
+    if(r) b.dataset.etat=r;
+    b.title='Exercice '+(k+1);
+    b.addEventListener('click',()=>{ ETAT.idx[onglet]=k; sauver();
+      onglet==='nombres'?rendreNombres():rendreDroite(); });
+    boite.appendChild(b);
+  });
+}
+function bilan(onglet){
+  const res=ETAT.res[onglet], total=res.length;
+  const ok=res.filter(r=>r==='ok').length;
+  ETAT.histo[onglet][ETAT.rituel]={ok:ok,total:total};
+  sauver(); majJournal();
+  const b=el('section','bilan');
+  b.appendChild(el('h2','','Rituel '+ETAT.rituel+' terminé'));
+  const s=el('div','bilan__score',ok+' / '+total); b.appendChild(s);
+  const aRevoir=res.filter(r=>r==='revoir').length;
+  b.appendChild(el('p','', aRevoir
+    ? aRevoir+(aRevoir>1?' nombres à revoir — on peut les reprendre demain en début de rituel.':' nombre à revoir — on peut le reprendre demain en début de rituel.')
+    : 'Tout est passé. On garde le même élan demain.'));
+  const act=el('div','actions'); b.appendChild(act);
+  const refaire=el('button','btn','Refaire ce rituel'); refaire.type='button';
+  refaire.addEventListener('click',()=>{ ETAT.idx[onglet]=0; ETAT.res[onglet]=ETAT.items[onglet].map(()=>null);
+    sauver(); onglet==='nombres'?rendreNombres():rendreDroite(); });
+  const autre=el('button','btn','Aller à l’autre rituel'); autre.type='button';
+  autre.addEventListener('click',()=>choisirOnglet(onglet==='nombres'?'droite':'nombres'));
+  const suivant=el('button','btn btn--plein','Rituel '+(ETAT.rituel+1)+' →'); suivant.type='button';
+  suivant.addEventListener('click',()=>{ reglerRituel(ETAT.rituel+1); });
+  act.appendChild(refaire); act.appendChild(autre); act.appendChild(suivant);
+  return b;
+}
+function majJournal(){
+  const j=$('#journal'); j.textContent='Journal : ';
+  const onglet=ETAT.onglet;
+  const debut=Math.max(1,ETAT.rituel-9);
+  let vide=true;
+  for(let n=debut;n<=ETAT.rituel;n++){
+    const h=ETAT.histo[onglet][n];
+    const i=el('i');
+    i.title='Rituel '+n+(h?' : '+h.ok+'/'+h.total:' : pas encore fait');
+    if(h&&h.total){ const p=h.ok/h.total; i.dataset.note=p>=0.99?'3':p>=0.6?'2':p>0?'1':'0'; vide=false; }
+    j.appendChild(i);
+  }
+  if(vide) j.appendChild(el('span','',' (rien d’enregistré pour l’instant)'));
+}
+
+/* =============================================================
+   12. Bandeau, onglets, fenêtres
+   ============================================================= */
+function majPalier(){
+  const pn=palier(PALIERS_NB,ETAT.rituel), rn=rangPalier(PALIERS_NB,ETAT.rituel);
+  $('#nb-palier-etiq').textContent='Palier '+(rn+1);
+  $('#nb-palier-nom').textContent=pn.nom;
+  $('#nb-palier-note').textContent=pn.note;
+  const pd=palier(PALIERS_DR,ETAT.rituel), rd=rangPalier(PALIERS_DR,ETAT.rituel);
+  $('#dr-palier-etiq').textContent='Palier '+(rd+1);
+  $('#dr-palier-nom').textContent=pd.nom;
+  $('#dr-palier-note').textContent=pd.note;
+}
+function choisirOnglet(nom){
+  ETAT.onglet=nom; sauver();
+  $('#tab-nombres').setAttribute('aria-selected',String(nom==='nombres'));
+  $('#tab-droite').setAttribute('aria-selected',String(nom==='droite'));
+  $('#panneau-nombres').hidden = nom!=='nombres';
+  $('#panneau-droite').hidden  = nom!=='droite';
+  majJournal();
+  nom==='nombres'?rendreNombres():rendreDroite();
+}
+function reglerRituel(n){
+  n=Math.min(200,Math.max(1,n|0));
+  ETAT.rituel=n; $('#rituel-num').value=n;
+  preparer(true); majPalier(); majJournal(); sauver();
+  ETAT.onglet==='nombres'?rendreNombres():rendreDroite();
+}
+function remplirMemo(){
+  const v=$('#memo-voyelles'), na=$('#memo-nasales');
+  const cases=[['a','a'],['o','o, ô'],['i','i, y'],['e2','é, è, ei, ai'],['u','u'],['oi','oi'],['ou','ou'],['e','e, eu']];
+  cases.forEach(([f,gr])=>{
+    const c=el('div','memo__case');
+    const g=el('div','gr',gr); g.style.color=FAMILLES[f]; c.appendChild(g);
+    c.appendChild(el('div','nom',NOMS_FAM[f])); v.appendChild(c);
+  });
+  [['an','an, am'],['en','en, em'],['on','on, om'],['in','in, im'],['un','un, um']].forEach(([s,gr])=>{
+    const c=el('div','memo__case');
+    const g=el('div','gr'); g.style.color=FAMILLES[SONS[s].f];
+    const sp=el('span','tk tk--v tk--rond'); sp.style.setProperty('--c',FAMILLES[SONS[s].f]);
+    sp.appendChild(formeRond()); sp.appendChild(el('span','tk__t',gr.split(',')[0]));
+    g.appendChild(sp); c.appendChild(g);
+    c.appendChild(el('div','nom','['+s+'] · '+gr)); na.appendChild(c);
+  });
+}
+function remplirEchelles(){
+  const ligne=(tb,table,i)=>{
+    const p=table[i], suiv=table[i+1];
+    const tr=el('tr');
+    tr.appendChild(el('td','', suiv ? p.de+' à '+(suiv.de-1) : 'à partir de '+p.de));
+    const td=el('td'); td.innerHTML='<strong>'+p.nom+'</strong><br>'+p.note; tr.appendChild(td);
+    tb.appendChild(tr);
+  };
+  const tb1=$('#echelle-nb'), tb2=$('#echelle-dr');
+  PALIERS_NB.forEach((p,i)=>ligne(tb1,PALIERS_NB,i));
+  PALIERS_DR.forEach((p,i)=>ligne(tb2,PALIERS_DR,i));
+}
+
+/* =============================================================
+   13. Démarrage
+   ============================================================= */
+charger();
+preparer(false);
+$('#rituel-num').value=ETAT.rituel;
+$('#opt-son').checked=ETAT.son;
+$('#opt-nb').value=String(ETAT.nbNombres);
+majPalier(); remplirMemo(); remplirEchelles();
+
+$('#rituel-moins').addEventListener('click',()=>reglerRituel(ETAT.rituel-1));
+$('#rituel-plus').addEventListener('click',()=>reglerRituel(ETAT.rituel+1));
+$('#rituel-num').addEventListener('change',e=>{
+  const n=Math.min(200,Math.max(1,parseInt(e.target.value,10)||1));
+  if(n!==ETAT.rituel) reglerRituel(n); else e.target.value=n;
+});
+$('#opt-son').addEventListener('change',e=>{ ETAT.son=e.target.checked; sauver(); });
+$('#opt-nb').addEventListener('change',e=>{
+  ETAT.nbNombres=parseInt(e.target.value,10)||5;
+  ETAT.items.nombres=genNombres(ETAT.rituel,ETAT.nbNombres);
+  ETAT.res.nombres=ETAT.items.nombres.map(()=>null);
+  ETAT.idx.nombres=0; sauver(); if(ETAT.onglet==='nombres') rendreNombres();
+});
+$('#tab-nombres').addEventListener('click',()=>choisirOnglet('nombres'));
+$('#tab-droite').addEventListener('click',()=>choisirOnglet('droite'));
+$('#lien-memo').addEventListener('click',()=>$('#dlg-memo').showModal());
+$('#lien-progression').addEventListener('click',()=>$('#dlg-progression').showModal());
+$('#lien-aide').addEventListener('click',()=>$('#dlg-aide').showModal());
+$$('[data-ferme]').forEach(b=>b.addEventListener('click',()=>$('#'+b.dataset.ferme).close()));
+
+choisirOnglet(ETAT.onglet);
+})();
+</script>
