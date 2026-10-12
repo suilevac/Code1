@@ -18,6 +18,7 @@ copié dans un traitement de texte ou exporté.
 | Rond | Un son nasal, dans la couleur de sa voyelle : an, en, on, in, ein, un |
 | Triangle | Un son avec yod : ill, ian, ion, ien |
 | Trait simple | La lettre ne se dit pas (le *p* de sept, le *s* de quatre-vingts) |
+| Lettres muettes | Elles ne sont pas codées à part : elles appartiennent au son qui les précède, donc dans sa couleur et à l'intérieur de son rond ou de son triangle (*vingt* → **ingt** en jaune dans le rond) |
 | Double trait | La lettre fait le son [s] (cinq, six, dix, soixante, cent) |
 
 Le lien *Tableau des codes*, en haut du site, affiche tout le tableau, gestes des consonnes

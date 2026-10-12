@@ -4,12 +4,12 @@
 
 import { codeText, makeToken } from './engine.js';
 import { nombresEnLettres } from './numbers.js';
-import { render } from './render.js';
+import { render, grouper } from './render.js';
 import { buildTableau } from './tableau.js';
 import { FAMILIES, SOUNDS } from './data.js';
 
 const $ = (s) => document.querySelector(s);
-const PREFS = 'aloe.prefs.v1';
+const PREFS = 'aloe.prefs.v2';
 const FIXES = 'aloe.corrections.v1';
 
 const EXEMPLE = `Dans la cour de l'école, Léa joue au ballon avec son chien.
@@ -22,7 +22,7 @@ const parDefaut = {
   police: "'Andika', Verdana, sans-serif",
   taille: 34, interligne: 2, espacement: 0.01,
   couleurs: true, contraste: false, gestes: false,
-  muettes: true, verifier: true, nombres: false,
+  muettes: false, verifier: true, nombres: false,
   texte: EXEMPLE,
 };
 let prefs = { ...parDefaut, ...lire(PREFS, {}) };
@@ -126,34 +126,37 @@ function ouvrirMenu(tk) {
 function fermerMenu() { $('#menu').hidden = true; cible = null; }
 
 /* ---------- sérialisation (copier / exporter) ---------- */
-function styleEnLigne(tk) {
+const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+function lettreHtml(tk) {
   const s = [];
-  if (tk.kind === 'vowel' && prefs.couleurs) {
-    const fam = FAMILIES[tk.fam];
-    if (fam) s.push(`color:${prefs.contraste ? fam.strong : fam.color}`);
-    if (tk.shape === 'circle') s.push(`border:2px solid currentColor;border-radius:50%;padding:0 4px`);
-    if (tk.shape === 'tri') s.push(`border-left:2px solid currentColor;border-bottom:2px solid currentColor;padding:0 3px`);
-  } else if (tk.kind === 'vowel') {
-    if (tk.shape === 'circle') s.push('border:2px solid #000;border-radius:50%;padding:0 4px');
-    if (tk.shape === 'tri') s.push('border-left:2px solid #000;border-bottom:2px solid #000;padding:0 3px');
-  }
   if (tk.mark === 'single') {
     s.push('text-decoration:underline');
     if (prefs.muettes) s.push('color:#9aa1ad');
   }
   if (tk.mark === 'double') s.push('border-bottom:3px double currentColor');
-  return s.join(';');
+  return s.length ? `<span style="${s.join(';')}">${esc(tk.src)}</span>` : esc(tk.src);
+}
+
+function uniteHtml(groupe) {
+  const { tete } = groupe;
+  const s = [];
+  if (tete.kind === 'vowel') {
+    const fam = FAMILIES[tete.fam];
+    if (prefs.couleurs && fam) s.push(`color:${prefs.contraste ? fam.strong : fam.color}`);
+    if (tete.shape === 'circle') s.push('border:2px solid currentColor;border-radius:50%;padding:0 4px');
+    if (tete.shape === 'tri') s.push('border-left:2px solid currentColor;border-bottom:2px solid currentColor;padding:0 3px');
+  }
+  const dedans = lettreHtml(tete) + groupe.suite.map((m) => lettreHtml(m.tk)).join('');
+  return s.length ? `<span style="${s.join(';')}">${dedans}</span>` : dedans;
 }
 
 function enHtml() {
-  const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   const corps = lignes.map((ligne) => {
     const contenu = ligne.map((item) => {
       if (item.type === 'raw') return esc(item.src);
-      return '<span style="white-space:nowrap">' + item.tokens.map((tk) => {
-        const st = styleEnLigne(tk);
-        return st ? `<span style="${st}">${esc(tk.src)}</span>` : esc(tk.src);
-      }).join('') + '</span>';
+      return '<span style="white-space:nowrap">' +
+        grouper(item.tokens).map(uniteHtml).join('') + '</span>';
     }).join('');
     return `<p style="margin:0 0 .25em">${contenu || '&nbsp;'}</p>`;
   }).join('\n');

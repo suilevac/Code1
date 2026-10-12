@@ -124,27 +124,30 @@ input[type="range"] { width: 110px; accent-color: var(--accent); }
 .vide { color: var(--doux); font-family: inherit; font-size: 15px; }
 
 /* ---------- les graphèmes ---------- */
+/* .unite = un son + les lettres muettes qui lui appartiennent */
 .mot { white-space: nowrap; }
-.tk { position: relative; display: inline-block; line-height: 1; color: var(--encre); }
-.tk--vowel { color: var(--c, var(--encre)); }
-.out--mono .tk--vowel { color: var(--encre); }
+.unite { position: relative; display: inline-block; line-height: 1; color: var(--encre); }
+.unite--vowel { color: var(--c, var(--encre)); }
+.out--mono .unite--vowel { color: var(--encre); }
 
+.tk { position: relative; display: inline-block; line-height: 1; }
 .tk__t { position: relative; }
-.tk--circle .tk__t { padding: 0 .13em; }
-.tk--tri .tk__t { padding: 0 .34em 0 .09em; }
-.tk--circle { margin: 0 .04em; }
-.tk--tri { margin: 0 .04em; }
+.unite--circle .tk__t, .unite--tri .tk__t { padding: 0 .02em; }
+.unite--circle { margin: 0 .05em; padding: 0 .12em; }
+.unite--tri { margin: 0 .04em; padding: 0 .30em 0 .08em; }
 
-.tk--tri .tk__shape { top: -.3em; bottom: .19em; }
+/* le SVG garderait son rapport largeur/hauteur : on l'impose explicitement */
 .tk__shape {
-  position: absolute; left: 0; right: 0; top: .04em; bottom: .02em;
-  width: auto; height: auto; pointer-events: none; overflow: visible;
+  position: absolute; left: 0; top: .02em;
+  width: 100%; height: calc(100% + .07em);
+  pointer-events: none; overflow: visible;
 }
+.unite--tri .tk__shape { top: -.3em; height: calc(100% + .22em); }
 
 .tk--muette .tk__t {
   text-decoration: underline;
   text-decoration-thickness: .05em;
-  text-underline-offset: .14em;
+  text-underline-offset: .09em;
 }
 .out--muettes-grises .tk--muette { color: #9aa1ad; }
 
@@ -306,7 +309,7 @@ dialog::backdrop { background: rgba(16, 24, 40, .45); }
   <label class="bascule"><input type="checkbox" id="opt-couleurs" checked> Couleurs</label>
   <label class="bascule"><input type="checkbox" id="opt-contraste"> Couleurs foncées</label>
   <label class="bascule"><input type="checkbox" id="opt-gestes"> Gestes</label>
-  <label class="bascule"><input type="checkbox" id="opt-muettes" checked> Muettes en gris</label>
+  <label class="bascule"><input type="checkbox" id="opt-muettes"> Muettes en gris</label>
   <label class="bascule"><input type="checkbox" id="opt-verifier" checked> Signaler les mots à vérifier</label>
   <label class="bascule"><input type="checkbox" id="opt-nombres"> Nombres en lettres</label>
   <div class="sep"></div>
@@ -361,6 +364,10 @@ dialog::backdrop { background: rgba(16, 24, 40, .45); }
       Un son avec yod est dans un triangle (<em>ill</em>, <em>ian</em>, <em>ion</em>, <em>ien</em>).</p>
     <p><strong>Les traits.</strong> Un trait simple sous une lettre : elle ne se dit pas.
       Un double trait : elle fait le son [s].</p>
+    <p><strong>Les lettres muettes.</strong> Elles ne forment pas un code à part : elles
+      appartiennent au son qui les précède. Dans <em>vingt</em>, le <em>g</em> et le <em>t</em>
+      sont donc dans le rond, en jaune avec le son [in] ; dans <em>chat</em>, le <em>t</em> est
+      rouge avec le [a].</p>
     <p><strong>Corriger.</strong> Le découpage est automatique : il se trompe parfois sur les mots rares,
       sur <em>-ent</em> (verbe ou son [an] ?) et sur <em>ill</em>. Les endroits douteux sont soulignés
       en pointillé orange. Cliquez sur la lettre pour choisir le bon code ; la correction est enregistrée
@@ -732,10 +739,13 @@ function buildTableau() {
       par(caseConsonne)(Object.keys(CONSONANTS))) +
     section('Les attaques', 'Consonne + l ou r : les deux gestes s\'enchaînent.',
       BLENDS.map((b) => `<div class="case case--cons"><div class="graphies">${b}</div></div>`).join('')) +
-    `<h2>Les traits</h2>
+    `<h2>Les traits et les lettres muettes</h2>
      <p class="note">
        <strong>Trait simple</strong> sous une lettre : elle ne se dit pas
        (le <em>p</em> de sept, le <em>s</em> de quatre-vingts).<br>
+       Une lettre muette ne forme pas un code à part : elle appartient au son qui la précède.
+       Dans <em>vingt</em>, le <em>g</em> et le <em>t</em> sont donc dans le rond, en jaune avec
+       le son [in] ; dans <em>chat</em>, le <em>t</em> est rouge avec le [a].<br>
        <strong>Double trait</strong> : la lettre fait le son [s] (cinq, six, dix, soixante, cent).<br>
        <em>* Les cases marquées d'une étoile ne sont pas sur l'affichage de la classe :
        elles ont été ajoutées pour que le site sache coder tous les mots (oin, ay, oy, uy).</em>
@@ -1035,6 +1045,10 @@ function codeComposite(word) {
 /* ---- render.js ---- */
 /* =============================================================
    render.js — Affichage du texte codé
+
+   Une lettre muette n'est pas codée à part : elle appartient au son
+   qui la précède. Elle est donc dans la même unité (même couleur,
+   à l'intérieur du rond ou du triangle), avec son trait simple.
    ============================================================= */
 
 
@@ -1063,22 +1077,26 @@ function shapeOverlay(shape) {
   return svg;
 }
 
-function tokenEl(tk, opts) {
+/* Rassemble chaque lettre muette avec le son qui la précède. */
+function grouper(tokens) {
+  const groupes = [];
+  tokens.forEach((tk, i) => {
+    const dernier = groupes[groupes.length - 1];
+    const porteur = dernier && (dernier.tete.kind === 'vowel' || dernier.tete.kind === 'cons');
+    if (tk.kind === 'mute' && porteur) dernier.suite.push({ tk, i });
+    else groupes.push({ tete: tk, i, suite: [] });
+  });
+  return groupes;
+}
+
+function lettreEl(tk, i, opts) {
   const span = document.createElement('span');
   span.className = 'tk tk--' + tk.kind;
-  if (tk.kind === 'vowel') {
-    const fam = FAMILIES[tk.fam];
-    if (fam) span.style.setProperty('--c', opts.contrast ? fam.strong : fam.color);
-    span.dataset.fam = tk.fam;
-    if (tk.shape === 'circle') span.classList.add('tk--circle');
-    if (tk.shape === 'tri') span.classList.add('tk--tri');
-  }
+  span.dataset.t = String(i);
   if (tk.mark === 'single') span.classList.add('tk--muette');
   if (tk.mark === 'double') span.classList.add('tk--sifflante');
   if (tk.check && opts.check) span.classList.add('tk--verifier');
   if (tk.manual) span.classList.add('tk--manuel');
-
-  if (tk.shape === 'circle' || tk.shape === 'tri') span.appendChild(shapeOverlay(tk.shape));
 
   if (opts.gestures && tk.kind === 'cons' && tk.gesture) {
     const g = document.createElement('span');
@@ -1086,12 +1104,28 @@ function tokenEl(tk, opts) {
     g.innerHTML = gestureSvg(tk.gesture);
     span.appendChild(g);
   }
-
   const txt = document.createElement('span');
   txt.className = 'tk__t';
   txt.textContent = tk.src;
   span.appendChild(txt);
   return span;
+}
+
+function uniteEl(groupe, opts) {
+  const { tete } = groupe;
+  const unite = document.createElement('span');
+  unite.className = 'unite unite--' + tete.kind;
+  if (tete.kind === 'vowel') {
+    const fam = FAMILIES[tete.fam];
+    if (fam) unite.style.setProperty('--c', opts.contrast ? fam.strong : fam.color);
+    unite.dataset.fam = tete.fam;
+    if (tete.shape === 'circle') unite.classList.add('unite--circle');
+    if (tete.shape === 'tri') unite.classList.add('unite--tri');
+    if (tete.shape === 'circle' || tete.shape === 'tri') unite.appendChild(shapeOverlay(tete.shape));
+  }
+  unite.appendChild(lettreEl(tete, groupe.i, opts));
+  for (const m of groupe.suite) unite.appendChild(lettreEl(m.tk, m.i, opts));
+  return unite;
 }
 
 function render(container, lines, opts = {}) {
@@ -1114,11 +1148,7 @@ function render(container, lines, opts = {}) {
       w.className = 'mot';
       w.dataset.mot = item.src.toLowerCase();
       w.dataset.w = String(wi++);
-      item.tokens.forEach((tk, ti) => {
-        const el = tokenEl(tk, opts);
-        el.dataset.t = String(ti);
-        w.appendChild(el);
-      });
+      for (const groupe of grouper(item.tokens)) w.appendChild(uniteEl(groupe, opts));
       p.appendChild(w);
     }
     container.appendChild(p);
@@ -1135,7 +1165,7 @@ function render(container, lines, opts = {}) {
 
 
 const $ = (s) => document.querySelector(s);
-const PREFS = 'aloe.prefs.v1';
+const PREFS = 'aloe.prefs.v2';
 const FIXES = 'aloe.corrections.v1';
 
 const EXEMPLE = `Dans la cour de l'école, Léa joue au ballon avec son chien.
@@ -1148,7 +1178,7 @@ const parDefaut = {
   police: "'Andika', Verdana, sans-serif",
   taille: 34, interligne: 2, espacement: 0.01,
   couleurs: true, contraste: false, gestes: false,
-  muettes: true, verifier: true, nombres: false,
+  muettes: false, verifier: true, nombres: false,
   texte: EXEMPLE,
 };
 let prefs = { ...parDefaut, ...lire(PREFS, {}) };
@@ -1252,34 +1282,37 @@ function ouvrirMenu(tk) {
 function fermerMenu() { $('#menu').hidden = true; cible = null; }
 
 /* ---------- sérialisation (copier / exporter) ---------- */
-function styleEnLigne(tk) {
+const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+function lettreHtml(tk) {
   const s = [];
-  if (tk.kind === 'vowel' && prefs.couleurs) {
-    const fam = FAMILIES[tk.fam];
-    if (fam) s.push(`color:${prefs.contraste ? fam.strong : fam.color}`);
-    if (tk.shape === 'circle') s.push(`border:2px solid currentColor;border-radius:50%;padding:0 4px`);
-    if (tk.shape === 'tri') s.push(`border-left:2px solid currentColor;border-bottom:2px solid currentColor;padding:0 3px`);
-  } else if (tk.kind === 'vowel') {
-    if (tk.shape === 'circle') s.push('border:2px solid #000;border-radius:50%;padding:0 4px');
-    if (tk.shape === 'tri') s.push('border-left:2px solid #000;border-bottom:2px solid #000;padding:0 3px');
-  }
   if (tk.mark === 'single') {
     s.push('text-decoration:underline');
     if (prefs.muettes) s.push('color:#9aa1ad');
   }
   if (tk.mark === 'double') s.push('border-bottom:3px double currentColor');
-  return s.join(';');
+  return s.length ? `<span style="${s.join(';')}">${esc(tk.src)}</span>` : esc(tk.src);
+}
+
+function uniteHtml(groupe) {
+  const { tete } = groupe;
+  const s = [];
+  if (tete.kind === 'vowel') {
+    const fam = FAMILIES[tete.fam];
+    if (prefs.couleurs && fam) s.push(`color:${prefs.contraste ? fam.strong : fam.color}`);
+    if (tete.shape === 'circle') s.push('border:2px solid currentColor;border-radius:50%;padding:0 4px');
+    if (tete.shape === 'tri') s.push('border-left:2px solid currentColor;border-bottom:2px solid currentColor;padding:0 3px');
+  }
+  const dedans = lettreHtml(tete) + groupe.suite.map((m) => lettreHtml(m.tk)).join('');
+  return s.length ? `<span style="${s.join(';')}">${dedans}</span>` : dedans;
 }
 
 function enHtml() {
-  const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
   const corps = lignes.map((ligne) => {
     const contenu = ligne.map((item) => {
       if (item.type === 'raw') return esc(item.src);
-      return '<span style="white-space:nowrap">' + item.tokens.map((tk) => {
-        const st = styleEnLigne(tk);
-        return st ? `<span style="${st}">${esc(tk.src)}</span>` : esc(tk.src);
-      }).join('') + '</span>';
+      return '<span style="white-space:nowrap">' +
+        grouper(item.tokens).map(uniteHtml).join('') + '</span>';
     }).join('');
     return `<p style="margin:0 0 .25em">${contenu || '&nbsp;'}</p>`;
   }).join('\n');

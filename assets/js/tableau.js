@@ -43,10 +43,13 @@ export function buildTableau() {
       par(caseConsonne)(Object.keys(CONSONANTS))) +
     section('Les attaques', 'Consonne + l ou r : les deux gestes s\'enchaînent.',
       BLENDS.map((b) => `<div class="case case--cons"><div class="graphies">${b}</div></div>`).join('')) +
-    `<h2>Les traits</h2>
+    `<h2>Les traits et les lettres muettes</h2>
      <p class="note">
        <strong>Trait simple</strong> sous une lettre : elle ne se dit pas
        (le <em>p</em> de sept, le <em>s</em> de quatre-vingts).<br>
+       Une lettre muette ne forme pas un code à part : elle appartient au son qui la précède.
+       Dans <em>vingt</em>, le <em>g</em> et le <em>t</em> sont donc dans le rond, en jaune avec
+       le son [in] ; dans <em>chat</em>, le <em>t</em> est rouge avec le [a].<br>
        <strong>Double trait</strong> : la lettre fait le son [s] (cinq, six, dix, soixante, cent).<br>
        <em>* Les cases marquées d'une étoile ne sont pas sur l'affichage de la classe :
        elles ont été ajoutées pour que le site sache coder tous les mots (oin, ay, oy, uy).</em>

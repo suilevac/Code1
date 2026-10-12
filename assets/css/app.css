@@ -118,27 +118,30 @@ input[type="range"] { width: 110px; accent-color: var(--accent); }
 .vide { color: var(--doux); font-family: inherit; font-size: 15px; }
 
 /* ---------- les graphèmes ---------- */
+/* .unite = un son + les lettres muettes qui lui appartiennent */
 .mot { white-space: nowrap; }
-.tk { position: relative; display: inline-block; line-height: 1; color: var(--encre); }
-.tk--vowel { color: var(--c, var(--encre)); }
-.out--mono .tk--vowel { color: var(--encre); }
+.unite { position: relative; display: inline-block; line-height: 1; color: var(--encre); }
+.unite--vowel { color: var(--c, var(--encre)); }
+.out--mono .unite--vowel { color: var(--encre); }
 
+.tk { position: relative; display: inline-block; line-height: 1; }
 .tk__t { position: relative; }
-.tk--circle .tk__t { padding: 0 .13em; }
-.tk--tri .tk__t { padding: 0 .34em 0 .09em; }
-.tk--circle { margin: 0 .04em; }
-.tk--tri { margin: 0 .04em; }
+.unite--circle .tk__t, .unite--tri .tk__t { padding: 0 .02em; }
+.unite--circle { margin: 0 .05em; padding: 0 .12em; }
+.unite--tri { margin: 0 .04em; padding: 0 .30em 0 .08em; }
 
-.tk--tri .tk__shape { top: -.3em; bottom: .19em; }
+/* le SVG garderait son rapport largeur/hauteur : on l'impose explicitement */
 .tk__shape {
-  position: absolute; left: 0; right: 0; top: .04em; bottom: .02em;
-  width: auto; height: auto; pointer-events: none; overflow: visible;
+  position: absolute; left: 0; top: .02em;
+  width: 100%; height: calc(100% + .07em);
+  pointer-events: none; overflow: visible;
 }
+.unite--tri .tk__shape { top: -.3em; height: calc(100% + .22em); }
 
 .tk--muette .tk__t {
   text-decoration: underline;
   text-decoration-thickness: .05em;
-  text-underline-offset: .14em;
+  text-underline-offset: .09em;
 }
 .out--muettes-grises .tk--muette { color: #9aa1ad; }
 
