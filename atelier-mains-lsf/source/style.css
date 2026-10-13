@@ -66,7 +66,6 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .seg{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{font:inherit;font-weight:700;padding:9px;background:transparent;border:0;color:var(--muted);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
-.seg button.d[aria-pressed="true"]{background:var(--debut);color:var(--panel)}
 .check{display:flex;align-items:center;gap:8px;font-size:.9rem}
 .field{display:flex;flex-direction:column;gap:4px}
 .field input,.field textarea,.field select{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:9px;padding:8px 10px}

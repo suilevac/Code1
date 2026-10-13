@@ -228,6 +228,26 @@ S = {
   pouvait construire un maillage de 44 000 sommets.
 - **`for (const k in ensembleD'Étape)`** suppose que toutes les clés sont des côtés de main : depuis les flèches par
   intervalle, un ensemble porte aussi `fl`. On énumère `['D','G']`.
+- **Un JSON importé vient de l'extérieur.** Une couleur qui serait un nombre, un style de flèche inconnu, un
+  `verrous` qui serait une chaîne : `Object.assign` les laissait passer, et c'est `refresh()` qui levait ensuite
+  une exception à CHAQUE clic, pour toujours. `load()` filtre maintenant chaque champ (`vHex`, `vNum`, `vIn`,
+  `vBool`, `vFl`), vide les poses incomplètes plutôt que de les laisser « présentes et vides », et n'écrit dans
+  `S` qu'une fois TOUT validé : un import refusé ne laisse plus l'atelier à moitié écrasé (il basculait sur
+  « les deux mains » au prochain rafraîchissement alors que le message disait « JSON illisible »). Vérifié sur
+  sept JSON tordus : l'atelier répond encore après chacun.
+- **« Recadrer au plus juste » était inerte dès qu'un fond était choisi** : on peignait le fond EN PREMIER, donc
+  tous les pixels étaient opaques et la boîte trouvée était l'image entière. On compose désormais le CONTENU seul
+  (référent, 3D, flèches), on mesure son alpha (`alphaBox`, marge égale sur les deux axes), puis on peint le fond
+  à la taille de SORTIE — son dégradé et son cadre suivent l'image finale.
+- **Export sans filet.** Pas de garde de réentrance ni de `try/finally` : un double clic laissait le plateau au
+  `pixelRatio` de l'export (flou à l'écran) et `showModal()` sur une boîte déjà ouverte bloquait le message sur
+  « Rendu en cours… ». Le bouton se désactive, tout est dans un `try/finally`, et l'URL d'objet du PNG est
+  révoquée (sinon un PNG de 0,5 à 3 Mo restait en mémoire par export).
+- **Un point DERRIÈRE l'œil** ne se projette pas en NaN mais en coordonnées retournées : le référent se serait
+  dessiné à l'envers et une flèche serait partie à l'autre bout de l'image dès qu'on entre dans la main.
+  `devant(v)` teste le z en repère caméra avant de tracer.
+- **Plan éloigné à 500.** Un buste à 170 % plus des étapes très écartées peuvent demander davantage, et tout ce
+  qui dépasse serait simplement coupé : `fitView` repousse `camera.far` au besoin.
 - **Trait de l'ongle en pixels du DESSIN.** De loin ou vu en biais, les 2,4 px de dessin tombaient sous le pixel
   d'écran : le trait se brisait en pointillé et l'ongle devenait une tache claire sans bord. Il garde maintenant au
   moins ~1,25 px d'écran (`max(nailLW, 1.25*fwidth(sd))`), multiplié par le profil en « U » pour que le bord libre

@@ -716,7 +716,7 @@ const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWr
   void main(){vec4 c=texture2D(tId,vUv);if(c.a<.5)discard;float d0=lin(texture2D(tDepth,vUv).r);float e=0.;
     float gr=c.b,r=mix(rad,radmax,gr);                  // la part « hors pose » est celle de CETTE main (canal bleu)
     for(int i=0;i<12;i++){float a=float(i)*.5235988;if(sep(c,d0,vUv+vec2(cos(a),sin(a))*r*texel))e=1.;}
-    if(e<.5){float pas=crad*wpx*d0,m=0.,sc=crv/max(gr,1e-4);  // trois directions : un pli dans n'importe quel sens
+    if(e<.5&&gr>.001){float pas=crad*wpx*d0,m=0.,sc=crv/gr;    // trois directions : un pli dans n'importe quel sens
       for(int i=0;i<3;i++){float a=float(i)*1.0471976;m=max(m,fold(d0,vec2(cos(a),sin(a))*crad*texel,pas));}
       if(m<sc)discard;e=1.;}
     if(e<.5)discard;gl_FragColor=vec4(.067,.067,.067,1.);}`});
@@ -791,6 +791,9 @@ bgL=$('bgL');fgL=$('fgL');
 const HL=(()=>{let a=1e9,b=-1e9;for(let i=1;i<3*MN;i+=3){if(MREST[i]<a)a=MREST[i];if(MREST[i]>b)b=MREST[i]}return b-a})();
 const INK='#14201f';
 function projTo(v,W,H){const q=v.clone().project(camera);return{x:(q.x+1)/2*W,y:(1-q.y)/2*H}}
+// Un point derrière l'œil se projette en coordonnées RETOURNÉES, pas en NaN : sans ce garde-fou, le référent se
+// dessinerait à l'envers et une flèche partirait à l'autre bout de l'image dès qu'on entre dans la main.
+const devant=v=>v.clone().applyMatrix4(camera.matrixWorldInverse).z < -camera.near;
 function ppuAt(v,H){return H/2/(Math.max(camera.position.distanceTo(v),1e-3)*Math.tan(camera.fov*Math.PI/360))}
 const mixW=(c,k)=>{const n=parseInt(c.slice(1),16),r=n>>16&255,g=n>>8&255,b=n&255,m=v=>Math.round(v+(255-v)*k);
   return '#'+((1<<24)+(m(r)<<16)+(m(g)<<8)+m(b)).toString(16).slice(1)};
@@ -803,7 +806,8 @@ const refAnchor=()=>new THREE.Vector3(S.ref.x/100*2*HL,.35*HL+S.ref.h/100*2*HL,-
 const BODY={ep:1.15,yEp:.10,yTa:1.92,taille:.74,cou:.215,yCou:-.16,menton:-.58,tete:.60,tw:.40};
 function drawRef(x,W,H){
   const R=S.ref;if(R.style==='aucun')return;
-  const A=refAnchor(),a=projTo(A,W,H),u=ppuAt(A,H)*HL*R.t;
+  const A=refAnchor();if(!devant(A))return;
+  const a=projTo(A,W,H),u=ppuAt(A,H)*HL*R.t;
   if(u<4||!isFinite(u)||!isFinite(a.x)||!isFinite(a.y))return;
   const P=(bx,by)=>[a.x+bx*u,a.y+by*u];
   const B=BODY,plein=R.style==='plein',hy=B.menton-B.tete,T=B.tete,w=B.tw;
@@ -916,12 +920,13 @@ function drawArrows(x,W,H){
   if(S.mode!=='mouvement'||!S.fleche||!S.cles)return;
   const lw=Math.max(2.4,.0105*Math.min(W,H)),off=new THREE.Vector3(0,-.38*HL,.28*HL);
   mainsOn().forEach(side=>{
-    const pts=S.cles.map(c=>projTo(new THREE.Vector3().fromArray((c[side]||c.D).pos).add(off),W,H));
+    const W3=S.cles.map(c=>new THREE.Vector3().fromArray(((c[side]||c.D)||{pos:[0,0,0]}).pos).add(off));
+    const vus=W3.map(devant),pts=W3.map(v=>projTo(v,W,H));
     let tracee=false;
-    for(let i=0;i+1<pts.length;i++)if(Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y)>lw*7){drawArrow(x,pts[i],pts[i+1],lw,segFl(i));tracee=true}
+    for(let i=0;i+1<pts.length;i++)if(vus[i]&&vus[i+1]&&Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y)>lw*7){drawArrow(x,pts[i],pts[i+1],lw,segFl(i));tracee=true}
     // pastilles dès qu'il y a plus de deux étapes, et aussi quand la main ne se déplace pas : sans elles, rien
     // ne dirait dans quel ordre lire deux configurations posées au même endroit
-    if(S.cles.length>2||!tracee)pts.forEach((p,i)=>badge(x,p,i+1,lw));
+    if(S.cles.length>2||!tracee)pts.forEach((p,i)=>{if(vus[i])badge(x,p,i+1,lw)});
   });
 }
 
@@ -964,7 +969,12 @@ function fitView(){
   const vf=camera.fov*Math.PI/180,hf=2*Math.atan(Math.tan(vf/2)*camera.aspect);
   const d=Math.max(z.y/2/Math.tan(vf/2),z.x/2/Math.tan(hf/2))*1.14+z.z/2;
   const dir=camera.position.clone().sub(controls.target);if(dir.lengthSq()<1e-6)dir.set(0,0,1);
-  controls.target.copy(c);camera.position.copy(c).addScaledVector(dir.normalize(),Math.max(d,8));controls.update()}
+  const D=Math.max(d,8);
+  // le plan éloigné vaut 500 : un buste à 170 % et des étapes très écartées peuvent demander plus, et tout ce qui
+  // dépasse serait simplement coupé. On le repousse au besoin (la profondeur reste largement assez précise).
+  const need=Math.ceil((D+z.length())*1.6/100)*100;
+  if(need>camera.far){camera.far=need;camera.updateProjectionMatrix()}
+  controls.target.copy(c);camera.position.copy(c).addScaledVector(dir.normalize(),D);controls.update()}
 function fitIfNeeded(force){
   if(force)return fitView();
   const b=contentBox();if(b.isEmpty())return;const V=THREE.Vector3;let m=0;
@@ -1099,7 +1109,7 @@ const press3=(l,v)=>l.forEach(([b,k])=>$(b).setAttribute('aria-pressed',k===v));
 // nouvelle : déplacer celle que l'utilisateur a déjà placée lui ferait perdre son réglage, et en mode mouvement
 // cela rallongerait la course d'une étape sans qu'il l'ait demandé.
 function ensureSide(side){const o=side==='G'?'D':'G',sg=side==='D'?-1:1;
-  const fix=set=>{if(set[side])return;const b=set[o]||(set[o]=clone(PRESETS['Dessin']));
+  const fix=set=>{if(okPose(set[side]))return;const b=okPose(set[o])?set[o]:(set[o]=clone(PRESETS['Dessin']));
     const m=mirror(b);if(Math.abs(m.pos[0]-b.pos[0])<12)m.pos[0]=b.pos[0]+sg*18;set[side]=m};
   fix(S.pose);if(S.cles)S.cles.forEach(fix);}
 function setMains(v){S.mains=v;mainsOn().forEach(ensureSide);if(mainsOn().indexOf(S.act)<0)S.act=mainsOn()[0];setHL(null);refresh();fitIfNeeded()}
@@ -1233,27 +1243,53 @@ function snapshot(){const o={version:8,mode:S.mode,mains:S.mains,act:S.act,verro
   o.pose=clone(S.pose);if(S.cles){o.cles=clone(S.cles);o.cur=S.cur}return o}
 const okPose=p=>p&&p.f&&ALL.every(k=>p.f[k])&&p.f.pouce.av!==undefined&&Array.isArray(p.q)&&Array.isArray(p.pos);
 const okSet=c=>c&&(okPose(c.D)||okPose(c.G));
+// Un JSON importé vient de l'extérieur : on ne lui fait confiance sur AUCUN champ. Une couleur qui serait un
+// nombre, un style inconnu, un verrou qui serait une chaîne — et c'est refresh() qui lève une exception à chaque
+// clic, pour toujours. On filtre, et on n'écrit dans S qu'une fois tout validé.
+const vHex=(v,d)=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v)?v:d;
+const vNum=(v,a,b,d)=>typeof v==='number'&&isFinite(v)?clamp(v,a,b):d;
+const vIn=(v,l,d)=>l.indexOf(v)>=0?v:d;
+const vBool=(v,d)=>typeof v==='boolean'?v:d;
+const vFl=(o,d)=>!o||typeof o!=='object'?clone(d):{style:vIn(o.style,FLS.map(f=>f[0]),d.style),
+  sens:o.sens<0?-1:1,double:vBool(o.double,d.double),col:vHex(o.col,d.col)};
 function load(o){
   if(!o||[6,7,8].indexOf(o.version)<0)throw new Error('format d\'une ancienne version de l\'atelier');
+  const N={fl:clone(S.fl),fond:clone(S.fond),ref:clone(S.ref)};
   if(o.version<8){   // versions 6-7 : une seule main, un début et une fin
-    const c=o.gauche?'G':'D';S.mains=c;S.act=c;
+    const c=o.gauche?'G':'D';N.mains=c;N.act=c;N.cur=0;
     if(o.mode==='mouvement'){if(!okPose(o.debut)||!okPose(o.fin))throw new Error('début ou fin manquant');
-      S.cles=[{[c]:clone(o.debut)},{[c]:clone(o.fin)}];S.pose={[c]:clone(o.fin)};S.mode='mouvement';S.cur=0;S.etapes=Math.max(0,(o.etapes||2)-1)}
-    else{if(!okPose(o.pose))throw new Error('pose manquante');S.pose={[c]:clone(o.pose)};S.cles=null;S.mode='pose'}
-    S.fleche=o.fleche!==false;
+      N.cles=[{[c]:clone(o.debut)},{[c]:clone(o.fin)}];N.pose={[c]:clone(o.fin)};N.mode='mouvement';N.etapes=Math.max(0,(o.etapes||2)-1)}
+    else{if(!okPose(o.pose))throw new Error('pose manquante');N.pose={[c]:clone(o.pose)};N.cles=null;N.mode='pose';N.etapes=S.etapes}
+    N.fleche=o.fleche!==false;
   }else{
-    S.mains=['D','G','DG'].indexOf(o.mains)<0?'D':o.mains;S.act=o.act==='G'?'G':'D';
-    if(o.cles&&Array.isArray(o.cles)&&o.cles.length>1&&o.cles.every(okSet))S.cles=clone(o.cles);else S.cles=null;
-    if(o.mode==='mouvement'){if(!S.cles)throw new Error('étapes manquantes');
-      S.cur=Math.max(0,Math.min(o.cur||0,S.cles.length-1));S.mode='mouvement';S.pose=okSet(o.pose)?clone(o.pose):clone(S.cles[S.cles.length-1])}
-    else{if(!okSet(o.pose))throw new Error('pose manquante');S.pose=clone(o.pose);S.mode='pose';S.cur=S.cles?Math.max(0,Math.min(o.cur||0,S.cles.length-1)):0}
-    S.etapes=o.etapes==null?1:Math.max(0,Math.min(3,o.etapes));S.fleche=o.fleche!==false;
-    if(o.fl)Object.assign(S.fl,o.fl);
-    if(o.decor){if(o.decor.fond)Object.assign(S.fond,o.decor.fond);if(o.decor.ref)Object.assign(S.ref,o.decor.ref)}
+    N.mains=vIn(o.mains,['D','G','DG'],'D');N.act=o.act==='G'?'G':'D';
+    N.cles=Array.isArray(o.cles)&&o.cles.length>1&&o.cles.every(okSet)?clone(o.cles):null;
+    if(o.mode==='mouvement'){if(!N.cles)throw new Error('étapes manquantes');
+      N.mode='mouvement';N.pose=okSet(o.pose)?clone(o.pose):clone(N.cles[N.cles.length-1])}
+    else{if(!okSet(o.pose))throw new Error('pose manquante');N.pose=clone(o.pose);N.mode='pose'}
+    N.cur=N.cles?Math.max(0,Math.min(vNum(o.cur,0,99,0),N.cles.length-1)):0;
+    N.etapes=vNum(o.etapes,0,3,1);N.fleche=o.fleche!==false;
+    N.fl=vFl(o.fl,S.fl);
+    const D=o.decor||{},F=D.fond||{},R=D.ref||{};
+    N.fond={type:vIn(F.type,['aucun','uni','degrade'],'aucun'),col:vHex(F.col,'#ffffff'),cadre:vBool(F.cadre,false)};
+    N.ref={style:vIn(R.style,['aucun','trait','plein'],'aucun'),t:vNum(R.t,.6,1.7,1),h:vNum(R.h,-60,60,0),
+           x:vNum(R.x,-60,60,0),visage:vBool(R.visage,true),reperes:vBool(R.reperes,false)};
+    if(N.cles)N.cles.forEach(c=>{c.fl=c.fl?vFl(c.fl,N.fl):undefined});
   }
-  if(mainsOn().indexOf(S.act)<0)S.act=mainsOn()[0];mainsOn().forEach(ensureSide);mainsOn().forEach(handOf);
-  if(o.verrous)for(const k in S.locks)if(o.verrous[k])S.locks[k]=o.verrous[k].slice();
-  if(o.vue&&o.vue.pos){camera.position.fromArray(o.vue.pos);controls.target.fromArray(o.vue.cible||[0,0,0]);controls.update()}refresh();
+  // une pose incomplète doit Être absente, pas « présente et vide » : ensureSide la refabriquerait sinon à moitié
+  const net=set=>['D','G'].forEach(k=>{if(set[k]!==undefined&&!okPose(set[k]))delete set[k]});
+  net(N.pose);if(N.cles)N.cles.forEach(net);
+  if(['D','G','DG'].indexOf(N.mains)<0)N.mains='D';
+  const on=N.mains==='DG'?['D','G']:[N.mains];if(on.indexOf(N.act)<0)N.act=on[0];
+  // tout est validé : on peut écrire
+  Object.assign(S,{mains:N.mains,act:N.act,mode:N.mode,pose:N.pose,cles:N.cles,cur:N.cur,
+    etapes:N.etapes,fleche:N.fleche,fl:N.fl,fond:N.fond,ref:N.ref});
+  mainsOn().forEach(ensureSide);mainsOn().forEach(handOf);
+  for(const k in S.locks){const v=o.verrous&&o.verrous[k];S.locks[k]=SEGN[typ(k)].map((_,i)=>!!(Array.isArray(v)&&v[i]))}
+  if(o.vue&&Array.isArray(o.vue.pos)&&o.vue.pos.length===3&&o.vue.pos.every(v=>typeof v==='number'&&isFinite(v))){
+    camera.position.fromArray(o.vue.pos);
+    const t=o.vue.cible;controls.target.fromArray(Array.isArray(t)&&t.length===3?t:[0,0,0]);controls.update()}
+  refresh();
 }
 let db=null,items=[];const libMsg=h=>$('lib').innerHTML=h;
 (async()=>{try{if(!window.claude||!window.claude.use)throw 0;db=await window.claude.use('db');if(!db)throw 0;
@@ -1276,24 +1312,42 @@ $('copyJson').onclick=()=>{const txt=JSON.stringify(snapshot());$('json').value=
   try{navigator.clipboard.writeText(txt).then(ok,fb)}catch(e){fb()}};
 $('importJson').onclick=()=>{try{load(JSON.parse($('json').value));$('jsonMsg').textContent='Configuration chargée.'}catch(e){$('jsonMsg').textContent='JSON illisible : '+(e.message||'format inattendu')}};
 let downloads=null;(async()=>{try{if(window.claude&&window.claude.use)downloads=await window.claude.use('downloads')}catch(e){}})();
-$('export').onclick=async()=>{const m=$('exportMsg');m.className='msg';m.textContent='Rendu en cours…';
+let lastURL=null,exporting=false;
+$('export').onclick=async()=>{
+  if(exporting)return;const m=$('exportMsg');m.className='msg';m.textContent='Rendu en cours…';
+  exporting=true;$('export').disabled=true;
   const size=+$('taille').value,w=stage.clientWidth,h=stage.clientHeight,old=renderer.getPixelRatio();
-  setHL(null);renderer.setPixelRatio(size/Math.max(w,h));renderer.setSize(w,h,false);
-  renderAll();
-  // on recompose à plat : le fond et le référent derrière, la 3D, puis les flèches — comme à l'écran
-  const gl=renderer.domElement,c=document.createElement('canvas');c.width=gl.width;c.height=gl.height;
-  const x=c.getContext('2d');paintBack(x,c.width,c.height);x.drawImage(gl,0,0);paintFront(x,c.width,c.height);
-  let out=$('recadre').checked?cropAlpha(c):c;const blob=await new Promise(r=>out.toBlob(r,'image/png'));
-  renderer.setPixelRatio(old);resize();drawOverlays();
-  const nom=($('nom').value.trim()||'main-lsf').replace(/[^\w\-àâäéèêëîïôöùûüç ]/gi,'').replace(/\s+/g,'-');
+  let blob=null;
+  try{
+    setHL(null);renderer.setPixelRatio(size/Math.max(w,h));renderer.setSize(w,h,false);renderAll();
+    // 1. le CONTENU seul : référent, rendu 3D, flèches. C'est lui qu'on mesure pour recadrer — si on peignait le
+    //    fond d'abord, toute l'image serait opaque et « recadrer au plus juste » ne couperait jamais rien.
+    const gl=renderer.domElement,A=document.createElement('canvas');A.width=gl.width;A.height=gl.height;
+    const xa=A.getContext('2d');drawRef(xa,A.width,A.height);xa.drawImage(gl,0,0);drawArrows(xa,A.width,A.height);
+    // 2. la boîte utile, puis le fond à la taille de SORTIE (son dégradé et son cadre suivent l'image finale)
+    const bx=$('recadre').checked?alphaBox(A):null,W=bx?bx.w:A.width,H=bx?bx.h:A.height;
+    const out=document.createElement('canvas');out.width=W;out.height=H;const xo=out.getContext('2d');
+    drawFond(xo,W,H);xo.drawImage(A,bx?bx.x:0,bx?bx.y:0,W,H,0,0,W,H);
+    blob=await new Promise(r=>out.toBlob(r,'image/png'));
+  }catch(e){m.className='msg err';m.textContent='Export impossible : '+(e&&e.message||'erreur inattendue')}
+  finally{renderer.setPixelRatio(old);resize();drawOverlays();exporting=false;$('export').disabled=false}
+  if(!blob)return;
+  // le repli n'arrive qu'APRÈS le nettoyage : un nom fait de caractères écartés donnait un fichier « .png »
+  const nom=$('nom').value.trim().replace(/[^\w\-àâäéèêëîïôöùûüç ]/gi,'').replace(/\s+/g,'-')||'main-lsf';
   if(downloads){try{await downloads.save({filename:nom+'.png',data:blob});m.textContent='Image enregistrée.';return}catch(e){if(e&&e.code==='declined'){m.textContent='Export annulé.';return}}}
-  $('imgOut').src=URL.createObjectURL(blob);$('imgDlg').showModal();m.textContent=''};
-$('closeDlg').onclick=()=>$('imgDlg').close();
-function cropAlpha(src){const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const x=c.getContext('2d');x.drawImage(src,0,0);
-  const d=x.getImageData(0,0,c.width,c.height).data;let x0=c.width,y0=c.height,x1=-1,y1=-1;
-  for(let y=0;y<c.height;y+=2)for(let i=0;i<c.width;i+=2)if(d[(y*c.width+i)*4+3]>8){if(i<x0)x0=i;if(i>x1)x1=i;if(y<y0)y0=y;if(y>y1)y1=y}
-  if(x1<0)return c;const pad=Math.round(c.width*.02);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(c.width,x1+pad);y1=Math.min(c.height,y1+pad);
-  const o=document.createElement('canvas');o.width=x1-x0;o.height=y1-y0;o.getContext('2d').drawImage(c,x0,y0,o.width,o.height,0,0,o.width,o.height);return o}
+  if(lastURL)URL.revokeObjectURL(lastURL);
+  lastURL=URL.createObjectURL(blob);$('imgOut').src=lastURL;if(!$('imgDlg').open)$('imgDlg').showModal();m.textContent='';
+};
+$('closeDlg').onclick=()=>{$('imgDlg').close();$('imgOut').removeAttribute('src');if(lastURL){URL.revokeObjectURL(lastURL);lastURL=null}};
+// boîte englobante de ce qui est dessiné, avec une marge ÉGALE sur les deux axes (une marge calculée sur la
+// largeur seule décentre la planche dans son cadre dès que le format s'allonge)
+function alphaBox(src){const W=src.width,H=src.height,d=src.getContext('2d').getImageData(0,0,W,H).data;
+  let x0=W,y0=H,x1=-1,y1=-1;
+  for(let y=0;y<H;y+=2)for(let i=0;i<W;i+=2)if(d[(y*W+i)*4+3]>8){if(i<x0)x0=i;if(i>x1)x1=i;if(y<y0)y0=y;if(y>y1)y1=y}
+  if(x1<0)return null;
+  const pad=Math.round(Math.min(W,H)*.02)+2;
+  x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(W,x1+pad);y1=Math.min(H,y1+pad);
+  return{x:x0,y:y0,w:x1-x0,h:y1-y0}}
 
 window.__atelier={renderer,setPron:v=>{PRONA=v;for(const k in HAND)HAND[k].skin.key=''},setKnk:v=>{KNG=v;for(const k in HAND)HAND[k].skin.key=''},setEdmax:v=>{EDMAX=v;edgeMat.uniforms.emax.value=v},setCrv:v=>{CRV=v},setCrmax:v=>{CRMAX=v},S,refresh,main,HAND,handOf,act,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,curSet,mirror,constrain,solve,renderAll,drawOverlays,load,snapshot,
   // surface de mise au point (balayage anti-déformation, mesures) : rien de tout cela n'est utilisé par l'interface
