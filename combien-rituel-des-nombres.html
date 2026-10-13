@@ -79,6 +79,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
 .item.counted{animation:tick .45s ease}
 @keyframes tick{50%{transform:translate(-50%,-50%) scale(1.16)}}
 .pack{position:absolute; border:3px dashed var(--rule); border-radius:22px; background:#F7FAFF}
+.domline{position:absolute; left:12%; right:12%; top:50%; border-top:4px dashed var(--rule)}
 .hands{position:absolute; inset:6% 4%; display:flex; align-items:center; justify-content:center; gap:3%}
 .hands svg{height:100%; width:auto; max-width:46%}
 
@@ -227,29 +228,39 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 .starrow b{font-weight:700; color:var(--gold); font-size:clamp(13px,1.5vw,19px); align-self:center}
 
 /* ---------- la maison du nombre ---------- */
-#view-deco{display:flex; flex-direction:column; gap:clamp(6px,1.4vh,16px); width:100%; flex:1; min-height:0; justify-content:center}
+#view-deco{display:flex; flex-direction:column; gap:clamp(4px,1.1vh,14px); width:100%; flex:1; min-height:0; justify-content:center}
 .deco-turn{display:flex; gap:clamp(6px,1vw,12px); justify-content:center; flex-wrap:wrap}
 .tpill{display:flex; align-items:center; gap:8px; border-radius:999px; border:3px solid var(--c); background:#fff;
   padding:3px 14px 3px 4px; opacity:.38; font-family:var(--font-display); font-weight:600; color:var(--c);
   font-size:clamp(13px,1.5vw,21px); transition:opacity .2s}
 .tpill.now{opacity:1; box-shadow:var(--lift)}
+.tpill.done{opacity:.85; border-color:var(--rule); color:var(--ink-soft)}
+.okdeco{font-size:.85em; background:#F2F6FD; border-radius:8px; padding:1px 7px; color:var(--ink-faint)}
 .tpill .av{width:clamp(24px,2.5vw,36px); aspect-ratio:1; border-radius:50%; background:var(--c); color:#fff;
   display:grid; place-items:center; font-size:.78em}
-.deco-grid{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:clamp(8px,1.6vw,24px); align-items:center; width:100%}
-.bins{display:flex; flex-direction:column; gap:clamp(6px,1vh,12px)}
-.bin{background:var(--card); border-radius:22px; box-shadow:var(--lift); border:3px solid var(--m);
-  padding:clamp(6px,1vh,12px) clamp(8px,1vw,16px); display:flex; flex-direction:column; align-items:center; gap:5px;
-  min-width:clamp(92px,10vw,146px); transition:transform .1s}
+.deco-grid{display:grid; grid-template-columns:auto minmax(0,1fr); gap:clamp(8px,1.6vw,24px); align-items:center; width:100%}
+.handsrow{display:flex; align-items:flex-end; justify-content:center; gap:clamp(4px,.9vw,14px)}
+.handcard{display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:1px}
+.hs{display:flex; gap:clamp(1px,.3vw,6px); align-items:flex-end; height:clamp(72px,15vh,184px)}
+.hs svg{height:100%; width:auto; max-height:100%}
+.handcard b{font-family:var(--font-display); font-weight:700; font-size:clamp(22px,3.6vw,54px); line-height:1}
+.opsign{font-family:var(--font-display); font-weight:700; font-size:clamp(18px,2.6vw,38px); color:var(--ink-faint); align-self:flex-end; padding-bottom:clamp(8px,1.6vh,22px)}
+.tot{font-family:var(--font-display); font-weight:700; font-size:clamp(24px,4vw,58px); color:var(--ink); align-self:flex-end; padding-bottom:0}
+.tot.wait{color:var(--rule-strong)}
+.bins{display:flex; flex-direction:row; gap:clamp(5px,.8vw,11px)}
+.bin{background:var(--card); border-radius:20px; box-shadow:var(--lift); border:3px solid var(--m);
+  padding:clamp(5px,.8vh,10px) clamp(7px,.9vw,14px); display:flex; flex-direction:column; align-items:center; gap:4px;
+  min-width:clamp(82px,9vw,130px); transition:transform .1s}
 .bin:active{transform:scale(.95)}
 .bin.empty{opacity:.35}
 .binpile{display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(3px,.4vw,6px); justify-items:center; min-height:clamp(26px,4vh,46px); align-content:center}
-.binpile i{width:clamp(12px,1.4vw,21px); aspect-ratio:1; border-radius:50%;
+.binpile i{width:clamp(11px,1.2vw,18px); aspect-ratio:1; border-radius:50%;
   background:radial-gradient(circle at 36% 30%, rgba(255,255,255,.5), transparent 58%), var(--m)}
 .binlab{font-size:clamp(9px,.95vw,12.5px); font-weight:700; color:var(--m); text-transform:uppercase; letter-spacing:.07em}
 .lanewrap{display:flex; flex-direction:column; align-items:center; gap:clamp(5px,1.1vh,13px); min-width:0}
 .lane{display:flex; gap:clamp(4px,.8vw,12px); align-items:center; justify-content:center; flex-wrap:wrap; max-width:100%;
   background:#fff; border-radius:999px; box-shadow:var(--lift); padding:clamp(7px,1.2vh,14px) clamp(11px,1.5vw,22px)}
-.slot{width:clamp(26px,3.8vw,60px); aspect-ratio:1; border-radius:50%; border:3px dashed var(--rule); padding:0; background:none}
+.slot{width:clamp(24px,3.3vw,52px); aspect-ratio:1; border-radius:50%; border:3px dashed var(--rule); padding:0; background:none}
 .slot.full{border-color:transparent; border-style:solid}
 .slot .bille{display:block; width:100%; height:100%; border-radius:50%;
   background:radial-gradient(circle at 36% 30%, rgba(255,255,255,.5), transparent 58%), var(--m);
@@ -261,14 +272,15 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 .eq .tot.ok{color:var(--ink)}
 .handz{display:flex; gap:clamp(2px,.4vw,8px); align-items:flex-end; height:clamp(92px,23vh,268px)}
 .handz svg{height:100%; width:auto}
-.house{align-self:center; max-width:100%; background:var(--card); border-radius:var(--r); box-shadow:var(--lift);
-  padding:clamp(6px,1.1vh,13px) clamp(8px,1.2vw,18px); display:flex; flex-direction:column; align-items:center; gap:clamp(4px,.8vh,9px)}
+.house{align-self:center; max-width:100%; background:var(--card); border-radius:999px; box-shadow:var(--lift);
+  padding:clamp(4px,.7vh,9px) clamp(10px,1.4vw,20px); display:flex; flex-wrap:wrap; align-items:center;
+  justify-content:center; gap:clamp(5px,.9vw,13px)}
 .roof{display:flex; align-items:center; gap:8px; font-family:var(--font-display); font-weight:600;
   font-size:clamp(11px,1.3vw,17px); color:var(--ink-soft)}
 .roof svg{width:clamp(20px,2vw,30px); height:auto}
 .windows{display:flex; gap:clamp(4px,.7vw,10px); flex-wrap:wrap; justify-content:center}
-.win{border:3px solid var(--rule-soft); border-radius:13px; padding:2px clamp(6px,.8vw,12px); background:#F6F9FE;
-  font-family:var(--font-display); font-weight:700; font-size:clamp(14px,1.9vw,28px); color:var(--ink-faint); min-width:3.2em; text-align:center}
+.win{border:3px solid var(--rule-soft); border-radius:12px; padding:1px clamp(5px,.7vw,11px); background:#F6F9FE;
+  font-family:var(--font-display); font-weight:700; font-size:clamp(13px,1.6vw,24px); color:var(--ink-faint); min-width:3.1em; text-align:center}
 .win.got{border-color:var(--rule); background:#fff}
 .win.got .a{color:var(--mA)} .win.got .b{color:var(--mB)} .win.got .p{color:var(--ink-faint)}
 .win.flash{animation:winflash 1s}
@@ -279,7 +291,6 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
   .boardgrid{grid-template-columns:1fr}
   .rstage.two{grid-template-columns:1fr}
   .deco-grid{grid-template-columns:1fr; justify-items:center}
-  .bins{flex-direction:row}
   .handz{height:clamp(70px,14vh,150px)}
 }
 @media (max-width:760px){
@@ -356,10 +367,9 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
         </div>
         <div class="lanewrap">
           <div class="lane" id="lane"></div>
-          <div class="eq" id="deco-eq"></div>
         </div>
-        <div class="handz" id="deco-hands"></div>
       </div>
+      <div class="handsrow" id="deco-hands"></div>
       <div class="house" id="house"></div>
     </div>
 
@@ -397,9 +407,9 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
   <section>
     <h4>Ce qu'on travaille</h4>
     <select id="mode-sel">
-      <option value="compter">Compter et écrire le nombre</option>
-      <option value="deco">Décomposer — la maison du nombre</option>
-      <option value="alterne">Les deux, en alternance</option>
+      <option value="plein">Le tour complet : compter → tout le monde écrit → décomposer</option>
+      <option value="compter">Compter et écrire seulement</option>
+      <option value="deco">Décomposer seulement</option>
     </select>
     <label class="lab"><input type="checkbox" id="opt-both"> Obliger à piocher dans les deux boîtes</label>
     <p class="note">Dans la maison du nombre, chacun passe à son tour et doit trouver une décomposition que personne n'a encore posée. Les maisons se remplissent de jour en jour.</p>
@@ -444,7 +454,8 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
     <p class="note">
       <b>Le tour.</b> La boîte s'ouvre, la collection apparaît → chacun compte dans sa tête et écrit le nombre sur son ardoise → on lève les ardoises → tu cliques sur l'élève qui a écrit juste le premier → il vient écrire le chiffre au tableau → tu cliques sur le chiffre qu'il a écrit. Juste : médaille. Faux : on recompte tous ensemble, personne ne perd rien, un autre peut essayer.<br><br>
       <b>Le secret du chiffre.</b> Le chiffre se retrace, puis il se couvre d'autant de points rouges que le nombre : 4 points pour le 4. On les compte à voix haute. Les points sont posés sur le tracé : ils servent aussi de repères pour écrire le chiffre.<br><br>
-      <b>La maison du nombre.</b> Chacun son tour : prendre des billes dans la boîte rouge et dans la boîte bleue, les poser sur la droite jusqu'à faire le nombre. Les doigts levés se colorent au fur et à mesure — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Une décomposition déjà posée est refusée : il faut en chercher une autre. Chaque nouvelle fenêtre de la maison vaut une étoile.<br><br>
+      <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau, écrit le chiffre au stylet et le valide. On déroule alors le secret du chiffre, puis <b>chaque élève vient écrire le même chiffre à côté du modèle</b> — tout le monde passe, tout le monde a son étoile. Ensuite seulement vient la décomposition du même nombre.<br><br>
+      <b>La décomposition.</b> Chacun son tour : prendre un paquet de billes dans la boîte rouge et un paquet dans la boîte bleue, les poser sur la droite. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
       <b>Au clavier.</b> <kbd>Espace</kbd> bouton principal · <kbd>1</kbd>…<kbd>9</kbd> le chiffre écrit au tableau · <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> l'élève qui va au tableau · <kbd>R</kbd> recompter · <kbd>Échap</kbd> fermer.<br><br>
       <b>Programmes.</b> Cycle 1 : dénombrer une collection jusqu'à 10, dire combien il y en a, utiliser le nombre pour exprimer une quantité, reconnaître de petites quantités organisées, écrire les chiffres. Cycle 2, CP : dénombrer, lire et écrire les nombres, associer les représentations (collection, constellation, doigts, chiffre), décomposer avec les deux paquets.
     </p>
@@ -485,13 +496,13 @@ const PIPC = ["#2A68CC","#7B4CC4","#E2701A","#17964C"];
 const ICONS = ["🍎","🐞","⭐","🐠","🎈","🍓","🦋","🐸","🍄","🚗","⚽","🐥","🌻","🐌"];
 
 const LEVELS = [
-  {name:"Constellations",        hint:"les points rangés comme sur le dé",        kinds:["pips"],                              flash:false},
-  {name:"Collections rangées",   hint:"des objets alignés, on compte un par un", kinds:["pips","ligne"],                      flash:false},
-  {name:"Collections dispersées",hint:"il faut s'organiser pour ne rien oublier",kinds:["ligne","disperse"],                  flash:false},
-  {name:"Les doigts",            hint:"lire une quantité sur les mains",          kinds:["disperse","doigts"],                 flash:false},
-  {name:"Flash",                 hint:"ça apparaît, ça disparaît, on garde en tête", kinds:["pips","disperse"],                flash:true},
-  {name:"Deux paquets",          hint:"deux petits paquets, un seul nombre",      kinds:["paquets"],                           flash:false},
-  {name:"Mélange surprise",      hint:"tout se mélange, parfois en flash",        kinds:["pips","ligne","disperse","doigts","paquets"], flashChance:0.35}
+  {name:"Petites quantités",     hint:"constellations, lignes, cercles",          kinds:["pips","ligne","cercle","domino"],    flash:false},
+  {name:"Collections variées",   hint:"rangées, en cercle, en petits tas",        kinds:["pips","ligne","cercle","domino","tas"], flash:false},
+  {name:"Collections dispersées",hint:"il faut s'organiser pour ne rien oublier", kinds:["ligne","disperse","tas","cercle"],   flash:false},
+  {name:"Les doigts",            hint:"lire une quantité sur les mains",          kinds:["disperse","doigts","tas","cercle"],  flash:false},
+  {name:"Flash",                 hint:"ça apparaît, ça disparaît, on garde en tête", kinds:["pips","cercle","disperse","tas"], flash:true},
+  {name:"Deux paquets",          hint:"deux petits paquets, un seul nombre",      kinds:["paquets","tas"],                     flash:false},
+  {name:"Mélange surprise",      hint:"tout se mélange, parfois en flash",        kinds:["pips","ligne","cercle","domino","tas","disperse","doigts","paquets"], flashChance:0.3}
 ];
 
 /* ---------------- etat ---------------- */
@@ -501,7 +512,7 @@ const FRESH = {
             {id:"s2",name:"Charlie",color:"rouge",stars:0},
             {id:"s3",name:"Tedo",color:"vert",stars:0}],
   digits:[1,2,3], level:0, autoLevel:true, streak:0,
-  mode:"compter", decoBoth:true, houses:{}, turn:0,
+  mode:"plein", decoBoth:true, houses:{}, turn:0,
   voice:true, sound:true, secret:true, flashMs:2000,
   updatedAt:0
 };
@@ -531,6 +542,7 @@ function adopt(d){
   merged.students.forEach(st => { if(typeof st.stars !== "number") st.stars = st.medals || 0; delete st.medals; });
   if(!merged.houses || typeof merged.houses !== "object") merged.houses = {};
   if(typeof merged.turn !== "number") merged.turn = 0;
+  if(merged.mode === "alterne" || !merged.mode) merged.mode = "plein";
   S = merged;
 }
 
@@ -660,6 +672,39 @@ function posLigne(n){
   for(let i=0;i<bot;i++) out.push({x: 50 + (i - (bot-1)/2) * (66/top), y:67});
   return out;
 }
+function posCercle(n){
+  if(n === 1) return [{x:50, y:50}];
+  return Array.from({length:n}, (_, i) => {
+    const a = -Math.PI/2 + i * 2*Math.PI/n;
+    return {x: 50 + 31*Math.cos(a), y: 50 + 35*Math.sin(a)};
+  });
+}
+function posDomino(n){
+  const top = Math.ceil(n/2), bot = n - top, out = [];
+  const sp = c => 66/Math.max(c, 3);
+  for(let i=0;i<top;i++) out.push({x: 50 + (i - (top-1)/2) * sp(top), y: 28});
+  for(let i=0;i<bot;i++) out.push({x: 50 + (i - (bot-1)/2) * sp(top), y: 72});
+  return out;
+}
+function posTas(n){
+  if(n <= 2) return posLigne(n);
+  const groups = [];
+  let left = n;
+  const maxG = n >= 6 ? 3 : 2;
+  while(left > 0 && groups.length < maxG){
+    const rest = maxG - groups.length - 1;
+    const hi = Math.max(1, Math.min(4, left - rest));
+    const g = groups.length === maxG - 1 ? left : 1 + Math.floor(Math.random()*hi);
+    groups.push(g); left -= g;
+  }
+  if(left > 0) groups[groups.length-1] += left;
+  const cx = groups.length === 2 ? [32, 68] : [24, 50, 76];
+  const out = [];
+  groups.forEach((g, i) => {
+    posPips(g, {x0:cx[i]-13, x1:cx[i]+13, y0:28, y1:74}).forEach(q => out.push(q));
+  });
+  return out;
+}
 function posDisperse(n){
   const out = [];
   let min = n > 6 ? 19 : 24;
@@ -693,15 +738,18 @@ function handSVG(up){
 
 function buildRound(){
   const lvl = LEVELS[S.level] || LEVELS[0];
-  const pool = S.digits.length ? S.digits.slice() : [1];
+  let pool = S.digits.length ? S.digits.slice() : [1];
+  if(S.mode !== "compter"){ const p2 = pool.filter(d => d >= 2); if(p2.length) pool = p2; }
   let n = pick(pool);
   if(pool.length > 1 && n === lastN) n = pick(pool.filter(x => x !== lastN));
   lastN = n;
   let kinds = lvl.kinds.slice();
-  if(n < 2) kinds = kinds.filter(k => k !== "paquets");
+  if(n < 2) kinds = kinds.filter(k => k !== "paquets" && k !== "tas" && k !== "domino");
   if(n > 10) kinds = kinds.filter(k => k !== "doigts");
-  if(!kinds.length) kinds = ["pips"];
+  if(kinds.length > 1) kinds = kinds.filter(k => k !== lastKind);
+  if(!kinds.length) kinds = ["ligne"];
   const kind = pick(kinds);
+  lastKind = kind;
   const flash = lvl.flash === true || (lvl.flashChance ? Math.random() < lvl.flashChance : false);
   const icon = pick(ICONS), pc = pick(PIPC);
   let split = null;
@@ -712,11 +760,12 @@ function buildRound(){
 function paintField(R){
   const f = $("#field"); f.innerHTML = "";
   const sz = R.n <= 3 ? 30 : (R.n <= 6 ? 24 : 19);
+  const tight = R.kind === "tas" || R.kind === "cercle";
   const addItem = (p, i, inside) => {
     const el = document.createElement("div");
     el.className = "item";
     el.style.left = p.x + "%"; el.style.top = p.y + "%";
-    el.style.setProperty("--sz", "calc(var(--u) * " + sz + ")");
+    el.style.setProperty("--sz", "calc(var(--u) * " + (tight ? sz*0.82 : sz) + ")");
     el.style.setProperty("--pc", R.pc);
     el.innerHTML = (R.kind === "pips" || R.kind === "paquets")
       ? '<div class="pip"></div><div class="num">'+(i+1)+'</div>'
@@ -743,7 +792,11 @@ function paintField(R){
     });
     return {items};
   }
-  const ps = R.kind === "pips" ? posPips(R.n) : (R.kind === "ligne" ? posLigne(R.n) : posDisperse(R.n));
+  const LAY = {pips:posPips, ligne:posLigne, cercle:posCercle, domino:posDomino, tas:posTas, disperse:posDisperse};
+  const ps = (LAY[R.kind] || posDisperse)(R.n);
+  if(R.kind === "domino"){
+    const dl = document.createElement("div"); dl.className = "domline"; f.appendChild(dl);
+  }
   ps.forEach((p, i) => items.push(addItem(p, i)));
   items.sort((a,b) => (parseFloat(a.style.top)*1.4 + parseFloat(a.style.left)) - (parseFloat(b.style.top)*1.4 + parseFloat(b.style.left)));
   items.forEach((el, i) => { const nn = el.querySelector(".num"); if(nn) nn.textContent = i+1; });
@@ -751,7 +804,7 @@ function paintField(R){
 }
 
 /* ---------------- mise en page vivante ---------------- */
-let lastN = -1, R = null, phase = "idle", picked = null, items = [], timers = [];
+let lastN = -1, lastKind = "", R = null, phase = "idle", picked = null, items = [], timers = [];
 const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
 const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
 
@@ -807,7 +860,7 @@ function renderChips(bumpId){
   $("#classfill").style.width = Math.min(100, (total/goal)*100) + "%";
   const lvl = LEVELS[S.level] || LEVELS[0];
   $("#etape-label").textContent = S.mode === "deco" ? "La maison du nombre"
-    : (S.mode === "alterne" ? "Compter · décomposer" : "Étape " + (S.level+1) + " · " + lvl.name.toLowerCase());
+    : "Étape " + (S.level+1) + " · " + lvl.name.toLowerCase() + (S.mode === "plein" ? " · décomposition" : "");
 }
 const STAR_D = "M12 1.6l3.1 6.6 7.1 1-5.2 5.1 1.3 7.2L12 18.1 5.7 21.5 7 14.3 1.8 9.2l7.1-1z";
 function starIcon(fill){
@@ -855,12 +908,19 @@ function renderPicks(){
 }
 
 /* ---------------- le tour ---------------- */
-let altFlip = false;
+function newOrderFrom(st){
+  const i = Math.max(0, S.students.findIndex(x => x.id === st.id));
+  return S.students.map((_, k) => S.students[(i + k) % S.students.length]);
+}
 function startRound(){
-  if(S.mode === "deco"){ startDeco(true); return; }
-  if(S.mode === "alterne"){ altFlip = !altFlip; if(altFlip){ startDeco(true); return; } }
   clearTimers(); picked = null; phase = "suspense";
   R = buildRound();
+  R.order = []; R.writeIdx = 0; R.decos = []; R.decoIdx = 0;
+  if(S.mode === "deco"){
+    R.order = newOrderFrom(S.students[S.turn % S.students.length]);
+    S.turn = (S.turn + 1) % S.students.length; save();
+    goDeco(); return;
+  }
   document.querySelectorAll(".fcell.target").forEach(e => e.classList.remove("target"));
   const lvl = LEVELS[S.level] || LEVELS[0];
   show(["box"]);
@@ -872,7 +932,7 @@ function startRound(){
   buttons("", null, "", null);
   later(() => {
     $("#box").classList.add("open"); sfxOpen(); phase = "show";
-    const step = R.kind === "pips" || R.kind === "paquets" ? 170 : 230;
+    const step = R.kind === "disperse" || R.kind === "tas" ? 230 : 180;
     if(R.kind === "doigts"){
       if(built.solo) built.solo.animate ? built.solo.animate([{transform:"scale(.6)",opacity:0},{transform:"scale(1)",opacity:1}], {duration:420, easing:"cubic-bezier(.2,1.5,.4,1)"}) : null;
       sfxPop(0);
@@ -895,7 +955,7 @@ function askPhase(){
   phase = "ask";
   renderPicks();
   show(["box","picks"]);
-  say("Combien y en a-t-il&nbsp;?", "Chacun écrit le nombre sur son ardoise. On lève les ardoises, puis clique sur celui qui a écrit juste le premier.");
+  say("Combien y en a-t-il&nbsp;?", "Chacun compte et écrit le nombre sur son ardoise. Qui a levé son ardoise le premier ? Clique sur son prénom : il commence, et ensuite tout le monde passera au tableau.");
   speak("Combien y en a-t-il ? Écris le nombre sur ton ardoise.");
   buttons("", null, "Personne n'a trouvé — recomptons", () => recount(() => askPhase()));
 }
@@ -944,12 +1004,15 @@ function celebrate(st, label, line2){
 }
 function win(){
   clearTimers(); phase = "win";
-  picked.stars++; S.streak++; save();
+  picked.stars++; S.streak++;
+  if(!R.order.length){ R.order = newOrderFrom(picked); R.writeIdx = 1; }
+  save();
   renderChips(picked.id);
-  celebrate(picked, R.n, picked.name + " a " + picked.stars + " étoile" + (picked.stars > 1 ? "s" : "") + " — et une de plus pour la classe");
+  celebrate(picked, R.n, picked.name + " a trouvé le premier — maintenant tout le monde passe au tableau");
   say("C'est juste&nbsp;: il y en a <em>" + R.n + "</em>&nbsp;!", "");
   speak("Bravo " + picked.name + " ! C'est bien " + WORDS[R.n] + ".");
-  buttons(S.secret ? "Le secret du chiffre →" : "Nouvelle question", S.secret ? reveal : startRound, "", null);
+  buttons(S.secret ? "Le secret du chiffre →" : "Au tour de " + (R.order[1] ? R.order[1].name : "la suite") + " →",
+          S.secret ? reveal : () => reveal(3), "", null);
   later(S.secret ? reveal : () => {}, 2800);
   if(S.autoLevel && S.streak >= 5 && S.level < LEVELS.length - 1){
     S.level++; S.streak = 0; save(); renderChips();
@@ -1019,11 +1082,11 @@ function confetti(c){
 const MA = "#D92B2B", MB = "#2A68CC";
 let D = null;
 
-function houseSlots(n){ return S.decoBoth ? n - 1 : n + 1; }
+function bothRequired(n){ return !!S.decoBoth && (n - 1) >= S.students.length; }
+function houseSlots(n){ return bothRequired(n) ? n - 1 : n + 1; }
 function houseGot(n){ const g = S.houses[n]; return Array.isArray(g) ? g : []; }
 function decoPool(){ const p = S.digits.filter(d => d >= (S.decoBoth ? 2 : 1)); return p.length ? p : [3]; }
-function currentStudent(){ return S.students[S.turn % S.students.length] || S.students[0]; }
-function nextStudent(){ return S.students[(S.turn + 1) % S.students.length] || S.students[0]; }
+function decoStudent(){ return (R && R.order && R.order[R.decoIdx]) || S.students[0]; }
 
 function handSVGC(cols, mirror){
   const F = [{x:28,h:64},{x:46,h:74},{x:64,h:66},{x:82,h:52}], SKIN = "#FFD9B8";
@@ -1039,35 +1102,32 @@ function handSVGC(cols, mirror){
   s += '<rect x="20" y="84" width="78" height="64" rx="24" fill="'+SKIN+'"/></g></svg>';
   return s;
 }
-function handsFor(a, b){
-  const cols = [];
-  for(let i=0;i<a;i++) cols.push(MA);
-  for(let i=0;i<b;i++) cols.push(MB);
-  const h1 = cols.slice(0,5), h2 = cols.slice(5,10);
-  while(h1.length < 5) h1.push(null);
-  while(h2.length < 5) h2.push(null);
-  let out = handSVGC(h1, false);
-  if(a + b > 5) out += handSVGC(h2, true);
-  return out;
+function handCard(count, col){
+  const hands = Math.max(1, Math.ceil(count / 5));
+  let hs = "";
+  for(let h=0; h<hands; h++){
+    const up = Math.max(0, Math.min(5, count - h*5));
+    const cols = [];
+    for(let i=0;i<up;i++) cols.push(col);
+    while(cols.length < 5) cols.push(null);
+    hs += handSVGC(cols, h % 2 === 1);
+  }
+  return '<span class="handcard"><span class="hs">' + hs + '</span><b style="color:' + col + '">' + count + '</b></span>';
 }
 function pileHTML(k){ let o = ""; for(let i=0;i<Math.max(0,k);i++) o += "<i></i>"; return o; }
 
-function startDeco(newNumber){
+function startDeco(){
   clearTimers(); phase = "deco"; picked = null;
-  let n;
-  if(D && !newNumber) n = D.n;
-  else {
-    let pool = decoPool().filter(x => houseGot(x).length < houseSlots(x));
-    if(!pool.length){ pool = decoPool(); }
-    if(D && pool.length > 1) pool = pool.filter(x => x !== D.n);
-    n = pick(pool);
-  }
-  D = {n:n, lane:[]};
+  if(!R) return;
+  if(!R.order.length) R.order = newOrderFrom(S.students[0]);
+  D = {n:R.n, lane:[]};
   show(["deco"]);
-  const st = currentStudent();
-  say('<span style="color:' + (COLORS[st.color]||COLORS.bleu) + '">' + st.name + '</span>, fabrique <em>' + n + '</em>&nbsp;!',
-      "Prends des billes rouges et des billes bleues, pose-les sur la droite. Il faut une décomposition que personne n'a encore trouvée.");
-  speak(st.name + ", fabrique " + WORDS[n] + " avec les deux boîtes.");
+  const st = decoStudent(), c = COLORS[st.color] || COLORS.bleu;
+  const both = bothRequired(D.n);
+  say('<span style="color:' + c + '">' + st.name + '</span>, fabrique <em>' + D.n + '</em> avec les billes',
+      (both ? "Un paquet de billes rouges ET un paquet de bleues" : "Des billes sur la droite")
+      + ", jusqu'à " + D.n + " — et une décomposition que personne n'a encore trouvée.");
+  speak(st.name + ", fabrique " + WORDS[D.n] + " avec les billes.");
   renderDeco();
 }
 
@@ -1102,9 +1162,8 @@ function renderDeco(){
     }
     L.appendChild(sl);
   }
-  $("#deco-eq").innerHTML = '<b style="color:'+MA+'">'+a+'</b><span>+</span><b style="color:'+MB+'">'+b+'</b>'
-    + '<span>=</span><b class="tot' + (lane.length === n ? " ok" : "") + '">' + lane.length + '</b>';
-  $("#deco-hands").innerHTML = handsFor(a, b);
+  $("#deco-hands").innerHTML = handCard(a, MA) + '<span class="opsign">+</span>' + handCard(b, MB)
+    + '<span class="opsign">=</span><span class="tot' + (lane.length === n ? "" : " wait") + '">' + lane.length + '</span>';
   renderHouse();
   const full = lane.length === n;
   buttons(full ? "Je valide ma décomposition" : "", full ? validateDeco : null,
@@ -1113,12 +1172,16 @@ function renderDeco(){
 
 function renderTurn(){
   const t = $("#deco-turn"); t.innerHTML = "";
-  S.students.forEach((st, i) => {
+  const list = R.order.length ? R.order : S.students;
+  list.forEach((st, i) => {
+    if(R.decoGoal && i >= R.decoGoal) return;
+    const done = i < R.decoIdx && R.decos[i];
     const b = document.createElement("button");
-    b.className = "tpill" + (i === S.turn % S.students.length ? " now" : "");
+    b.className = "tpill" + (i === R.decoIdx ? " now" : "") + (done ? " done" : "");
     b.style.setProperty("--c", COLORS[st.color] || COLORS.bleu);
-    b.innerHTML = '<span class="av">' + st.name.slice(0,1).toUpperCase() + '</span>' + st.name;
-    b.onclick = () => { S.turn = i; save(); startDeco(false); };
+    b.innerHTML = '<span class="av">' + st.name.slice(0,1).toUpperCase() + '</span>' + st.name
+      + (done ? ' <span class="okdeco"><b style="color:' + MA + '">' + R.decos[i][0] + '</b>+<b style="color:' + MB + '">' + R.decos[i][1] + '</b></span>' : '');
+    b.onclick = () => { R.decos = R.decos.slice(0, i); R.decoIdx = i; startDeco(); };
     t.appendChild(b);
   });
 }
@@ -1128,7 +1191,7 @@ function renderHouse(){
   const roof = '<div class="roof"><svg viewBox="0 0 40 24" aria-hidden="true"><path d="M20 2 L37 20 H3 Z" fill="#E6EDF9" stroke="#C8D9F1" stroke-width="3" stroke-linejoin="round"/></svg>'
     + 'La maison du ' + n + ' — ' + got.length + ' sur ' + houseSlots(n) + '</div>';
   let w = "";
-  const from = S.decoBoth ? 1 : 0, to = S.decoBoth ? n - 1 : n;
+  const from = bothRequired(n) ? 1 : 0, to = bothRequired(n) ? n - 1 : n;
   for(let a = from; a <= to; a++){
     const has = got.indexOf(a) >= 0;
     w += '<span class="win' + (has ? " got" : "") + '" data-a="' + a + '">'
@@ -1155,25 +1218,26 @@ function nope(msg, a){
 function validateDeco(){
   if(!D || D.lane.length !== D.n) return;
   const n = D.n, a = D.lane.filter(x => x === "a").length, b = n - a;
-  if(S.decoBoth && (a === 0 || b === 0)){ nope("Il faut prendre dans les deux boîtes !"); return; }
+  if(bothRequired(n) && (a === 0 || b === 0)){ nope("Il faut des billes dans les deux boîtes !"); return; }
+  if(R.decos.some(d => d[0] === a)){ nope("Celle-là est déjà faite ! Cherches-en une autre.", a); return; }
+  R.decos.push([a, b]);
   const got = houseGot(n);
-  if(got.indexOf(a) >= 0){ nope("Celle-là, on l'a déjà trouvée ! Cherches-en une autre.", a); return; }
-  got.push(a); got.sort((x, y) => x - y); S.houses[n] = got;
-  const st = currentStudent();
+  if(got.indexOf(a) < 0){ got.push(a); got.sort((x, y) => x - y); S.houses[n] = got; }
+  const st = decoStudent();
   st.stars++; save();
   renderChips(st.id);
   clearTimers(); phase = "decowin";
-  const eq = '<b style="color:'+MA+'">' + a + '</b> rouges et <b style="color:'+MB+'">' + b + '</b> bleues, ça fait bien ' + n + '.';
-  celebrate(st, a + "+" + b, eq + ' &nbsp;·&nbsp; ' + st.name + ' a ' + st.stars + ' étoile' + (st.stars > 1 ? "s" : ""));
-  say('<span style="color:'+MA+'">' + a + '</span> + <span style="color:'+MB+'">' + b + '</span> = <em>' + n + '</em>', "Une nouvelle fenêtre dans la maison du " + n + ".");
+  const eq = '<b style="color:' + MA + '">' + a + '</b> rouges et <b style="color:' + MB + '">' + b + '</b> bleues, ça fait bien ' + n + '.';
+  celebrate(st, a + "+" + b, eq);
+  say('<span style="color:' + MA + '">' + a + '</span> + <span style="color:' + MB + '">' + b + '</span> = <em>' + n + '</em>',
+      "Une façon de plus de fabriquer " + n + ".");
   speak(WORDS[a] + " plus " + WORDS[b] + " égale " + WORDS[n] + ". Bravo " + st.name + " !");
-  const complete = got.length >= houseSlots(n);
-  S.turn = (S.turn + 1) % S.students.length; save();
-  if(complete){
-    later(() => toast("La maison du " + n + " est complète !"), 700);
-    buttons("Un autre nombre →", () => startDeco(true), "", null);
+  R.decoIdx++;
+  if(R.decoIdx >= (R.decoGoal || R.order.length)){
+    later(() => toast("Tout le monde a trouvé une décomposition de " + n), 700);
+    buttons("C'est bon, on avance →", startRound, "", null);
   } else {
-    buttons("Au tour de " + currentStudent().name + " →", () => startDeco(false), "", null);
+    buttons("Au tour de " + decoStudent().name + " →", startDeco, "", null);
   }
 }
 
@@ -1190,8 +1254,8 @@ function chain(k){
   ).join(' <span style="opacity:.35">→</span> ');
 }
 
-function reveal(){
-  clearTimers(); phase = "reveal"; rvStep = 0;
+function reveal(from){
+  clearTimers(); phase = "reveal"; rvStep = (typeof from === "number") ? from : 0;
   show(["reveal"]);
   const col = $("#r-collection"); col.innerHTML = "";
   const clone = $("#field").cloneNode(true);
@@ -1278,19 +1342,70 @@ function stepReveal(){
     buttons("À toi d'écrire →", nextStep, "", null);
     return;
   }
-  const who = picked || S.students[0];
-  const c = COLORS[who.color] || "#16284F";
+  writeTurn();
+}
+
+/* le modèle complet, dessiné d'un coup (quand on saute les étapes animées) */
+function buildModelInstant(){
+  const n = R.n;
+  $("#r-ang").innerHTML = (ANG[n] ? ANG[n].s : []).map(d => '<path class="ang fade" d="' + d + '"/>').join("");
+  $("#r-school").innerHTML = (DIGITS[n] ? DIGITS[n].p : []).map(d => '<path class="trace" d="' + d + '"/>').join("");
+  $("#r-dots").innerHTML = "";
+  (ANG[n] ? ANG[n].d : []).forEach((t, i) => {
+    const g = svgEl("g", {class:"ptg"});
+    g.style.transform = "translate(" + t[0] + "px," + t[1] + "px)";
+    g.appendChild(svgEl("circle", {class:"pt", r:9}));
+    const tx = svgEl("text", {class:"ptn", x:0, y:0}); tx.textContent = i + 1; g.appendChild(tx);
+    $("#r-dots").appendChild(g);
+  });
+  $("#r-start").innerHTML = "";
+  const marks = [];
+  Array.from($("#r-school").children).forEach((pa, i) => {
+    const p0 = pa.getPointAtLength(0);
+    let x = p0.x, y = p0.y;
+    marks.forEach(m => { if(Math.hypot(m.x - x, m.y - y) < 16){ x += 20; y -= 15; } });
+    marks.push({x:x, y:y});
+    const g = svgEl("g", {});
+    g.appendChild(svgEl("circle", {class:"startn", cx:x, cy:y, r:10}));
+    const t = svgEl("text", {class:"startt", x:x, y:y}); t.textContent = i + 1; g.appendChild(t);
+    $("#r-start").appendChild(g);
+  });
+}
+
+/* chacun vient écrire le chiffre à côté du modèle */
+function writeTurn(){
+  clearTimers();
+  if(!R.order.length) R.order = newOrderFrom(picked || S.students[0]);
+  const who = R.order[R.writeIdx];
+  if(!who){ afterWriting(); return; }
+  phase = "reveal"; rvStep = 3;
+  const n = R.n, c = COLORS[who.color] || "#16284F";
+  show(["reveal"]);
+  if(!$("#r-school").children.length) buildModelInstant();
   chain(5);
   $("#rcap").innerHTML = '<span style="color:' + c + '">' + who.name + '</span>, écris le <b>' + n + '</b> à côté du modèle.';
   $("#rstage").classList.add("two");
   $("#rwrite").hidden = false;
   padWrite.setColor(c); padWrite.clear();
   requestAnimationFrame(() => padWrite.fit());
-  speak(who.name + ", écris le " + WORDS[n] + " à côté.");
-  buttons("Nouvelle question", startRound, "⭐ Bien écrit !", () => {
-    who.stars++; save(); renderChips(who.id);
-    sfxWin(); toast("Une étoile pour " + who.name); speak("Bravo " + who.name + " !");
-  });
+  say("Au tableau, chacun son tour&nbsp;: <span style=\"color:" + c + "\">" + who.name + "</span>",
+      "Les autres préparent leur ardoise : tout le monde écrira le " + n + ".");
+  speak(who.name + ", écris le " + WORDS[n] + " à côté du modèle.");
+  const last = R.writeIdx >= R.order.length - 1;
+  const suite = last ? (S.mode === "plein" ? " — on décompose →" : " — nouvelle question →") : " — au suivant →";
+  buttons("⭐ Bien écrit" + suite, () => {
+    who.stars++; save(); renderChips(who.id); sfxWin(); speak("Bravo " + who.name);
+    R.writeIdx++; writeTurn();
+  }, "Passer son tour", () => { R.writeIdx++; writeTurn(); });
+}
+function afterWriting(){
+  if(S.mode === "plein") goDeco(); else startRound();
+}
+function goDeco(){
+  R.decoIdx = 0; R.decos = [];
+  R.decoGoal = Math.min(R.order.length, houseSlots(R.n));
+  if(R.decoGoal < 1){ startRound(); return; }
+  startDeco();
 }
 
 /* ---------------- panneau de la maitresse ---------------- */
@@ -1391,7 +1506,7 @@ $("#pad2-clear").onclick = () => padWrite.clear();
 $("#rsvg").onclick = () => { if(phase === "reveal" && rvStep < 3) nextStep(); };
 $("#bin-a").onclick = () => takeBille("a");
 $("#bin-b").onclick = () => takeBille("b");
-$("#mode-sel").onchange = e => { S.mode = e.target.value; save(); renderChips(); toast(e.target.value === "deco" ? "Maison du nombre" : (e.target.value === "compter" ? "Compter et écrire" : "Les deux en alternance")); };
+$("#mode-sel").onchange = e => { S.mode = e.target.value; save(); renderChips(); toast(e.target.value === "deco" ? "Décomposer seulement" : (e.target.value === "compter" ? "Compter et écrire" : "Tour complet")); };
 $("#opt-both").onchange = e => { S.decoBoth = e.target.checked; save(); if(phase === "deco") renderDeco(); };
 let armedH = false, armHT = null;
 $("#reset-houses").onclick = () => {
