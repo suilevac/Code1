@@ -2,8 +2,9 @@
    render.js — Affichage du texte codé
 
    Une lettre muette n'est pas codée à part : elle appartient au son
-   qui la précède. Elle est donc dans la même unité (même couleur,
-   à l'intérieur du rond ou du triangle), avec son trait simple.
+   qui la précède. Elle est donc dans la même unité, dans sa couleur.
+   Le trait simple ne sert que si l'unité n'a ni rond ni triangle :
+   là où il y en a un, la forme dit déjà que tout se lit d'un seul son.
    ============================================================= */
 
 import { FAMILIES } from './data.js';
@@ -46,11 +47,14 @@ export function grouper(tokens) {
   return groupes;
 }
 
-function lettreEl(tk, i, opts) {
+function lettreEl(tk, i, opts, sansTrait = false) {
   const span = document.createElement('span');
   span.className = 'tk tk--' + tk.kind;
   span.dataset.t = String(i);
-  if (tk.mark === 'single') span.classList.add('tk--muette');
+  if (tk.mark === 'single') {
+    span.classList.add('tk--muette');
+    if (sansTrait) span.classList.add('tk--sans-trait');
+  }
   if (tk.mark === 'double') span.classList.add('tk--sifflante');
   if (tk.check && opts.check) span.classList.add('tk--verifier');
   if (tk.manual) span.classList.add('tk--manuel');
@@ -80,8 +84,9 @@ function uniteEl(groupe, opts) {
     if (tete.shape === 'tri') unite.classList.add('unite--tri');
     if (tete.shape === 'circle' || tete.shape === 'tri') unite.appendChild(shapeOverlay(tete.shape));
   }
-  unite.appendChild(lettreEl(tete, groupe.i, opts));
-  for (const m of groupe.suite) unite.appendChild(lettreEl(m.tk, m.i, opts));
+  const sansTrait = tete.shape === 'circle' || tete.shape === 'tri';
+  unite.appendChild(lettreEl(tete, groupe.i, opts, sansTrait));
+  for (const m of groupe.suite) unite.appendChild(lettreEl(m.tk, m.i, opts, sansTrait));
   return unite;
 }
 

@@ -154,6 +154,8 @@ input[type="range"] { width: 110px; accent-color: var(--accent); }
   text-decoration-thickness: .05em;
   text-underline-offset: .09em;
 }
+/* dans un rond ou un triangle, la forme suffit : pas de trait */
+.tk--sans-trait .tk__t { text-decoration: none; }
 .out--muettes-grises .tk--muette { color: #9aa1ad; }
 
 .tk--sifflante .tk__t {
@@ -377,7 +379,8 @@ dialog::backdrop { background: rgba(16, 24, 40, .45); }
     <p><strong>Les lettres muettes.</strong> Elles ne forment pas un code à part : elles
       appartiennent au son qui les précède. Dans <em>vingt</em>, le <em>g</em> et le <em>t</em>
       sont donc dans le rond, en jaune avec le son [in] ; dans <em>chat</em>, le <em>t</em> est
-      rouge avec le [a].</p>
+      rouge avec le [a]. Le trait simple n'apparaît que s'il n'y a ni rond ni triangle :
+      la forme dit déjà que tout se lit d'un seul son.</p>
     <p><strong>Corriger.</strong> Le découpage est automatique : il se trompe parfois sur les mots rares,
       sur <em>-ent</em> (verbe ou son [an] ?) et sur <em>ill</em>. Les endroits douteux sont soulignés
       en pointillé orange. Cliquez sur la lettre pour choisir le bon code ; la correction est enregistrée
@@ -755,7 +758,8 @@ function buildTableau() {
        (le <em>p</em> de sept, le <em>s</em> de quatre-vingts).<br>
        Une lettre muette ne forme pas un code à part : elle appartient au son qui la précède.
        Dans <em>vingt</em>, le <em>g</em> et le <em>t</em> sont donc dans le rond, en jaune avec
-       le son [in] ; dans <em>chat</em>, le <em>t</em> est rouge avec le [a].<br>
+       le son [in] ; dans <em>chat</em>, le <em>t</em> est rouge avec le [a]. Le trait n'apparaît
+       que s'il n'y a ni rond ni triangle : la forme dit déjà que tout se lit d'un seul son.<br>
        <strong>Double trait</strong> : la lettre fait le son [s] (cinq, six, dix, soixante, cent).<br>
        <em>* Les cases marquées d'une étoile ne sont pas sur l'affichage de la classe :
        elles ont été ajoutées pour que le site sache coder tous les mots (oin, ay, oy, uy).</em>
@@ -1057,8 +1061,9 @@ function codeComposite(word) {
    render.js — Affichage du texte codé
 
    Une lettre muette n'est pas codée à part : elle appartient au son
-   qui la précède. Elle est donc dans la même unité (même couleur,
-   à l'intérieur du rond ou du triangle), avec son trait simple.
+   qui la précède. Elle est donc dans la même unité, dans sa couleur.
+   Le trait simple ne sert que si l'unité n'a ni rond ni triangle :
+   là où il y en a un, la forme dit déjà que tout se lit d'un seul son.
    ============================================================= */
 
 
@@ -1099,11 +1104,14 @@ function grouper(tokens) {
   return groupes;
 }
 
-function lettreEl(tk, i, opts) {
+function lettreEl(tk, i, opts, sansTrait = false) {
   const span = document.createElement('span');
   span.className = 'tk tk--' + tk.kind;
   span.dataset.t = String(i);
-  if (tk.mark === 'single') span.classList.add('tk--muette');
+  if (tk.mark === 'single') {
+    span.classList.add('tk--muette');
+    if (sansTrait) span.classList.add('tk--sans-trait');
+  }
   if (tk.mark === 'double') span.classList.add('tk--sifflante');
   if (tk.check && opts.check) span.classList.add('tk--verifier');
   if (tk.manual) span.classList.add('tk--manuel');
@@ -1133,8 +1141,9 @@ function uniteEl(groupe, opts) {
     if (tete.shape === 'tri') unite.classList.add('unite--tri');
     if (tete.shape === 'circle' || tete.shape === 'tri') unite.appendChild(shapeOverlay(tete.shape));
   }
-  unite.appendChild(lettreEl(tete, groupe.i, opts));
-  for (const m of groupe.suite) unite.appendChild(lettreEl(m.tk, m.i, opts));
+  const sansTrait = tete.shape === 'circle' || tete.shape === 'tri';
+  unite.appendChild(lettreEl(tete, groupe.i, opts, sansTrait));
+  for (const m of groupe.suite) unite.appendChild(lettreEl(m.tk, m.i, opts, sansTrait));
   return unite;
 }
 
@@ -1294,10 +1303,10 @@ function fermerMenu() { $('#menu').hidden = true; cible = null; }
 /* ---------- sérialisation (copier / exporter) ---------- */
 const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
-function lettreHtml(tk) {
+function lettreHtml(tk, sansTrait = false) {
   const s = [];
   if (tk.mark === 'single') {
-    s.push('text-decoration:underline');
+    if (!sansTrait) s.push('text-decoration:underline');
     if (prefs.muettes) s.push('color:#9aa1ad');
   }
   if (tk.mark === 'double') s.push('border-bottom:3px double currentColor');
@@ -1313,7 +1322,9 @@ function uniteHtml(groupe) {
     if (tete.shape === 'circle') s.push('border:2px solid currentColor;border-radius:50%;padding:0 4px');
     if (tete.shape === 'tri') s.push('border-left:2px solid currentColor;border-bottom:2px solid currentColor;padding:0 3px');
   }
-  const dedans = lettreHtml(tete) + groupe.suite.map((m) => lettreHtml(m.tk)).join('');
+  const sansTrait = tete.shape === 'circle' || tete.shape === 'tri';
+  const dedans = lettreHtml(tete, sansTrait) +
+    groupe.suite.map((m) => lettreHtml(m.tk, sansTrait)).join('');
   return s.length ? `<span style="${s.join(';')}">${dedans}</span>` : dedans;
 }
 

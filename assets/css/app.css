@@ -143,6 +143,8 @@ input[type="range"] { width: 110px; accent-color: var(--accent); }
   text-decoration-thickness: .05em;
   text-underline-offset: .09em;
 }
+/* dans un rond ou un triangle, la forme suffit : pas de trait */
+.tk--sans-trait .tk__t { text-decoration: none; }
 .out--muettes-grises .tk--muette { color: #9aa1ad; }
 
 .tk--sifflante .tk__t {

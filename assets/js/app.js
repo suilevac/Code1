@@ -128,10 +128,10 @@ function fermerMenu() { $('#menu').hidden = true; cible = null; }
 /* ---------- sérialisation (copier / exporter) ---------- */
 const esc = (t) => t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
-function lettreHtml(tk) {
+function lettreHtml(tk, sansTrait = false) {
   const s = [];
   if (tk.mark === 'single') {
-    s.push('text-decoration:underline');
+    if (!sansTrait) s.push('text-decoration:underline');
     if (prefs.muettes) s.push('color:#9aa1ad');
   }
   if (tk.mark === 'double') s.push('border-bottom:3px double currentColor');
@@ -147,7 +147,9 @@ function uniteHtml(groupe) {
     if (tete.shape === 'circle') s.push('border:2px solid currentColor;border-radius:50%;padding:0 4px');
     if (tete.shape === 'tri') s.push('border-left:2px solid currentColor;border-bottom:2px solid currentColor;padding:0 3px');
   }
-  const dedans = lettreHtml(tete) + groupe.suite.map((m) => lettreHtml(m.tk)).join('');
+  const sansTrait = tete.shape === 'circle' || tete.shape === 'tri';
+  const dedans = lettreHtml(tete, sansTrait) +
+    groupe.suite.map((m) => lettreHtml(m.tk, sansTrait)).join('');
   return s.length ? `<span style="${s.join(';')}">${dedans}</span>` : dedans;
 }
 

@@ -49,7 +49,8 @@ export function buildTableau() {
        (le <em>p</em> de sept, le <em>s</em> de quatre-vingts).<br>
        Une lettre muette ne forme pas un code à part : elle appartient au son qui la précède.
        Dans <em>vingt</em>, le <em>g</em> et le <em>t</em> sont donc dans le rond, en jaune avec
-       le son [in] ; dans <em>chat</em>, le <em>t</em> est rouge avec le [a].<br>
+       le son [in] ; dans <em>chat</em>, le <em>t</em> est rouge avec le [a]. Le trait n'apparaît
+       que s'il n'y a ni rond ni triangle : la forme dit déjà que tout se lit d'un seul son.<br>
        <strong>Double trait</strong> : la lettre fait le son [s] (cinq, six, dix, soixante, cent).<br>
        <em>* Les cases marquées d'une étoile ne sont pas sur l'affichage de la classe :
        elles ont été ajoutées pour que le site sache coder tous les mots (oin, ay, oy, uy).</em>
