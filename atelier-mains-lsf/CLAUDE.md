@@ -194,8 +194,44 @@ S = {
   ajoute un buste (3,7 mains de haut), une deuxième main ou des étapes écartées, le contenu sort du cadre.
   On recadre **seulement quand il déborde** (ou de force quand on allume le référent, et on restaure la vue
   précédente quand on l'éteint), jamais au milieu d'un geste. Bouton « Cadrer » sur le plateau.
-- **Format d'échange v8** : `{version:8, mode, mains, act, pose|cles, cur, etapes, fleche, fl, decor:{fond,ref}, verrous, vue}`.
-  `load()` relit les versions 6 et 7 (une main, début/fin) et les convertit.
+- **Format d'échange v8** : `{version:8, mode, mains, act, pose, cles, cur, etapes, fleche, fl, decor:{fond,ref}, verrous, vue}`.
+  `snapshot()` garde À LA FOIS la pose fixe et les étapes : le mode ne dit pas lequel des deux travaux on veut
+  conserver, et perdre quatre étapes clés parce qu'on avait repassé la main en « pose fixe » avant d'enregistrer
+  serait brutal. `load()` relit les versions 6 et 7 (une main, début/fin) et les convertit.
+
+### Pièges rencontrés sur cette version (relus par une revue multi-axes, puis corrigés)
+
+- **Main en miroir ⇒ normales à l'envers.** `scale.x = -1` : Three.js retourne bien le sens des faces, mais
+  `normalMatrix` est l'inverse TRANSPOSÉE, donc elle retourne aussi la normale. Sans correction la main gauche
+  recevait la lumière à l'envers (aplat uniforme, sans modelé) et la repeinte de peau sous l'ongle se déclenchait
+  sur la face cachée. Uniforme `nflip` dans le nuanceur de peau, mis à −1 par `mkHand` pour une main gauche.
+- **Un seul `gR` pour tout l'écran.** La passe des traits intérieurs est UNIQUE : prendre le maximum des deux mains
+  ouvrait le détecteur de plis et épaississait les traits de la main restée au repos, donc « Dessin = dessin exact
+  au pixel près » tombait dès qu'on affichait les deux. La passe identité écrit désormais `gR` dans son canal BLEU
+  (`idMatProto`, une matière par main) et `edgeMat` le lit par pixel.
+- **Boucle de lecture et état partagé.** « Jouer » capturait la longueur de `S.cles` au départ : supprimer une
+  étape ou charger une configuration pendant la lecture levait une exception DANS le rappel d'animation, donc ni
+  l'image suivante ni le `setTimeout` final n'étaient atteints et `playing` restait à true pour toujours — l'atelier
+  gelé, rechargement obligatoire. La boucle relit l'état à chaque image et un `try/catch` rend la main.
+- **Ne jamais déplacer ce que l'utilisateur a placé.** `ensureSide` écartait les deux mains en poussant la pose
+  EXISTANTE ; en mode mouvement cela rallongeait la course d'une étape sans qu'il l'ait demandé. Seule la main
+  nouvellement créée est décalée.
+- **Un réglage par intervalle ne doit pas déborder.** `segFl()` retombe sur `S.fl` quand un intervalle n'a pas de
+  style propre : écrire dans `S.fl` changeait donc aussi les intervalles qu'on n'avait pas touchés. `flSet` fige
+  d'abord le style courant sur tous les intervalles, puis ne modifie que celui qui est visé.
+- **Rogner une liste de fantômes, oui ; rogner des étapes clés, non.** Une pastille numérotée sans main dessous ne
+  veut rien dire : `ghostList` garde toutes les étapes clés et distribue ce qui reste de budget en tourniquet sur
+  les intervalles, pour que le mouvement reste régulier au lieu de ralentir au début et de sauter à la fin.
+- **Rendu à la demande : tout ce qui change l'image doit le dire.** `setHL` n'écrivait que des uniformes, donc le
+  surlignage au survol ne s'affichait plus (et pouvait s'allumer périmé à la première image suivante). Il appelle
+  `repaint()`, et il lit `HAND[S.act]` au lieu de `act()` : `act()` CRÉE la main manquante, donc un simple survol
+  pouvait construire un maillage de 44 000 sommets.
+- **`for (const k in ensembleD'Étape)`** suppose que toutes les clés sont des côtés de main : depuis les flèches par
+  intervalle, un ensemble porte aussi `fl`. On énumère `['D','G']`.
+- **Trait de l'ongle en pixels du DESSIN.** De loin ou vu en biais, les 2,4 px de dessin tombaient sous le pixel
+  d'écran : le trait se brisait en pointillé et l'ongle devenait une tache claire sans bord. Il garde maintenant au
+  moins ~1,25 px d'écran (`max(nailLW, 1.25*fwidth(sd))`), multiplié par le profil en « U » pour que le bord libre
+  reste ouvert. Au zoom des rendus de contrôle, `fwidth` < 1,9 : la pose du dessin est inchangée.
 
 ## Architecture précédente (v7)
 

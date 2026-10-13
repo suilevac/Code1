@@ -118,7 +118,7 @@ const [TF,TB,TN,TE,TC]=await Promise.all([tex(HD.texFront),tex(HD.texBack),tex(H
 [TN,TE].forEach(t=>{t.generateMipmaps=false;t.minFilter=THREE.LinearFilter});   // distance signée : pas de moyenne entre niveaux (elle déborderait sur la tranche)
 const NAILC=new THREE.Vector3(...HD.nail.col),NAILS=new THREE.Vector3(...HD.nail.skin);
 const LIGHT=new THREE.Vector3(-.45,.55,1).normalize();
-const VS=`attribute float part;attribute float rnz;attribute vec2 crf;uniform float hlPart;varying float vH;varying float vS;varying vec2 vCr;varying vec2 vUv;varying vec3 vN;void main(){vH=abs(part-hlPart)<.5?1.:0.;vS=smoothstep(-.3,.3,rnz);vCr=crf;vUv=uv;vN=normalize(normalMatrix*normal);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
+const VS=`attribute float part;attribute float rnz;attribute vec2 crf;uniform float hlPart;uniform float nflip;varying float vH;varying float vS;varying vec2 vCr;varying vec2 vUv;varying vec3 vN;void main(){vH=abs(part-hlPart)<.5?1.:0.;vS=smoothstep(-.3,.3,rnz);vCr=crf;vUv=uv;vN=normalize(normalMatrix*normal)*nflip;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
 // ongles (dos seulement) : texNail R = distance signée au bord (px) → aplat net + trait fin du dessin, nets à tout grossissement ;
 // G/B = peau repeinte (sous l'ongle, son trait, bouts de trait étirés en taches), sur le dos franc (vS≈0) ; texNailE = poids
 // du trait : il s'amincit jusqu'à rien au bord libre (« U » ouvert du dessin). Pose du dessin : rien sur la tranche ni vu en biais (vue paume = dessin exact) ; hors pose (npose) partout
@@ -132,10 +132,14 @@ if(vCr.x!=0.||vCr.y!=0.){vec4 cr=texture2D(crTex,vUv);
  cb=mix(cb,nailSkin*cr.b*255.,cr.a*vCr.y);
  cf*=max(1.-cr.r*(1.-vCr.x),.08)/max(1.-cr.r,.15)*(1.-.22*max(-vCr.x,0.)*smoothstep(.13,.26,cr.g));}
 vec3 nt=texture2D(nailTex,vUv).rgb;cb=mix(cb,nailSkin*nt.b*255.,nt.g*max((1.-smoothstep(0.,.15,vS))*smoothstep(.15,.4,normalize(vN).z),npose));
-float sd=(nt.r*255.-128.)/12.,aw=clamp(fwidth(sd),.03,1.5),wn=max(1.-smoothstep(.5,.9,vS),npose);cb=mix(cb,nailCol,wn*clamp(.5-sd/aw,0.,1.));
-float lw=nailLW*texture2D(nailE,vUv).r;cb*=1.-wn*min(lw/aw,1.)*clamp(.5-(abs(sd+lw*.5)-lw*.5)/aw,0.,1.);vec3 c=mix(cb,cf,vS);
+float sd=(nt.r*255.-128.)/12.,aw0=fwidth(sd),aw=max(aw0,.03),wn=max(1.-smoothstep(.5,.9,vS),npose);cb=mix(cb,nailCol,wn*clamp(.5-sd/aw,0.,1.));
+// Le trait de l'ongle garde au moins ~1,25 pixel d'écran. Il était fixé en pixels du DESSIN : de loin, ou vu en
+// biais, les 2,4 px de dessin tombaient sous le pixel d'écran et le trait se brisait en pointillé — l'ongle
+// devenait une tache claire sans bord. Un illustrateur garde la même plume quelle que soit la taille du dessin.
+// La forme en « U » est préservée : l'élargissement est multiplié par le profil (nailE), qui s'éteint au bord libre.
+float lw=texture2D(nailE,vUv).r*max(nailLW,1.25*aw0);cb*=1.-wn*min(lw/aw,1.)*clamp(.5-(abs(sd+lw*.5)-lw*.5)/aw,0.,1.);vec3 c=mix(cb,cf,vS);
 float s=clamp(.8+.26*max(dot(normalize(vN),L),0.),0.,1.);c*=s;c=mix(c,vec3(1.,.78,.1),hl*vH*.4);gl_FragColor=vec4(c,opacity);}`;
-const skinMat=back=>new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},colTex2:{value:TB},crTex:{value:TC},alphaTex:{value:TF},nailTex:{value:TN},nailE:{value:TE},npose:{value:0},nailCol:{value:NAILC},nailSkin:{value:NAILS},nailLW:{value:HD.nail.lw},opacity:{value:1},hl:{value:0},hlPart:{value:-10},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS,extensions:{derivatives:true}});
+const skinMat=back=>new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},colTex2:{value:TB},crTex:{value:TC},alphaTex:{value:TF},nailTex:{value:TN},nailE:{value:TE},npose:{value:0},nailCol:{value:NAILC},nailSkin:{value:NAILS},nailLW:{value:HD.nail.lw},opacity:{value:1},hl:{value:0},hlPart:{value:-10},nflip:{value:1},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS,extensions:{derivatives:true}});
 const HULL=HD.outw+.6;
 
 function orient(geo,inside){
@@ -239,7 +243,14 @@ const MIDFA=new THREE.BufferAttribute(MIDF,3);
 // progressivement dès que la pose quitte celle du dessin (le dessin au repos reste exact au pixel près)
 const MDZ=new Float32Array(MN);if(MS.dz){const d=b64arr(MS.dz,Int16Array);for(let i=0;i<MN;i++)MDZ[i]=d[i]/MS.q/SC}
 let MRNZC=null;const rootBlend=f=>{const d0=PRESETS['Dessin'].f;let m=0;for(const k in d0)for(const a in d0[k])m=Math.max(m,Math.abs((f[k][a]||0)-d0[k][a]));return smooth(0,12,m)};
-let MRNZ=null;const SKIN_ID=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
+let MRNZ=null;
+// Passe « identité » : R = partie, G = doigt ou non, et B = la part « hors pose du dessin » (gR) de CETTE main.
+// Avec deux mains, la passe des traits est unique pour tout l'écran : sans ce canal, une main qui bouge ouvrirait
+// le détecteur de plis et épaissirait les traits de l'autre, restée au repos — et « Dessin = dessin exact au
+// pixel près » tomberait dès qu'on affiche les deux.
+const idMatProto=()=>new THREE.ShaderMaterial({side:THREE.DoubleSide,uniforms:{gr:{value:0}},
+  vertexShader:'attribute vec3 color;uniform float gr;varying vec3 vC;void main(){vC=vec3(color.rg,gr);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:'varying vec3 vC;void main(){gl_FragColor=vec4(vC,1.);}'});
 
 /* ======================================================================
    Une main = une hiérarchie d'articulations + des peaux
@@ -289,9 +300,9 @@ function makeHand(skeletonOnly){
     g.setAttribute('crf',new THREE.BufferAttribute(new Int8Array(2*MN),2,true));   // plis et rides (piste R)
     const hg=new THREE.BufferGeometry();hg.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));hg.setAttribute('part',MPARTA);hg.setIndex(MINDEX);
     const me=new THREE.Mesh(g,f),mh=new THREE.Mesh(hg,hullMat);me.frustumCulled=mh.frustumCulled=false;
-    me.userData={hull:false,idMat:SKIN_ID};mh.userData={hull:true};root.add(me,mh);meshes.push(me,mh);
+    me.userData={hull:false};mh.userData={hull:true};root.add(me,mh);meshes.push(me,mh);
     const idg=new THREE.BufferGeometry();idg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9*NT),3));idg.setAttribute('color',MIDFA);
-    const idm=new THREE.Mesh(idg,SKIN_ID);idm.visible=false;idm.frustumCulled=false;root.add(idm);skin={g,hg,idg,idm,key:'',hm:hullMat,sm:f,gR:0,crZ:true};
+    const im=idMatProto();const idm=new THREE.Mesh(idg,im);idm.visible=false;idm.frustumCulled=false;root.add(idm);skin={g,hg,idg,idm,im,key:'',hm:hullMat,sm:f,gR:0,crZ:true};
   }
   const joints={};
   ALL.forEach(k=>{
@@ -661,10 +672,15 @@ const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enab
 // 44 000 sommets à recalculer, donc rien n'existe tant qu'on n'affiche qu'une main sans mouvement.
 const HAND={D:Object.assign(makeHand(),{side:1,ghosts:[]})};
 const main=HAND.D;
-function handOf(s){if(!HAND[s])HAND[s]=Object.assign(makeHand(),{side:s==='G'?-1:1,ghosts:[]});return HAND[s]}
+// Une main en miroir (scale.x = -1) : normalMatrix est l'inverse TRANSPOSÉE, donc elle retourne la normale.
+// Sans correction, la main gauche reçoit la lumière à l'envers (aplat uniforme, sans modelé) et la repeinte de
+// peau sous l'ongle se déclenche sur la face CACHÉE. On remet la normale à l'endroit dans le nuanceur.
+function mkHand(sg){const h=Object.assign(makeHand(),{side:sg,ghosts:[]});
+  if(sg<0)h.skinMats.forEach(m=>m.uniforms.nflip.value=-1);return h}
+function handOf(s){if(!HAND[s])HAND[s]=mkHand(s==='G'?-1:1);return HAND[s]}
 const act=()=>handOf(S.act);
 const MAXG=()=>S.mains==='DG'?5:8;
-function ghostOf(H,i){while(H.ghosts.length<=i){const g=Object.assign(makeHand(),{side:H.side});g.root.visible=false;H.ghosts.push(g)}return H.ghosts[i]}
+function ghostOf(H,i){while(H.ghosts.length<=i){const g=mkHand(H.side);g.root.visible=false;H.ghosts.push(g)}return H.ghosts[i]}
 $('loading').hidden=true;
 // passe « identité » : chaque partie dans sa couleur, pour tracer les contours intérieurs
 let idRT=null,bgL=null,fgL=null;
@@ -675,10 +691,10 @@ let dirty=2;const repaint=()=>{dirty=2};
 function ensureRT(w,h){if(idRT&&idRT.width===w&&idRT.height===h)return;if(idRT){idRT.depthTexture.dispose();idRT.dispose()}
   idRT=new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true});idRT.depthTexture=new THREE.DepthTexture(w,h);idRT.depthTexture.type=THREE.UnsignedIntType}
 const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-  uniforms:{tId:{value:null},tDepth:{value:null},texel:{value:new THREE.Vector2()},cn:{value:.5},cf:{value:500},rad:{value:2},emax:{value:EDMAX},
+  uniforms:{tId:{value:null},tDepth:{value:null},texel:{value:new THREE.Vector2()},cn:{value:.5},cf:{value:500},rad:{value:2},radmax:{value:2},emax:{value:EDMAX},
     crad:{value:1.4},crv:{value:1e4},crmax:{value:CRMAX},wpx:{value:.001}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
-  fragmentShader:`uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 texel;uniform float cn;uniform float cf;uniform float rad;uniform float emax;
+  fragmentShader:`uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 texel;uniform float cn;uniform float cf;uniform float rad;uniform float radmax;uniform float emax;
   uniform float crad;uniform float crv;uniform float crmax;uniform float wpx;varying vec2 vUv;
   float lin(float d){float z=d*2.-1.;return 2.*cn*cf/(cf+cn-z*(cf-cn));}
   // creux le long d'une direction : les DEUX voisins remontent vers l'œil ⇒ arête rentrante. On prend le plus
@@ -698,10 +714,11 @@ const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWr
       return dn-d0<emax&&(dn-d0>thr||(fingers&&(dn-d0>.02||(abs(dn-d0)<=.02&&c.r<q.r))));}
     return c.g>.5&&dn-d0>.7&&dn-d0<emax;}                 // un doigt replié devant lui-même
   void main(){vec4 c=texture2D(tId,vUv);if(c.a<.5)discard;float d0=lin(texture2D(tDepth,vUv).r);float e=0.;
-    for(int i=0;i<12;i++){float a=float(i)*.5235988;if(sep(c,d0,vUv+vec2(cos(a),sin(a))*rad*texel))e=1.;}
-    if(e<.5){float pas=crad*wpx*d0,m=0.;                // trois directions : un pli dans n'importe quel sens
+    float gr=c.b,r=mix(rad,radmax,gr);                  // la part « hors pose » est celle de CETTE main (canal bleu)
+    for(int i=0;i<12;i++){float a=float(i)*.5235988;if(sep(c,d0,vUv+vec2(cos(a),sin(a))*r*texel))e=1.;}
+    if(e<.5){float pas=crad*wpx*d0,m=0.,sc=crv/max(gr,1e-4);  // trois directions : un pli dans n'importe quel sens
       for(int i=0;i<3;i++){float a=float(i)*1.0471976;m=max(m,fold(d0,vec2(cos(a),sin(a))*crad*texel,pas));}
-      if(m<crv)discard;e=1.;}
+      if(m<sc)discard;e=1.;}
     if(e<.5)discard;gl_FragColor=vec4(.067,.067,.067,1.);}`});
 const edgeQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),edgeMat),edgeScene=new THREE.Scene(),edgeCam=new THREE.Camera();edgeScene.add(edgeQuad);
 function renderAll(){
@@ -709,7 +726,7 @@ function renderAll(){
   // 1. identités (mains pleines seulement)
   const hidden=[];const hide=o=>{if(o.visible){o.visible=false;hidden.push(o)}};
   const fulls=[];for(const k in HAND){const H=HAND[k];H.ghosts.forEach(g=>hide(g.root));if(H.root.visible)fulls.push(H)}
-  fulls.forEach(H=>{H.meshes.forEach(hide);H.skin.idm.visible=true});
+  fulls.forEach(H=>{H.meshes.forEach(hide);H.skin.idm.visible=true;H.skin.im.uniforms.gr.value=H.skin.gR});
   const cc=renderer.getClearColor(new THREE.Color()),ca=renderer.getClearAlpha();
   renderer.setRenderTarget(idRT);renderer.setClearColor(0,0);renderer.clear();renderer.render(scene,camera);renderer.setRenderTarget(null);
   fulls.forEach(H=>H.skin.idm.visible=false);hidden.forEach(o=>o.visible=true);
@@ -726,22 +743,28 @@ function renderAll(){
   // Comme mesh.dz, la correction n'entre qu'une fois la pose quittée (gR) : « Dessin » reste exact au pixel près.
   const hd=Math.max(camera.position.distanceTo(controls.target),1e-3),r0=1.6*renderer.getPixelRatio();
   const ppu=size.y/2/(hd*Math.tan(camera.fov*Math.PI/360));          // pixels de rendu par unité du modèle
-  edgeMat.uniforms.rad.value=r0+gR*(clamp(.4*HULL/SC*ppu,r0,5.5)-r0);
+  edgeMat.uniforms.rad.value=r0;edgeMat.uniforms.radmax.value=clamp(.4*HULL/SC*ppu,r0,5.5);
   edgeMat.uniforms.emax.value=EDMAX;edgeMat.uniforms.cn.value=camera.near;edgeMat.uniforms.cf.value=camera.far;
   // plis : rayon fin et fixe (le trait d'un creux est plus fin qu'un contour), et seuil qui s'ouvre avec gR, pour
   // que la pose du dessin — une main à plat, sans aucun pli — reste exacte au pixel près.
   edgeMat.uniforms.crad.value=Math.max(1.1,1.25*renderer.getPixelRatio());
   edgeMat.uniforms.wpx.value=2*Math.tan(camera.fov*Math.PI/360)/size.y;
-  edgeMat.uniforms.crmax.value=CRMAX;edgeMat.uniforms.crv.value=CRV/Math.max(gR,1e-4);
+  edgeMat.uniforms.crmax.value=CRMAX;edgeMat.uniforms.crv.value=CRV;
   renderer.autoClear=false;renderer.render(edgeScene,edgeCam);renderer.autoClear=true;
 }
 let playing=null;
 // Les fantômes d'une main : les autres étapes clés, plus S.etapes images intermédiaires par intervalle.
 function ghostList(side){
   const C=S.cles,out=[];
-  for(let i=0;i<C.length;i++)if(i!==S.cur)out.push({p:C[i][side],op:.34});
-  for(let i=0;i+1<C.length;i++)for(let j=1;j<=S.etapes;j++){const t=j/(S.etapes+1);out.push({p:lerpPose(C[i][side],C[i+1][side],t),op:.17})}
-  return out.slice(0,MAXG());
+  for(let i=0;i<C.length;i++)if(i!==S.cur&&C[i][side])out.push({p:C[i][side],op:.34});
+  // Les étapes CLÉS passent toujours : une pastille numérotée sans main dessous ne veut rien dire. Ce qui reste
+  // de budget va aux images intermédiaires, prises en tourniquet sur les intervalles : si on doit en couper,
+  // le mouvement reste régulier au lieu de ralentir au début et de sauter à la fin.
+  let libre=Math.max(0,MAXG()-out.length);
+  for(let j=1;j<=S.etapes&&libre>0;j++)
+    for(let i=0;i+1<C.length&&libre>0;i++){const a=C[i][side],b=C[i+1][side];if(!a||!b)continue;
+      out.push({p:lerpPose(a,b,j/(S.etapes+1)),op:.17});libre--}
+  return out;
 }
 function render3D(){
   if(playing)return;
@@ -977,7 +1000,7 @@ function pick(e){
 const label=s=>!s?'':s.k===null?'Main · tourner (Maj : déplacer)':`${NOMS[s.k]} · ${SEGN[typ(s.k)][s.g]}${S.locks[s.k][s.g]?' 🔒':''}`;
 let hovered=null;
 function setHL(s){const key=s?(s.k===null?'paume':s.k):null;if(key===hovered)return;
-  hovered=key;for(const k in HAND)HAND[k].skinMats.forEach(m=>{const on=key&&HAND[k]===act();m.uniforms.hl.value=on?1:0;m.uniforms.hlPart.value=on?ID[key]:-10})}
+  hovered=key;repaint();const A=HAND[S.act];for(const k in HAND)HAND[k].skinMats.forEach(m=>{const on=key&&HAND[k]===A;m.uniforms.hl.value=on?1:0;m.uniforms.hlPart.value=on?ID[key]:-10})}
 
 /* ======================================================================
    Marionnette
@@ -1072,25 +1095,30 @@ document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>applyPreset(
 function syncSliders(){sliders.forEach(s=>{const v=Math.round(s.get());s.el.value=v;s.out.textContent=v+s.unit;if(s.lb)s.lb.setAttribute('aria-pressed',s.lock.get())})}
 const press=(a,b,f)=>{a.setAttribute('aria-pressed',f);b.setAttribute('aria-pressed',!f)};
 const press3=(l,v)=>l.forEach(([b,k])=>$(b).setAttribute('aria-pressed',k===v));
-// une main gauche n'existe que si on la demande : on la fabrique en miroir de la droite, et on écarte les deux
-function ensureSide(side){const o=side==='G'?'D':'G',sg=k=>k==='D'?-1:1;
+// Une main gauche n'existe que si on la demande : on la fabrique en miroir de la droite. On n'écarte QUE la
+// nouvelle : déplacer celle que l'utilisateur a déjà placée lui ferait perdre son réglage, et en mode mouvement
+// cela rallongerait la course d'une étape sans qu'il l'ait demandé.
+function ensureSide(side){const o=side==='G'?'D':'G',sg=side==='D'?-1:1;
   const fix=set=>{if(set[side])return;const b=set[o]||(set[o]=clone(PRESETS['Dessin']));
-    if(Math.abs(b.pos[0])<6)b.pos[0]=sg(o)*9;set[side]=mirror(b)};
+    const m=mirror(b);if(Math.abs(m.pos[0]-b.pos[0])<12)m.pos[0]=b.pos[0]+sg*18;set[side]=m};
   fix(S.pose);if(S.cles)S.cles.forEach(fix);}
 function setMains(v){S.mains=v;mainsOn().forEach(ensureSide);if(mainsOn().indexOf(S.act)<0)S.act=mainsOn()[0];setHL(null);refresh();fitIfNeeded()}
 
 /* ---- bandeau des étapes clés ---- */
 function stepStrip(){
-  const box=$('stepStrip');if(S.mode!=='mouvement'||!S.cles){box.innerHTML='';return}
+  const box=$('stepStrip');if(S.mode!=='mouvement'||!S.cles){box.innerHTML='';$('stepDel').disabled=$('stepDup').disabled=true;return}
   const n=S.cles.length;
   box.innerHTML=S.cles.map((_,i)=>`<button data-step="${i}" aria-pressed="${i===S.cur}">${i===0?'Début':i===n-1?'Fin':'Étape '+(i+1)}</button>`).join('')
     +(n<5?'<button class="add" id="stepAdd">+ étape</button>':'');
   box.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{S.cur=+b.dataset.step;refresh()});
   const a=$('stepAdd');if(a)a.onclick=()=>{
     const i=S.cur,last=i===S.cles.length-1,c={};
-    mainsOn().forEach(k=>{c[k]=last?clone(S.cles[i][k]):lerpPose(S.cles[i][k],S.cles[i+1][k],.5);if(last)c[k].pos[0]+=12});
+    // les deux côtés, pas seulement ceux qui sont à l'écran : sinon la main cachée sauterait à cette étape
+    ['D','G'].forEach(k=>{const a=S.cles[i][k];if(!a)return;const b=last?null:S.cles[i+1][k];
+      c[k]=b?lerpPose(a,b,.5):clone(a);if(!b)c[k].pos[0]+=12});
+    if(S.cles[i].fl)c.fl=clone(S.cles[i].fl);
     S.cles.splice(i+1,0,c);S.cur=i+1;refresh();fitIfNeeded()};
-  $('stepDel').disabled=n<=2;
+  $('stepDel').disabled=n<=2;$('stepDup').disabled=n>=5;
 }
 
 /* ---- styles et couleurs de flèche ---- */
@@ -1100,7 +1128,14 @@ function flIcon(st){const A={x:5,y:20},B={x:47,y:20},pts=arrowPts(A,B,st,1),n=pt
     +`<polyline points="${pts.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')}"/>`
     +`<polyline points="${hd(-.42)} ${e.x.toFixed(1)},${e.y.toFixed(1)} ${hd(.42)}"/></svg>`}
 const FLCOL=[['#14201f','Encre'],['#00857f','Vert INJS'],['#b3261e','Rouge'],['#1a5fb4','Bleu']];
-function flSet(k,v){const i=segIdx();if(S.cles&&S.cles.length>1){const c=S.cles[i];c.fl=Object.assign({},segFl(i),{[k]:v});Object.assign(S.fl,c.fl)}else S.fl[k]=v}
+// Régler la flèche d'un intervalle ne doit pas changer celle des autres. Comme segFl() retombe sur S.fl quand
+// un intervalle n'a pas de style propre, on fige d'abord le style courant sur TOUS les intervalles, puis on ne
+// modifie que celui qui est visé.
+function flSet(k,v){
+  if(!S.cles||S.cles.length<2){S.fl[k]=v;return}
+  const i=segIdx();
+  for(let j=0;j+1<S.cles.length;j++)if(!S.cles[j].fl)S.cles[j].fl=Object.assign({},S.fl);
+  S.cles[i].fl[k]=v;S.fl[k]=v;}
 function flUI(){
   const F=segFl(segIdx()),i=segIdx();
   $('flSeg').textContent=S.cles&&S.cles.length>2?`Flèche de l'étape ${i+1} vers ${i+2}`:'Trajectoire';
@@ -1146,10 +1181,10 @@ $('miroir').onclick=()=>{const o=S.act==='G'?'D':'G',set=curSet();set[o]=mirror(
 $('resetOrient').onclick=()=>{editable().q=[0,0,0,1];refresh()};
 $('unlockAll').onclick=()=>{for(const k in S.locks)S.locks[k]=S.locks[k].map(()=>false);refresh()};
 $('modePose').onclick=()=>{S.mode='pose';refresh()};
-$('modeMvt').onclick=()=>{if(!S.cles){const a=clone(S.pose),b=clone(S.pose);for(const k in b)if(b[k])b[k].pos[0]+=14;S.cles=[a,b]}
+$('modeMvt').onclick=()=>{if(playing)return;if(!S.cles){const a=clone(S.pose),b=clone(S.pose);['D','G'].forEach(k=>{if(b[k])b[k].pos[0]+=14});S.cles=[a,b]}
   S.mode='mouvement';S.cur=Math.min(S.cur,S.cles.length-1);mainsOn().forEach(ensureSide);refresh();fitIfNeeded()};
-$('stepDup').onclick=()=>{S.cles.splice(S.cur+1,0,clone(S.cles[S.cur]));S.cur++;refresh()};
-$('stepDel').onclick=()=>{if(S.cles.length<=2)return;S.cles.splice(S.cur,1);S.cur=Math.min(S.cur,S.cles.length-1);refresh()};
+$('stepDup').onclick=()=>{if(playing||!S.cles||S.cles.length>=5)return;S.cles.splice(S.cur+1,0,clone(S.cles[S.cur]));S.cur++;refresh();fitIfNeeded()};
+$('stepDel').onclick=()=>{if(playing||!S.cles||S.cles.length<=2)return;S.cles.splice(S.cur,1);S.cur=Math.min(S.cur,S.cles.length-1);refresh()};
 $('etapes').oninput=e=>{S.etapes=+e.target.value;$('etapesOut').textContent=S.etapes;render3D()};
 $('fleche').onchange=e=>{S.fleche=e.target.checked;refresh()};
 $('flDouble').onchange=e=>{flSet('double',e.target.checked);refresh()};
@@ -1167,13 +1202,23 @@ $('refVisage').onchange=e=>{S.ref.visage=e.target.checked;drawOverlays()};
 $('refRep').onchange=e=>{S.ref.reperes=e.target.checked;drawOverlays()};
 $('fondCadre').onchange=e=>{S.fond.cadre=e.target.checked;drawOverlays()};
 $('fondPick').oninput=e=>{S.fond.col=e.target.value;if(S.fond.type==='aucun')S.fond.type='uni';refresh()};
-$('play').onclick=()=>{if(playing||S.mode!=='mouvement')return;
-  const on=mainsOn();for(const k in HAND)HAND[k].ghosts.forEach(g=>g.root.visible=false);
+$('play').onclick=()=>{if(playing||S.mode!=='mouvement'||!S.cles||S.cles.length<2)return;
+  for(const k in HAND)HAND[k].ghosts.forEach(g=>g.root.visible=false);
   fgL.getContext('2d').clearRect(0,0,fgL.width,fgL.height);
-  const n=S.cles.length-1,t0=performance.now(),dur=900*n;playing=true;
-  (function step(now){const k=Math.min(1,(now-t0)/dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,u=e*n,i=Math.min(n-1,Math.floor(u));
-    on.forEach(side=>applyPose(handOf(side),lerpPose(S.cles[i][side],S.cles[i+1][side],u-i)));
-      repaint();if(k<1)requestAnimationFrame(step);else setTimeout(()=>{playing=null;render3D()},600)})(t0)};
+  const t0=performance.now(),dur=900*(S.cles.length-1);playing=true;
+  // La suite d'étapes peut changer SOUS la lecture (supprimer une étape, charger une configuration) : on relit donc
+  // sa longueur à chaque image, et toute erreur rend la main. Sans ça, une exception dans ce rappel laissait
+  // « playing » à true pour toujours — plus rien ne répondait et il fallait recharger la page.
+  const fini=()=>{playing=null;render3D()};
+  (function step(now){
+    try{
+      const C=S.cles;if(!playing||S.mode!=='mouvement'||!C||C.length<2)return fini();
+      const n=C.length-1,k=Math.min(1,(now-t0)/dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,u=e*n,i=Math.min(n-1,Math.floor(u));
+      mainsOn().forEach(side=>{const a=C[i][side],b=C[i+1][side];if(a&&b)applyPose(handOf(side),lerpPose(a,b,u-i))});
+      repaint();if(k<1)return requestAnimationFrame(step);
+      setTimeout(fini,600);
+    }catch(err){console.error(err);fini()}
+  })(t0)};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));
   document.querySelectorAll('[data-pane]').forEach(p=>p.hidden=p.dataset.pane!==b.dataset.tab)});
 
@@ -1183,7 +1228,9 @@ document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.query
 function snapshot(){const o={version:8,mode:S.mode,mains:S.mains,act:S.act,verrous:clone(S.locks),
   decor:{fond:clone(S.fond),ref:clone(S.ref)},fl:clone(S.fl),fleche:S.fleche,etapes:S.etapes,
   vue:{pos:camera.position.toArray().map(v=>+v.toFixed(2)),cible:controls.target.toArray().map(v=>+v.toFixed(2))}};
-  if(S.mode==='pose')o.pose=clone(S.pose);else{o.cles=clone(S.cles);o.cur=S.cur}return o}
+  // on garde les deux : le mode ne dit pas lequel des deux travaux l'utilisateur veut conserver, et perdre
+  // quatre étapes clés parce qu'on avait repassé la main en « pose fixe » avant d'enregistrer serait brutal
+  o.pose=clone(S.pose);if(S.cles){o.cles=clone(S.cles);o.cur=S.cur}return o}
 const okPose=p=>p&&p.f&&ALL.every(k=>p.f[k])&&p.f.pouce.av!==undefined&&Array.isArray(p.q)&&Array.isArray(p.pos);
 const okSet=c=>c&&(okPose(c.D)||okPose(c.G));
 function load(o){
@@ -1196,9 +1243,10 @@ function load(o){
     S.fleche=o.fleche!==false;
   }else{
     S.mains=['D','G','DG'].indexOf(o.mains)<0?'D':o.mains;S.act=o.act==='G'?'G':'D';
-    if(o.mode==='mouvement'){if(!Array.isArray(o.cles)||o.cles.length<2||!o.cles.every(okSet))throw new Error('étapes manquantes');
-      S.cles=clone(o.cles);S.cur=Math.min(o.cur||0,S.cles.length-1);S.mode='mouvement';S.pose=clone(S.cles[S.cles.length-1])}
-    else{if(!okSet(o.pose))throw new Error('pose manquante');S.pose=clone(o.pose);S.cles=null;S.mode='pose'}
+    if(o.cles&&Array.isArray(o.cles)&&o.cles.length>1&&o.cles.every(okSet))S.cles=clone(o.cles);else S.cles=null;
+    if(o.mode==='mouvement'){if(!S.cles)throw new Error('étapes manquantes');
+      S.cur=Math.max(0,Math.min(o.cur||0,S.cles.length-1));S.mode='mouvement';S.pose=okSet(o.pose)?clone(o.pose):clone(S.cles[S.cles.length-1])}
+    else{if(!okSet(o.pose))throw new Error('pose manquante');S.pose=clone(o.pose);S.mode='pose';S.cur=S.cles?Math.max(0,Math.min(o.cur||0,S.cles.length-1)):0}
     S.etapes=o.etapes==null?1:Math.max(0,Math.min(3,o.etapes));S.fleche=o.fleche!==false;
     if(o.fl)Object.assign(S.fl,o.fl);
     if(o.decor){if(o.decor.fond)Object.assign(S.fond,o.decor.fond);if(o.decor.ref)Object.assign(S.ref,o.decor.ref)}

@@ -22,7 +22,7 @@ VEND = os.environ.get('ATELIER_VENDOR', '/tmp/claude-0/-home-user-Code1/1652bac3
 # ---- mesures faites dans la page (le maillage n'est accessible que là) --------------------------------
 MESURE = r"""
 (poses)=>{
- const A=window.__atelier,TH=THREE,h=A.main,MN=A.MN,NT=A.NT,SC=A.SC;
+ const A=window.__atelier,TH=THREE,h=A.act(),MN=A.MN,NT=A.NT,SC=A.SC;
  const g=h.skin.g,idx=A.MINDEX.array,pos=g.attributes.position.array;
  // --- repos : aires, normales, longueurs d'os, anneaux de peau ---
  const dessin=JSON.parse(JSON.stringify(A.PRESETS['Dessin'].f));
