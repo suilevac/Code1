@@ -8,6 +8,7 @@
   --rule:#C8D9F1; --rule-soft:#E3EBF8;
   --red:#E0342A; --gold:#E9A51C;
   --rose:#DE4199; --rouge:#D22D2D; --vert:#17964C; --bleu:#2A68CC; --orange:#E2701A; --violet:#7B4CC4;
+  --mA:#D92B2B; --mB:#2A68CC;
   --font-display:'Fredoka','Trebuchet MS',system-ui,sans-serif;
   --font-ui:'Lexend',system-ui,-apple-system,'Segoe UI',sans-serif;
   --r:20px;
@@ -188,6 +189,74 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
   animation:toastin .3s ease}
 @keyframes toastin{from{opacity:0; transform:translate(-50%,-14px)}}
 
+/* ---------- l'etoile et sa fete ---------- */
+.medal{position:relative}
+.medal > *{position:relative}
+.rays{position:absolute; top:46%; left:50%; width:min(150vmin,1400px); aspect-ratio:1;
+  transform:translate(-50%,-50%); animation:spin 26s linear infinite; pointer-events:none}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.bigstar{width:clamp(120px,26vmin,280px); height:auto; animation:starpop .85s cubic-bezier(.2,1.5,.5,1)}
+@keyframes starpop{0%{transform:scale(.2) rotate(-35deg); opacity:0}60%{transform:scale(1.15) rotate(8deg)}100%{transform:none; opacity:1}}
+@keyframes popin{0%{transform:scale(0)}70%{transform:scale(1.16)}100%{transform:scale(1)}}
+.starrow{display:flex; gap:clamp(3px,.5vw,7px); flex-wrap:wrap; justify-content:center; max-width:min(90%,760px)}
+.starrow i{display:block; width:clamp(17px,2.2vw,32px); animation:popin .4s cubic-bezier(.2,1.6,.4,1) backwards}
+.starrow i svg{display:block; width:100%; height:auto}
+.starrow b{font-weight:700; color:var(--gold); font-size:clamp(13px,1.5vw,19px); align-self:center}
+
+/* ---------- la maison du nombre ---------- */
+#view-deco{display:flex; flex-direction:column; gap:clamp(6px,1.4vh,16px); width:100%; flex:1; min-height:0; justify-content:center}
+.deco-turn{display:flex; gap:clamp(6px,1vw,12px); justify-content:center; flex-wrap:wrap}
+.tpill{display:flex; align-items:center; gap:8px; border-radius:999px; border:3px solid var(--c); background:#fff;
+  padding:3px 14px 3px 4px; opacity:.38; font-family:var(--font-display); font-weight:600; color:var(--c);
+  font-size:clamp(13px,1.5vw,21px); transition:opacity .2s}
+.tpill.now{opacity:1; box-shadow:var(--lift)}
+.tpill .av{width:clamp(24px,2.5vw,36px); aspect-ratio:1; border-radius:50%; background:var(--c); color:#fff;
+  display:grid; place-items:center; font-size:.78em}
+.deco-grid{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:clamp(8px,1.6vw,24px); align-items:center; width:100%}
+.bins{display:flex; flex-direction:column; gap:clamp(6px,1vh,12px)}
+.bin{background:var(--card); border-radius:22px; box-shadow:var(--lift); border:3px solid var(--m);
+  padding:clamp(6px,1vh,12px) clamp(8px,1vw,16px); display:flex; flex-direction:column; align-items:center; gap:5px;
+  min-width:clamp(92px,10vw,146px); transition:transform .1s}
+.bin:active{transform:scale(.95)}
+.bin.empty{opacity:.35}
+.binpile{display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(3px,.4vw,6px); justify-items:center; min-height:clamp(26px,4vh,46px); align-content:center}
+.binpile i{width:clamp(12px,1.4vw,21px); aspect-ratio:1; border-radius:50%;
+  background:radial-gradient(circle at 36% 30%, rgba(255,255,255,.5), transparent 58%), var(--m)}
+.binlab{font-size:clamp(9px,.95vw,12.5px); font-weight:700; color:var(--m); text-transform:uppercase; letter-spacing:.07em}
+.lanewrap{display:flex; flex-direction:column; align-items:center; gap:clamp(5px,1.1vh,13px); min-width:0}
+.lane{display:flex; gap:clamp(4px,.8vw,12px); align-items:center; justify-content:center; flex-wrap:wrap; max-width:100%;
+  background:#fff; border-radius:999px; box-shadow:var(--lift); padding:clamp(7px,1.2vh,14px) clamp(11px,1.5vw,22px)}
+.slot{width:clamp(26px,3.8vw,60px); aspect-ratio:1; border-radius:50%; border:3px dashed var(--rule); padding:0; background:none}
+.slot.full{border-color:transparent; border-style:solid}
+.slot .bille{display:block; width:100%; height:100%; border-radius:50%;
+  background:radial-gradient(circle at 36% 30%, rgba(255,255,255,.5), transparent 58%), var(--m);
+  box-shadow:0 7px 13px -8px rgba(22,40,79,.8); animation:popin .32s cubic-bezier(.2,1.6,.4,1)}
+.lane.nope{animation:shake .45s}
+@keyframes shake{20%{transform:translateX(-12px)}45%{transform:translateX(12px)}70%{transform:translateX(-6px)}}
+.eq{font-family:var(--font-display); font-weight:700; font-size:clamp(20px,3.2vw,50px); display:flex; gap:.22em; align-items:baseline; color:var(--ink)}
+.eq .tot{color:var(--ink-faint)}
+.eq .tot.ok{color:var(--ink)}
+.handz{display:flex; gap:clamp(2px,.4vw,8px); align-items:flex-end; height:clamp(92px,23vh,268px)}
+.handz svg{height:100%; width:auto}
+.house{align-self:center; max-width:100%; background:var(--card); border-radius:var(--r); box-shadow:var(--lift);
+  padding:clamp(6px,1.1vh,13px) clamp(8px,1.2vw,18px); display:flex; flex-direction:column; align-items:center; gap:clamp(4px,.8vh,9px)}
+.roof{display:flex; align-items:center; gap:8px; font-family:var(--font-display); font-weight:600;
+  font-size:clamp(11px,1.3vw,17px); color:var(--ink-soft)}
+.roof svg{width:clamp(20px,2vw,30px); height:auto}
+.windows{display:flex; gap:clamp(4px,.7vw,10px); flex-wrap:wrap; justify-content:center}
+.win{border:3px solid var(--rule-soft); border-radius:13px; padding:2px clamp(6px,.8vw,12px); background:#F6F9FE;
+  font-family:var(--font-display); font-weight:700; font-size:clamp(14px,1.9vw,28px); color:var(--ink-faint); min-width:3.2em; text-align:center}
+.win.got{border-color:var(--rule); background:#fff}
+.win.got .a{color:var(--mA)} .win.got .b{color:var(--mB)} .win.got .p{color:var(--ink-faint)}
+.win.flash{animation:winflash 1s}
+@keyframes winflash{0%,100%{transform:none}25%{transform:scale(1.16) rotate(-3deg)}60%{transform:scale(1.08) rotate(2deg)}}
+.sub.warn{color:var(--red); font-weight:700}
+
+@media (max-width:860px){
+  .deco-grid{grid-template-columns:1fr; justify-items:center}
+  .bins{flex-direction:row}
+  .handz{height:clamp(70px,14vh,150px)}
+}
 @media (max-width:760px){
   .reveal{grid-template-columns:1fr}
   .rcard:first-child{display:none}
@@ -207,7 +276,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
       <span id="etape-label">Étape 1 · constellations</span>
     </div>
     <div class="classbar">
-      <span>Médailles de la classe</span>
+      <span>Étoiles de la classe</span>
       <span class="track"><span class="fill" id="classfill" style="width:0%"></span></span>
       <span id="classnum" style="font-variant-numeric:tabular-nums;font-weight:700">0</span>
     </div>
@@ -230,7 +299,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 
     <div id="view-board" hidden style="display:flex;flex-direction:column;align-items:center;gap:clamp(8px,2vh,22px);width:100%">
       <div class="boardname" id="boardname">Wendy</div>
-      <div class="sub">Qu'est-ce qui est écrit au tableau ? Clique sur le chiffre.</div>
+      <div class="sub">Touche le chiffre que tu viens d'écrire.</div>
       <div class="keypad" id="keypad"></div>
     </div>
 
@@ -251,6 +320,22 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
         <div class="tally-big" id="r-count">&nbsp;</div>
       </div>
     </div>
+    <div id="view-deco" hidden>
+      <div class="deco-turn" id="deco-turn"></div>
+      <div class="deco-grid">
+        <div class="bins">
+          <button class="bin" id="bin-a" style="--m:var(--mA)"><span class="binpile" id="pile-a"></span><span class="binlab">rouges</span></button>
+          <button class="bin" id="bin-b" style="--m:var(--mB)"><span class="binpile" id="pile-b"></span><span class="binlab">bleues</span></button>
+        </div>
+        <div class="lanewrap">
+          <div class="lane" id="lane"></div>
+          <div class="eq" id="deco-eq"></div>
+        </div>
+        <div class="handz" id="deco-hands"></div>
+      </div>
+      <div class="house" id="house"></div>
+    </div>
+
     <div class="verdict" id="verdict" hidden></div>
   </main>
 
@@ -283,6 +368,17 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
   </section>
 
   <section>
+    <h4>Ce qu'on travaille</h4>
+    <select id="mode-sel">
+      <option value="compter">Compter et écrire le nombre</option>
+      <option value="deco">Décomposer — la maison du nombre</option>
+      <option value="alterne">Les deux, en alternance</option>
+    </select>
+    <label class="lab"><input type="checkbox" id="opt-both"> Obliger à piocher dans les deux boîtes</label>
+    <p class="note">Dans la maison du nombre, chacun passe à son tour et doit trouver une décomposition que personne n'a encore posée. Les maisons se remplissent de jour en jour.</p>
+  </section>
+
+  <section>
     <h4>Étape du parcours</h4>
     <select id="level-sel"></select>
     <label class="lab"><input type="checkbox" id="auto-level"> Passer à l'étape suivante après 5 réussites</label>
@@ -311,8 +407,9 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 
   <section>
     <h4>Compteurs</h4>
-    <button class="danger" id="reset-medals">Remettre les médailles à zéro</button>
-    <p class="note" id="store-note">Les médailles sont enregistrées : elles seront encore là demain matin.</p>
+    <button class="danger" id="reset-medals">Remettre les étoiles à zéro</button>
+    <button class="mini" id="reset-houses">Vider les maisons des nombres</button>
+    <p class="note" id="store-note">Les étoiles sont enregistrées : elles seront encore là demain matin.</p>
   </section>
 
   <section>
@@ -320,6 +417,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
     <p class="note">
       <b>Le tour.</b> La boîte s'ouvre, la collection apparaît → chacun compte dans sa tête et écrit le nombre sur son ardoise → on lève les ardoises → tu cliques sur l'élève qui a écrit juste le premier → il vient écrire le chiffre au tableau → tu cliques sur le chiffre qu'il a écrit. Juste : médaille. Faux : on recompte tous ensemble, personne ne perd rien, un autre peut essayer.<br><br>
       <b>Le secret du chiffre.</b> Le chiffre se retrace, puis il se couvre d'autant de points rouges que le nombre : 4 points pour le 4. On les compte à voix haute. Les points sont posés sur le tracé : ils servent aussi de repères pour écrire le chiffre.<br><br>
+      <b>La maison du nombre.</b> Chacun son tour : prendre des billes dans la boîte rouge et dans la boîte bleue, les poser sur la droite jusqu'à faire le nombre. Les doigts levés se colorent au fur et à mesure — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Une décomposition déjà posée est refusée : il faut en chercher une autre. Chaque nouvelle fenêtre de la maison vaut une étoile.<br><br>
       <b>Au clavier.</b> <kbd>Espace</kbd> bouton principal · <kbd>1</kbd>…<kbd>9</kbd> le chiffre écrit au tableau · <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> l'élève qui va au tableau · <kbd>R</kbd> recompter · <kbd>Échap</kbd> fermer.<br><br>
       <b>Programmes.</b> Cycle 1 : dénombrer une collection jusqu'à 10, dire combien il y en a, utiliser le nombre pour exprimer une quantité, reconnaître de petites quantités organisées, écrire les chiffres. Cycle 2, CP : dénombrer, lire et écrire les nombres, associer les représentations (collection, constellation, doigts, chiffre), décomposer avec les deux paquets.
     </p>
@@ -360,10 +458,11 @@ const LEVELS = [
 /* ---------------- etat ---------------- */
 const FRESH = {
   v:1,
-  students:[{id:"s1",name:"Wendy",color:"rose",medals:0},
-            {id:"s2",name:"Charlie",color:"rouge",medals:0},
-            {id:"s3",name:"Tedo",color:"vert",medals:0}],
+  students:[{id:"s1",name:"Wendy",color:"rose",stars:0},
+            {id:"s2",name:"Charlie",color:"rouge",stars:0},
+            {id:"s3",name:"Tedo",color:"vert",stars:0}],
   digits:[1,2,3], level:0, autoLevel:true, streak:0,
+  mode:"compter", decoBoth:true, houses:{}, turn:0,
   voice:true, sound:true, secret:true, flashMs:2000,
   updatedAt:0
 };
@@ -383,13 +482,17 @@ function save(){
   clearTimeout(dbTimer);
   dbTimer = setTimeout(async () => {
     try{ await dbDoc.set(JSON.parse(JSON.stringify(S))); }
-    catch(e){ if(e && e.code === "invalid_argument") $("#store-note").textContent = "Les médailles sont gardées sur cet appareil (cette page est ouverte en lecture seule)."; }
+    catch(e){ if(e && e.code === "invalid_argument") $("#store-note").textContent = "Les étoiles sont gardées sur cet appareil (cette page est ouverte en lecture seule)."; }
   }, 500);
 }
 function adopt(d){
   if(!d || typeof d !== "object") return;
   const merged = Object.assign({}, FRESH, d);
-  if(Array.isArray(merged.students) && merged.students.length) S = merged;
+  if(!Array.isArray(merged.students) || !merged.students.length) return;
+  merged.students.forEach(st => { if(typeof st.stars !== "number") st.stars = st.medals || 0; delete st.medals; });
+  if(!merged.houses || typeof merged.houses !== "object") merged.houses = {};
+  if(typeof merged.turn !== "number") merged.turn = 0;
+  S = merged;
 }
 
 /* ---------------- sons et voix ---------------- */
@@ -408,7 +511,10 @@ function tone(freq, dur, type, vol){
   }catch(e){}
 }
 function sfxPop(i){ tone(520 + (i||0)*55, 0.16, "sine", 0.14); }
-function sfxWin(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.3,"triangle",0.17), i*110)); }
+function sfxWin(){
+  [523,659,784,1046,1319].forEach((f,i)=>setTimeout(()=>tone(f,0.34,"triangle",0.17), i*105));
+  [1568,2093,1760,2349].forEach((f,i)=>setTimeout(()=>tone(f,0.18,"sine",0.08), 620 + i*130));
+}
 function sfxMiss(){ tone(392,0.22,"sine",0.12); setTimeout(()=>tone(330,0.3,"sine",0.12),200); }
 function sfxOpen(){ tone(300,0.18,"triangle",0.1); setTimeout(()=>tone(450,0.22,"triangle",0.1),120); }
 function speak(txt){
@@ -585,7 +691,7 @@ function fitBox(){
 try{ new ResizeObserver(fitBox).observe(document.getElementById("view-box")); }catch(e){}
 window.addEventListener("resize", fitBox);
 
-const VIEWS = {box:"#view-box", picks:"#view-picks", board:"#view-board", medal:"#view-medal", reveal:"#view-reveal"};
+const VIEWS = {box:"#view-box", picks:"#view-picks", board:"#view-board", medal:"#view-medal", reveal:"#view-reveal", deco:"#view-deco"};
 function show(list){
   Object.keys(VIEWS).forEach(k => { $(VIEWS[k]).hidden = list.indexOf(k) < 0; });
   $("#verdict").hidden = list.indexOf("reveal") < 0;
@@ -612,18 +718,37 @@ function renderChips(bumpId){
     el.style.setProperty("--c", COLORS[st.color] || COLORS.bleu);
     el.innerHTML = '<span class="pastille">'+st.name.slice(0,1).toUpperCase()+'</span>'
       + '<span class="who">'+st.name+'</span>'
-      + '<span class="tally">'+medalIcon()+st.medals+'</span>';
+      + '<span class="tally">'+starIcon()+st.stars+'</span>';
     box.appendChild(el);
   });
-  const total = S.students.reduce((a,b) => a + b.medals, 0);
+  const total = S.students.reduce((a,b) => a + b.stars, 0);
   const goal = Math.max(10, Math.ceil((total + 1) / 10) * 10);
   $("#classnum").textContent = total + " / " + goal;
   $("#classfill").style.width = Math.min(100, (total/goal)*100) + "%";
   const lvl = LEVELS[S.level] || LEVELS[0];
-  $("#etape-label").textContent = "Étape " + (S.level+1) + " · " + lvl.name.toLowerCase();
+  $("#etape-label").textContent = S.mode === "deco" ? "La maison du nombre"
+    : (S.mode === "alterne" ? "Compter · décomposer" : "Étape " + (S.level+1) + " · " + lvl.name.toLowerCase());
 }
-function medalIcon(){
-  return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="15" r="7" fill="#E9A51C"/><circle cx="12" cy="15" r="4.2" fill="#F7C94B"/><path d="M7 2h4l-2 6H5z" fill="#2A68CC"/><path d="M17 2h-4l2 6h4z" fill="#D22D2D"/></svg>';
+const STAR_D = "M12 1.6l3.1 6.6 7.1 1-5.2 5.1 1.3 7.2L12 18.1 5.7 21.5 7 14.3 1.8 9.2l7.1-1z";
+function starIcon(fill){
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="'+STAR_D+'" fill="'+(fill||"#E9A51C")+'"/></svg>';
+}
+function starRow(n){
+  let out = "", shown = Math.min(n, 14);
+  for(let i=0;i<shown;i++) out += '<i style="animation-delay:'+(i*55)+'ms">'+starIcon()+'</i>';
+  if(n > shown) out += '<b>+'+(n-shown)+'</b>';
+  return out;
+}
+function bigStar(label){
+  return '<svg class="bigstar" viewBox="0 0 24 25" aria-hidden="true">'
+    + '<path d="'+STAR_D+'" fill="#C98610" transform="translate(0,.9)"/>'
+    + '<path d="'+STAR_D+'" fill="#F3B81F"/>'
+    + '<text x="12" y="13.6" text-anchor="middle" dominant-baseline="central" font-family="Fredoka, sans-serif" font-weight="700" font-size="'+(String(label).length>2?5.4:7.6)+'" fill="#7A4F03">'+label+'</text></svg>';
+}
+function raysSVG(){
+  let r = '<svg class="rays" viewBox="-50 -50 100 100" aria-hidden="true">';
+  for(let i=0;i<18;i++) r += '<path d="M0,0 L46,-5 L46,5 Z" fill="#E9A51C" opacity=".15" transform="rotate('+(i*20)+')"/>';
+  return r + '</svg>';
 }
 function renderFrise(){
   const f = $("#frise"); f.innerHTML = "";
@@ -650,7 +775,10 @@ function renderPicks(){
 }
 
 /* ---------------- le tour ---------------- */
+let altFlip = false;
 function startRound(){
+  if(S.mode === "deco"){ startDeco(true); return; }
+  if(S.mode === "alterne"){ altFlip = !altFlip; if(altFlip){ startDeco(true); return; } }
   clearTimers(); picked = null; phase = "suspense";
   R = buildRound();
   document.querySelectorAll(".fcell.target").forEach(e => e.classList.remove("target"));
@@ -698,7 +826,7 @@ function goBoard(st){
   const c = COLORS[st.color] || COLORS.bleu;
   $("#view-board").style.setProperty("--c", c);
   $("#boardname").textContent = st.name;
-  say('<span style="color:' + c + '">' + st.name + "</span> va au tableau&nbsp;!", "Elle ou il écrit le chiffre en grand, puis tu cliques sur ce qui est écrit.");
+  say('<span style="color:' + c + '">' + st.name + "</span> va au tableau&nbsp;!", "Écris le chiffre en grand au stylet, puis touche ici le même chiffre pour vérifier.");
   speak(st.name + ", au tableau ! Écris le chiffre.");
   renderKeypad();
   buttons("", null, "← Un autre élève", () => askPhase());
@@ -711,7 +839,7 @@ function renderKeypad(){
     k.appendChild(b);
   }
   const x = document.createElement("button");
-  x.className = "key no"; x.innerHTML = "<b>✗</b>pas encore lisible"; x.onclick = () => answer(-1);
+  x.className = "key no"; x.innerHTML = "<b>↺</b>on efface"; x.onclick = () => answer(-1);
   k.appendChild(x);
 }
 
@@ -720,19 +848,25 @@ function answer(d){
   if(d === R.n) win(); else miss(d);
 }
 
-function win(){
-  clearTimers(); phase = "win";
-  picked.medals++; S.streak++; save();
-  renderChips(picked.id);
-  const c = COLORS[picked.color] || COLORS.bleu;
+const CHEERS = ["Bravo", "Super", "Magnifique", "Bien joué", "Tu assures", "Génial"];
+function celebrate(st, label, line2){
+  const c = COLORS[st.color] || COLORS.bleu;
   const v = $("#view-medal");
   v.style.setProperty("--c", c);
-  v.innerHTML = bigMedal(c, R.n) + '<div class="say">Bravo ' + picked.name + '&nbsp;!</div>'
-    + '<div class="sub">' + picked.name + ' a ' + picked.medals + ' médaille' + (picked.medals > 1 ? "s" : "") + '</div>';
+  v.innerHTML = raysSVG() + bigStar(label)
+    + '<div class="say">' + pick(CHEERS) + " " + st.name + "&nbsp;!</div>"
+    + '<div class="starrow">' + starRow(st.stars) + '</div>'
+    + '<div class="sub">' + line2 + '</div>';
   show(["medal"]);
+  confetti(c); sfxWin();
+}
+function win(){
+  clearTimers(); phase = "win";
+  picked.stars++; S.streak++; save();
+  renderChips(picked.id);
+  celebrate(picked, R.n, picked.name + " a " + picked.stars + " étoile" + (picked.stars > 1 ? "s" : "") + " — et une de plus pour la classe");
   say("C'est juste&nbsp;: il y en a <em>" + R.n + "</em>&nbsp;!", "");
-  confetti(c);
-  sfxWin(); speak("Bravo " + picked.name + " ! C'est bien " + WORDS[R.n] + ".");
+  speak("Bravo " + picked.name + " ! C'est bien " + WORDS[R.n] + ".");
   buttons(S.secret ? "Le secret du chiffre →" : "Nouvelle question", S.secret ? reveal : startRound, "", null);
   later(S.secret ? reveal : () => {}, 2800);
   if(S.autoLevel && S.streak >= 5 && S.level < LEVELS.length - 1){
@@ -744,8 +878,8 @@ function miss(d){
   clearTimers(); phase = "miss"; S.streak = 0;
   R.tries.push(d);
   show(["box"]);
-  const what = d === -1 ? "ce n'est pas encore lisible" : "c'est le chiffre " + d;
-  say("Presque&nbsp;! " + picked.name + "&nbsp;: " + what + ".", "On recompte tous ensemble, puis on peut réessayer. Personne ne perd de médaille.");
+  const what = d === -1 ? "on efface et on recommence" : "c'est le chiffre " + d;
+  say("Presque&nbsp;! " + picked.name + "&nbsp;: " + what + ".", "On recompte tous ensemble, puis on peut réessayer. Personne ne perd d'étoile.");
   sfxMiss(); speak("Presque ! On recompte tous ensemble.");
   buttons("Recomptons ensemble", () => recount(() => askPhase()), "", null);
 }
@@ -784,14 +918,6 @@ function recount(then){
   later(step, 500);
 }
 
-function bigMedal(c, n){
-  return '<svg viewBox="0 0 160 190" aria-hidden="true">'
-    + '<path d="M44 6h30l-16 62-30-6z" fill="'+c+'"/><path d="M116 6H86l16 62 30-6z" fill="'+c+'" opacity=".72"/>'
-    + '<circle cx="80" cy="124" r="58" fill="#C98610"/><circle cx="80" cy="120" r="56" fill="#E9A51C"/>'
-    + '<circle cx="80" cy="120" r="43" fill="#F7C94B"/>'
-    + '<text x="80" y="120" text-anchor="middle" dominant-baseline="central" font-family="Fredoka, sans-serif" font-weight="700" font-size="54" fill="#8A5A05">'+n+'</text>'
-    + '</svg>';
-}
 function confetti(c){
   const old = $("#conf"); if(old) old.remove();
   const wrap = document.createElement("div"); wrap.className = "confetti"; wrap.id = "conf";
@@ -805,6 +931,168 @@ function confetti(c){
   }
   $("#stage").appendChild(wrap);
   setTimeout(() => wrap.remove(), 4600);
+}
+
+/* ---------------- la maison du nombre ---------------- */
+const MA = "#D92B2B", MB = "#2A68CC";
+let D = null;
+
+function houseSlots(n){ return S.decoBoth ? n - 1 : n + 1; }
+function houseGot(n){ const g = S.houses[n]; return Array.isArray(g) ? g : []; }
+function decoPool(){ const p = S.digits.filter(d => d >= (S.decoBoth ? 2 : 1)); return p.length ? p : [3]; }
+function currentStudent(){ return S.students[S.turn % S.students.length] || S.students[0]; }
+function nextStudent(){ return S.students[(S.turn + 1) % S.students.length] || S.students[0]; }
+
+function handSVGC(cols, mirror){
+  const F = [{x:28,h:64},{x:46,h:74},{x:64,h:66},{x:82,h:52}], SKIN = "#FFD9B8";
+  let s = '<svg viewBox="-28 -4 138 156" aria-hidden="true"' + (mirror ? ' style="transform:scaleX(-1)"' : '') + '>';
+  s += '<g stroke="#DFA87A" stroke-width="3.5" stroke-linejoin="round">';
+  s += cols[0]
+    ? '<rect x="-24" y="70" width="24" height="60" rx="12" transform="rotate(32 -12 128)" fill="'+cols[0]+'"/>'
+    : '<rect x="6" y="96" width="50" height="22" rx="11" fill="'+SKIN+'"/>';
+  for(let i=0;i<4;i++){
+    const f = F[i], c = cols[i+1], h = c ? f.h : 26;
+    s += '<rect x="'+f.x+'" y="'+(96-h)+'" width="16" height="'+(h+16)+'" rx="8" fill="'+(c||SKIN)+'"/>';
+  }
+  s += '<rect x="20" y="84" width="78" height="64" rx="24" fill="'+SKIN+'"/></g></svg>';
+  return s;
+}
+function handsFor(a, b){
+  const cols = [];
+  for(let i=0;i<a;i++) cols.push(MA);
+  for(let i=0;i<b;i++) cols.push(MB);
+  const h1 = cols.slice(0,5), h2 = cols.slice(5,10);
+  while(h1.length < 5) h1.push(null);
+  while(h2.length < 5) h2.push(null);
+  let out = handSVGC(h1, false);
+  if(a + b > 5) out += handSVGC(h2, true);
+  return out;
+}
+function pileHTML(k){ let o = ""; for(let i=0;i<Math.max(0,k);i++) o += "<i></i>"; return o; }
+
+function startDeco(newNumber){
+  clearTimers(); phase = "deco"; picked = null;
+  let n;
+  if(D && !newNumber) n = D.n;
+  else {
+    let pool = decoPool().filter(x => houseGot(x).length < houseSlots(x));
+    if(!pool.length){ pool = decoPool(); }
+    if(D && pool.length > 1) pool = pool.filter(x => x !== D.n);
+    n = pick(pool);
+  }
+  D = {n:n, lane:[]};
+  show(["deco"]);
+  const st = currentStudent();
+  say('<span style="color:' + (COLORS[st.color]||COLORS.bleu) + '">' + st.name + '</span>, fabrique <em>' + n + '</em>&nbsp;!',
+      "Prends des billes rouges et des billes bleues, pose-les sur la droite. Il faut une décomposition que personne n'a encore trouvée.");
+  speak(st.name + ", fabrique " + WORDS[n] + " avec les deux boîtes.");
+  renderDeco();
+}
+
+function takeBille(col){
+  if(phase !== "deco" || !D) return;
+  if(D.lane.length >= D.n){ nope("La droite est pleine : valide, ou enlève une bille."); return; }
+  D.lane.push(col);
+  tone(col === "a" ? 540 : 470, 0.13, "sine", 0.13);
+  renderDeco();
+}
+
+function renderDeco(){
+  if(!D) return;
+  const n = D.n, lane = D.lane;
+  const a = lane.filter(x => x === "a").length, b = lane.length - a;
+  renderTurn();
+  $("#pile-a").innerHTML = pileHTML(n - a);
+  $("#pile-b").innerHTML = pileHTML(n - b);
+  $("#bin-a").classList.toggle("empty", n - a <= 0);
+  $("#bin-b").classList.toggle("empty", n - b <= 0);
+  const L = $("#lane"); L.innerHTML = "";
+  for(let i=0;i<n;i++){
+    const sl = document.createElement("button");
+    sl.className = "slot" + (lane[i] ? " full" : "");
+    if(lane[i]){
+      sl.style.setProperty("--m", lane[i] === "a" ? MA : MB);
+      sl.innerHTML = '<span class="bille"></span>';
+      sl.title = "enlever cette bille";
+      sl.onclick = () => { D.lane.splice(i,1); tone(300,0.12,"sine",0.1); renderDeco(); };
+    } else {
+      sl.onclick = () => nope("Prends une bille dans une boîte.");
+    }
+    L.appendChild(sl);
+  }
+  $("#deco-eq").innerHTML = '<b style="color:'+MA+'">'+a+'</b><span>+</span><b style="color:'+MB+'">'+b+'</b>'
+    + '<span>=</span><b class="tot' + (lane.length === n ? " ok" : "") + '">' + lane.length + '</b>';
+  $("#deco-hands").innerHTML = handsFor(a, b);
+  renderHouse();
+  const full = lane.length === n;
+  buttons(full ? "Je valide ma décomposition" : "", full ? validateDeco : null,
+          lane.length ? "Je recommence" : "", lane.length ? () => { D.lane = []; renderDeco(); } : null);
+}
+
+function renderTurn(){
+  const t = $("#deco-turn"); t.innerHTML = "";
+  S.students.forEach((st, i) => {
+    const b = document.createElement("button");
+    b.className = "tpill" + (i === S.turn % S.students.length ? " now" : "");
+    b.style.setProperty("--c", COLORS[st.color] || COLORS.bleu);
+    b.innerHTML = '<span class="av">' + st.name.slice(0,1).toUpperCase() + '</span>' + st.name;
+    b.onclick = () => { S.turn = i; save(); startDeco(false); };
+    t.appendChild(b);
+  });
+}
+
+function renderHouse(){
+  const n = D.n, got = houseGot(n), h = $("#house");
+  const roof = '<div class="roof"><svg viewBox="0 0 40 24" aria-hidden="true"><path d="M20 2 L37 20 H3 Z" fill="#E6EDF9" stroke="#C8D9F1" stroke-width="3" stroke-linejoin="round"/></svg>'
+    + 'La maison du ' + n + ' — ' + got.length + ' sur ' + houseSlots(n) + '</div>';
+  let w = "";
+  const from = S.decoBoth ? 1 : 0, to = S.decoBoth ? n - 1 : n;
+  for(let a = from; a <= to; a++){
+    const has = got.indexOf(a) >= 0;
+    w += '<span class="win' + (has ? " got" : "") + '" data-a="' + a + '">'
+      + (has ? '<b class="a">'+a+'</b><span class="p">+</span><b class="b">'+(n-a)+'</b>' : '?<span class="p">+</span>?')
+      + '</span>';
+  }
+  h.innerHTML = roof + '<div class="windows">' + w + '</div>';
+}
+
+function nope(msg, a){
+  sfxMiss();
+  const L = $("#lane");
+  if(L){ L.classList.remove("nope"); void L.offsetWidth; L.classList.add("nope"); }
+  const sub = $("#sub");
+  sub.textContent = msg; sub.classList.add("warn");
+  setTimeout(() => sub.classList.remove("warn"), 2600);
+  speak(msg);
+  if(typeof a === "number"){
+    const w = document.querySelector('.win[data-a="' + a + '"]');
+    if(w){ w.classList.remove("flash"); void w.offsetWidth; w.classList.add("flash"); }
+  }
+}
+
+function validateDeco(){
+  if(!D || D.lane.length !== D.n) return;
+  const n = D.n, a = D.lane.filter(x => x === "a").length, b = n - a;
+  if(S.decoBoth && (a === 0 || b === 0)){ nope("Il faut prendre dans les deux boîtes !"); return; }
+  const got = houseGot(n);
+  if(got.indexOf(a) >= 0){ nope("Celle-là, on l'a déjà trouvée ! Cherches-en une autre.", a); return; }
+  got.push(a); got.sort((x, y) => x - y); S.houses[n] = got;
+  const st = currentStudent();
+  st.stars++; save();
+  renderChips(st.id);
+  clearTimers(); phase = "decowin";
+  const eq = '<b style="color:'+MA+'">' + a + '</b> rouges et <b style="color:'+MB+'">' + b + '</b> bleues, ça fait bien ' + n + '.';
+  celebrate(st, a + "+" + b, eq + ' &nbsp;·&nbsp; ' + st.name + ' a ' + st.stars + ' étoile' + (st.stars > 1 ? "s" : ""));
+  say('<span style="color:'+MA+'">' + a + '</span> + <span style="color:'+MB+'">' + b + '</span> = <em>' + n + '</em>', "Une nouvelle fenêtre dans la maison du " + n + ".");
+  speak(WORDS[a] + " plus " + WORDS[b] + " égale " + WORDS[n] + ". Bravo " + st.name + " !");
+  const complete = got.length >= houseSlots(n);
+  S.turn = (S.turn + 1) % S.students.length; save();
+  if(complete){
+    later(() => toast("La maison du " + n + " est complète !"), 700);
+    buttons("Un autre nombre →", () => startDeco(true), "", null);
+  } else {
+    buttons("Au tour de " + currentStudent().name + " →", () => startDeco(false), "", null);
+  }
 }
 
 /* ---------------- le secret du chiffre ---------------- */
@@ -877,6 +1165,8 @@ function renderPanel(){
   sel.value = S.level;
   sel.onchange = () => { S.level = +sel.value; S.streak = 0; save(); renderChips(); };
   $("#auto-level").checked = !!S.autoLevel;
+  $("#mode-sel").value = S.mode || "compter";
+  $("#opt-both").checked = !!S.decoBoth;
   $("#opt-voice").checked = !!S.voice;
   $("#opt-sound").checked = !!S.sound;
   $("#opt-secret").checked = !!S.secret;
@@ -916,7 +1206,7 @@ $("#opt-flash").onchange = e => { S.flashMs = +e.target.value; save(); };
 $("#add-stud").onclick = () => {
   const used = S.students.map(s => s.color);
   const free = Object.keys(COLORS).filter(c => used.indexOf(c) < 0);
-  S.students.push({id:"s" + Date.now().toString(36), name:"Élève", color: free[0] || "bleu", medals:0});
+  S.students.push({id:"s" + Date.now().toString(36), name:"Élève", color: free[0] || "bleu", stars:0});
   save(); renderPanel(); renderChips();
 };
 document.querySelectorAll("[data-preset]").forEach(b => {
@@ -931,18 +1221,29 @@ $("#reset-medals").onclick = () => {
   const b = $("#reset-medals");
   if(!armed){
     armed = true; b.textContent = "Sûr ? Clique encore pour effacer";
-    armTimer = setTimeout(() => { armed = false; b.textContent = "Remettre les médailles à zéro"; }, 4000);
+    armTimer = setTimeout(() => { armed = false; b.textContent = "Remettre les étoiles à zéro"; }, 4000);
     return;
   }
   clearTimeout(armTimer); armed = false;
-  S.students.forEach(s => s.medals = 0); S.streak = 0; save();
-  b.textContent = "Remettre les médailles à zéro";
-  renderChips(); toast("Médailles remises à zéro");
+  S.students.forEach(s => s.stars = 0); S.streak = 0; save();
+  b.textContent = "Remettre les étoiles à zéro";
+  renderChips(); toast("Étoiles remises à zéro");
 };
 function openPanel(o){
   $("#panel").hidden = !o; $("#scrim").hidden = !o;
   if(o) renderPanel();
 }
+$("#bin-a").onclick = () => takeBille("a");
+$("#bin-b").onclick = () => takeBille("b");
+$("#mode-sel").onchange = e => { S.mode = e.target.value; save(); renderChips(); toast(e.target.value === "deco" ? "Maison du nombre" : (e.target.value === "compter" ? "Compter et écrire" : "Les deux en alternance")); };
+$("#opt-both").onchange = e => { S.decoBoth = e.target.checked; save(); if(phase === "deco") renderDeco(); };
+let armedH = false, armHT = null;
+$("#reset-houses").onclick = () => {
+  const b = $("#reset-houses");
+  if(!armedH){ armedH = true; b.textContent = "Sûr ? Clique encore"; armHT = setTimeout(() => { armedH = false; b.textContent = "Vider les maisons des nombres"; }, 4000); return; }
+  clearTimeout(armHT); armedH = false; b.textContent = "Vider les maisons des nombres";
+  S.houses = {}; save(); if(phase === "deco") renderDeco(); toast("Maisons vidées");
+};
 $("#btn-panel").onclick = () => openPanel(true);
 $("#btn-close").onclick = () => openPanel(false);
 $("#scrim").onclick = () => openPanel(false);
@@ -964,7 +1265,7 @@ document.addEventListener("keydown", e => {
     if(st) goBoard(st);
     return;
   }
-  if(k === "r" && R){ recount(() => askPhase()); }
+  if(k === "r" && R && phase !== "deco" && phase !== "decowin"){ recount(() => askPhase()); }
 });
 
 /* ---------------- demarrage ---------------- */
@@ -984,7 +1285,7 @@ try{
 (async () => {
   try{
     const db = window.claude && window.claude.use ? await window.claude.use("db") : null;
-    if(!db){ $("#store-note").textContent = "Les médailles sont gardées sur cet appareil et ce navigateur."; return; }
+    if(!db){ $("#store-note").textContent = "Les étoiles sont gardées sur cet appareil et ce navigateur."; return; }
     dbDoc = db.doc("rituel/etat");
     const snap = await dbDoc.get();
     if(snap && snap.exists){
@@ -993,9 +1294,9 @@ try{
     } else {
       save();
     }
-    $("#store-note").textContent = "Les médailles sont enregistrées avec la page : elles seront encore là demain matin, sur n'importe quel appareil.";
+    $("#store-note").textContent = "Les étoiles sont enregistrées avec la page : elles seront encore là demain matin, sur n'importe quel appareil.";
   }catch(e){
-    $("#store-note").textContent = "Les médailles sont gardées sur cet appareil et ce navigateur.";
+    $("#store-note").textContent = "Les étoiles sont gardées sur cet appareil et ce navigateur.";
   }
 })();
 </script>
