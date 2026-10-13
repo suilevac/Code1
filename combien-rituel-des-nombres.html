@@ -104,7 +104,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
   border-radius:8px; padding:0 6px; font-weight:700}
 
 /* ---------- tableau : nom + clavier ---------- */
-.boardname{font-family:var(--font-display); font-weight:700; color:var(--c); font-size:clamp(34px,8vw,92px); line-height:1; text-align:center}
+.boardname{font-family:var(--font-display); font-weight:700; color:var(--c); font-size:clamp(24px,4.4vw,56px); line-height:1; text-align:center}
 .keypad{display:grid; grid-template-columns:repeat(5,1fr); gap:clamp(6px,1vw,12px); width:100%; max-width:760px}
 .key{background:var(--card); border-radius:16px; box-shadow:var(--lift); padding:clamp(6px,1.2vh,12px) 0;
   display:grid; place-items:center; transition:transform .1s ease}
@@ -123,23 +123,46 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
 @keyframes fall{0%{transform:translateY(-10vh) rotate(0); opacity:1}100%{transform:translateY(110vh) rotate(720deg); opacity:.9}}
 
 /* ---------- revelation ---------- */
-.reveal{display:grid; grid-template-columns:1.1fr 1fr 1fr; gap:clamp(8px,1.6vw,20px); width:100%; align-items:stretch}
-.rcard{background:var(--card); border-radius:var(--r); box-shadow:var(--lift); padding:clamp(8px,1.4vh,16px);
-  display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0}
-.rcard h3{margin:0; font-size:clamp(10px,1.3vmin,13px); letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); font-weight:700}
-.rcard .holder{flex:1; min-height:0; width:100%; display:grid; place-items:center}
-.minibox{position:relative; width:100%; aspect-ratio:16/9; border-radius:14px; background:#F7FAFF; overflow:hidden; border:2px solid var(--rule-soft)}
-.glyphsvg{width:100%; height:100%; max-height:min(34vh,330px)}
+/* ---------- l'ardoise numerique (stylet) ---------- */
+.wframe{position:relative; width:100%; aspect-ratio:3/2; max-height:100%; background:#fff; border-radius:24px;
+  box-shadow:var(--lift); border:3px solid var(--rule-soft); overflow:hidden; touch-action:none}
+.wframe::before{content:''; position:absolute; left:6%; right:6%; top:50%; border-top:3px dashed var(--rule-soft)}
+.wframe canvas{position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:crosshair; display:block}
+.wclear{position:absolute; right:10px; bottom:10px; background:#fff; border:2px solid var(--rule); border-radius:999px;
+  padding:5px 13px; font-size:clamp(10px,1vw,13px); font-weight:700; color:var(--ink-soft)}
+.wtag{position:absolute; left:14px; top:10px; font-size:clamp(9px,1vw,12px); font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--ink-faint)}
+.boardgrid{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); grid-template-rows:minmax(0,1fr);
+  gap:clamp(10px,1.8vw,26px); place-items:center; width:100%; flex:1; min-height:0}
+.boardgrid .wframe{height:100%; width:auto; max-width:100%; aspect-ratio:3/2}
+.boardgrid .keypad{align-self:center}
+
+/* ---------- la revelation pas a pas ---------- */
+.reveal{display:flex; flex-direction:column; align-items:center; gap:clamp(6px,1.3vh,16px); width:100%; flex:1; min-height:0}
+.rtop{display:flex; align-items:center; gap:clamp(8px,1.4vw,18px); max-width:100%}
+.rtop .minibox{width:clamp(110px,15vw,210px)}
+.minibox{position:relative; aspect-ratio:16/9; border-radius:14px; background:#F7FAFF; overflow:hidden; border:2px solid var(--rule-soft)}
+.rcap{font-family:var(--font-display); font-weight:600; font-size:clamp(14px,2vw,28px); color:var(--ink); text-wrap:balance}
+.rcap b{color:var(--red)}
+.rstage{flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr);
+  gap:clamp(10px,2vw,28px); place-items:center; width:100%}
+.rstage.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.rmodel{height:100%; min-height:0; min-width:0; display:grid; place-items:center}
+.rwrite{height:100%; min-height:0; min-width:0; width:100%; display:flex; align-items:center; justify-content:center}
+.rwrite .wframe{height:100%; width:auto; max-width:100%; aspect-ratio:3/2}
+.glyphsvg{width:auto; height:100%; max-height:min(42vh,420px); max-width:100%; overflow:visible}
 .trace{fill:none; stroke:var(--ink); stroke-width:11; stroke-linecap:round; stroke-linejoin:round}
 .ghost{fill:none; stroke:var(--rule-soft); stroke-width:11; stroke-linecap:round; stroke-linejoin:round}
-.secret .trace{stroke:var(--rule-soft)}
-.pt{fill:var(--red); opacity:0; transform-box:fill-box; transform-origin:center; transform:scale(.2)}
-.pt.on{opacity:1; transform:scale(1); animation:ptin .34s cubic-bezier(.2,1.6,.4,1)}
-@keyframes ptin{to{opacity:1; transform:scale(1)}}
-.ptnum{font-family:var(--font-display); font-weight:600; font-size:17px; fill:var(--red); opacity:0}
-.ptnum.on{opacity:1; transition:opacity .2s}
-.tally-big{font-family:var(--font-display); font-weight:700; font-size:clamp(20px,2.4vw,38px); color:var(--red); font-variant-numeric:tabular-nums}
-.verdict{font-family:var(--font-display); font-weight:600; text-align:center; font-size:clamp(17px,2.4vw,34px)}
+.ang{fill:none; stroke:var(--rule); stroke-width:9; stroke-linecap:round; stroke-linejoin:round;
+  transition:stroke .5s ease, stroke-width .5s ease, opacity .5s ease}
+.ang.dark{stroke:var(--ink); stroke-width:12}
+.ang.fade{opacity:.16; stroke:var(--ink)}
+.ptg{transition:transform .95s cubic-bezier(.45,0,.2,1)}
+.pt{fill:var(--red); transform-box:fill-box; transform-origin:center; animation:popin .32s cubic-bezier(.2,1.6,.4,1)}
+.ptn{fill:#fff; font-family:var(--font-display); font-weight:600; font-size:9px; text-anchor:middle; dominant-baseline:central; pointer-events:none}
+.startn{fill:var(--bleu)}
+.startt{fill:#fff; font-family:var(--font-display); font-weight:600; font-size:10px; text-anchor:middle; dominant-baseline:central}
+.verdict{font-family:var(--font-display); font-weight:600; text-align:center; font-size:clamp(15px,2vw,28px)}
 .verdict b{color:var(--red)}
 
 /* ---------- pied : frise + action ---------- */
@@ -253,14 +276,15 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 .sub.warn{color:var(--red); font-weight:700}
 
 @media (max-width:860px){
+  .boardgrid{grid-template-columns:1fr}
+  .rstage.two{grid-template-columns:1fr}
   .deco-grid{grid-template-columns:1fr; justify-items:center}
   .bins{flex-direction:row}
   .handz{height:clamp(70px,14vh,150px)}
 }
 @media (max-width:760px){
-  .reveal{grid-template-columns:1fr}
-  .rcard:first-child{display:none}
-  .keypad{grid-template-columns:repeat(4,1fr)}
+  .rtop .minibox{display:none}
+  .keypad{grid-template-columns:repeat(5,1fr)}
   .brand span{display:none}
   .classbar{display:none}
 }
@@ -297,27 +321,30 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 
     <div class="picks" id="view-picks" hidden></div>
 
-    <div id="view-board" hidden style="display:flex;flex-direction:column;align-items:center;gap:clamp(8px,2vh,22px);width:100%">
+    <div id="view-board" hidden style="display:flex;flex-direction:column;align-items:center;gap:clamp(6px,1.4vh,16px);width:100%;flex:1;min-height:0;justify-content:center">
       <div class="boardname" id="boardname">Wendy</div>
-      <div class="sub">Touche le chiffre que tu viens d'écrire.</div>
-      <div class="keypad" id="keypad"></div>
+      <div class="boardgrid">
+        <div class="wframe"><span class="wtag">écris ici au stylet</span><canvas id="pad"></canvas><button class="wclear" id="pad-clear">effacer</button></div>
+        <div class="keypad" id="keypad"></div>
+      </div>
     </div>
 
     <div class="medal" id="view-medal" hidden></div>
 
     <div class="reveal" id="view-reveal" hidden>
-      <div class="rcard">
-        <h3>La collection</h3>
-        <div class="holder" id="r-collection"></div>
+      <div class="rtop">
+        <div class="minibox" id="r-collection"></div>
+        <div class="rcap" id="rcap"></div>
       </div>
-      <div class="rcard">
-        <h3>Le chiffre</h3>
-        <div class="holder" id="r-digit"></div>
-      </div>
-      <div class="rcard">
-        <h3>Le secret du chiffre</h3>
-        <div class="holder" id="r-secret"></div>
-        <div class="tally-big" id="r-count">&nbsp;</div>
+      <div class="rstage" id="rstage">
+        <div class="rmodel">
+          <svg class="glyphsvg" id="rsvg" viewBox="-14 -12 128 132" aria-label="le chiffre et ses points">
+            <g id="r-ang"></g><g id="r-school"></g><g id="r-start"></g><g id="r-dots"></g>
+          </svg>
+        </div>
+        <div class="rwrite" id="rwrite" hidden>
+          <div class="wframe"><span class="wtag">à toi d'écrire</span><canvas id="pad2"></canvas><button class="wclear" id="pad2-clear">effacer</button></div>
+        </div>
       </div>
     </div>
     <div id="view-deco" hidden>
@@ -440,6 +467,18 @@ const DIGITS = {
   8:{p:["M54,54 C30,44 26,16 50,10 C74,4 78,32 54,54 C26,70 22,96 50,100 C80,96 80,70 54,54"], w:"huit"},
   9:{p:["M76,48 C70,64 46,66 34,56 C20,44 26,14 52,10 C74,8 82,30 80,54 C78,80 60,96 36,100"], w:"neuf"}
 };
+/* le chiffre anguleux : autant de pointes marquées que le nombre (comme les chiffres arabes d'origine) */
+const ANG = {
+  1:{s:["M30,26 L58,6 L58,100"], d:[[58,6]]},
+  2:{s:["M20,18 L74,18 L20,94 L82,94"], d:[[74,18],[20,94]]},
+  3:{s:["M20,12 L78,12 L38,50 L80,76 L24,98"], d:[[78,12],[38,50],[80,76]]},
+  4:{s:["M62,6 L10,66 L88,66","M62,6 L62,100"], d:[[62,6],[10,66],[88,66],[62,100]]},
+  5:{s:["M84,14 L28,14 L24,46 L66,44 L78,72 L54,96 L22,80"], d:[[28,14],[24,46],[66,44],[78,72],[54,96]]},
+  6:{s:["M72,10 L26,62","M26,62 L70,48 L86,74 L52,98 L20,74 Z"], d:[[72,10],[26,62],[70,48],[86,74],[52,98],[20,74]]},
+  7:{s:["M14,32 L14,14 L86,14 L38,96 L58,96","M28,56 L70,56"], d:[[14,32],[14,14],[86,14],[38,96],[58,96],[28,56],[70,56]]},
+  8:{s:["M50,8 L78,30 L52,54 L22,30 Z","M48,56 L82,78 L50,100 L18,78 Z"], d:[[50,8],[78,30],[52,54],[22,30],[48,56],[82,78],[50,100],[18,78]]},
+  9:{s:["M50,6 L82,28 L70,58 L30,58 L18,28 Z","M70,58 L80,76 L74,92 L52,100 L28,90"], d:[[50,6],[82,28],[70,58],[30,58],[18,28],[80,76],[74,92],[52,100],[28,90]]}
+};
 const WORDS = {0:"zéro",1:"un",2:"deux",3:"trois",4:"quatre",5:"cinq",6:"six",7:"sept",8:"huit",9:"neuf"};
 const COLORS = {rose:"#DE4199", rouge:"#D22D2D", vert:"#17964C", bleu:"#2A68CC", orange:"#E2701A", violet:"#7B4CC4"};
 const PIPC = ["#2A68CC","#7B4CC4","#E2701A","#17964C"];
@@ -541,18 +580,58 @@ function traceIn(svg, ms){
     requestAnimationFrame(() => { p.style.strokeDashoffset = 0; });
   });
 }
-function dotsAlong(svg, n){
-  const paths = Array.from(svg.querySelectorAll(".trace"));
-  const lens = paths.map(p => p.getTotalLength());
-  const total = lens.reduce((a,b)=>a+b, 0);
-  const out = [];
-  for(let i=0;i<n;i++){
-    let t = ((i + 0.5) / n) * total, k = 0;
-    while(k < lens.length - 1 && t > lens[k]){ t -= lens[k]; k++; }
-    const pt = paths[k].getPointAtLength(Math.min(t, lens[k]));
-    out.push(pt);
+
+/* ---------------- l'ardoise numerique : on ecrit au stylet ---------------- */
+function makePad(id){
+  const cv = document.getElementById(id);
+  if(!cv) return {clear(){}, setColor(){}, fit(){}, empty(){return true;}};
+  const ctx = cv.getContext("2d");
+  let strokes = [], cur = null, color = "#16284F";
+  const lw = () => Math.max(4, cv.width * 0.017);
+  function fit(){
+    const r = cv.getBoundingClientRect();
+    if(!r.width || !r.height) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+    if(w === cv.width && h === cv.height) return;
+    cv.width = w; cv.height = h; redraw();
   }
-  return out;
+  function redraw(){
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    strokes.forEach(st => {
+      ctx.strokeStyle = st.color; ctx.fillStyle = st.color; ctx.lineWidth = lw();
+      if(st.pts.length < 2){
+        ctx.beginPath(); ctx.arc(st.pts[0].x*cv.width, st.pts[0].y*cv.height, lw()/2, 0, 6.3); ctx.fill(); return;
+      }
+      ctx.beginPath();
+      st.pts.forEach((q, i) => { const x = q.x*cv.width, y = q.y*cv.height; if(i) ctx.lineTo(x,y); else ctx.moveTo(x,y); });
+      ctx.stroke();
+    });
+  }
+  function seg(st){
+    const k = st.pts.length; if(k < 2) return;
+    ctx.strokeStyle = st.color; ctx.lineWidth = lw(); ctx.lineCap = "round"; ctx.lineJoin = "round";
+    const a = st.pts[k-2], b = st.pts[k-1];
+    ctx.beginPath(); ctx.moveTo(a.x*cv.width, a.y*cv.height); ctx.lineTo(b.x*cv.width, b.y*cv.height); ctx.stroke();
+  }
+  function at(e){ const r = cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width, y:(e.clientY-r.top)/r.height}; }
+  cv.addEventListener("pointerdown", e => {
+    e.preventDefault(); try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+    cur = {color:color, pts:[at(e)]}; strokes.push(cur); redraw();
+  });
+  cv.addEventListener("pointermove", e => { if(!cur) return; e.preventDefault(); cur.pts.push(at(e)); seg(cur); });
+  const stop = () => { cur = null; };
+  cv.addEventListener("pointerup", stop);
+  cv.addEventListener("pointercancel", stop);
+  cv.addEventListener("pointerleave", stop);
+  try{ new ResizeObserver(fit).observe(cv); }catch(e){}
+  return {
+    clear(){ strokes = []; redraw(); },
+    setColor(c){ color = c; },
+    fit, empty(){ return !strokes.length; }
+  };
 }
 
 /* ---------------- fabrique de la collection ---------------- */
@@ -691,6 +770,7 @@ function fitBox(){
 try{ new ResizeObserver(fitBox).observe(document.getElementById("view-box")); }catch(e){}
 window.addEventListener("resize", fitBox);
 
+const padBoard = makePad("pad"), padWrite = makePad("pad2");
 const VIEWS = {box:"#view-box", picks:"#view-picks", board:"#view-board", medal:"#view-medal", reveal:"#view-reveal", deco:"#view-deco"};
 function show(list){
   Object.keys(VIEWS).forEach(k => { $(VIEWS[k]).hidden = list.indexOf(k) < 0; });
@@ -826,9 +906,11 @@ function goBoard(st){
   const c = COLORS[st.color] || COLORS.bleu;
   $("#view-board").style.setProperty("--c", c);
   $("#boardname").textContent = st.name;
-  say('<span style="color:' + c + '">' + st.name + "</span> va au tableau&nbsp;!", "Écris le chiffre en grand au stylet, puis touche ici le même chiffre pour vérifier.");
+  say("Au tableau&nbsp;!", "Écris le chiffre en grand au stylet, puis touche ici le même chiffre pour vérifier.");
   speak(st.name + ", au tableau ! Écris le chiffre.");
   renderKeypad();
+  padBoard.setColor(c); padBoard.clear();
+  requestAnimationFrame(() => padBoard.fit());
   buttons("", null, "← Un autre élève", () => askPhase());
 }
 function renderKeypad(){
@@ -839,7 +921,7 @@ function renderKeypad(){
     k.appendChild(b);
   }
   const x = document.createElement("button");
-  x.className = "key no"; x.innerHTML = "<b>↺</b>on efface"; x.onclick = () => answer(-1);
+  x.className = "key no"; x.innerHTML = "<b>?</b>je ne sais pas"; x.onclick = () => answer(-1);
   k.appendChild(x);
 }
 
@@ -878,7 +960,7 @@ function miss(d){
   clearTimers(); phase = "miss"; S.streak = 0;
   R.tries.push(d);
   show(["box"]);
-  const what = d === -1 ? "on efface et on recommence" : "c'est le chiffre " + d;
+  const what = d === -1 ? "ce n'est pas encore sûr" : "c'est le chiffre " + d;
   say("Presque&nbsp;! " + picked.name + "&nbsp;: " + what + ".", "On recompte tous ensemble, puis on peut réessayer. Personne ne perd d'étoile.");
   sfxMiss(); speak("Presque ! On recompte tous ensemble.");
   buttons("Recomptons ensemble", () => recount(() => askPhase()), "", null);
@@ -1095,49 +1177,120 @@ function validateDeco(){
   }
 }
 
-/* ---------------- le secret du chiffre ---------------- */
+/* ---------------- le secret du chiffre, pas a pas ---------------- */
+const NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs){ const e = document.createElementNS(NS, tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+let rvStep = 0;
+
+function chain(k){
+  const n = R.n;
+  const parts = [n + " objets", n + " points", n + " coins", "le chiffre " + n, "je l'écris"];
+  $("#verdict").innerHTML = parts.map((t, i) =>
+    '<span style="opacity:' + (i < k ? 1 : .22) + (i === k - 1 ? ";color:var(--red)" : "") + '">' + t + '</span>'
+  ).join(' <span style="opacity:.35">→</span> ');
+}
+
 function reveal(){
-  clearTimers(); phase = "reveal";
+  clearTimers(); phase = "reveal"; rvStep = 0;
   show(["reveal"]);
-  say("Le secret du <em>" + R.n + "</em>", "");
-  buttons("Nouvelle question", startRound, "", null);
-
   const col = $("#r-collection"); col.innerHTML = "";
-  const mini = document.createElement("div"); mini.className = "minibox";
   const clone = $("#field").cloneNode(true);
-  clone.querySelectorAll(".item").forEach(el => { el.classList.add("in","counted"); });
-  mini.appendChild(clone); col.appendChild(mini); watchU(mini);
-
-  $("#r-digit").innerHTML = digitSVG(R.n);
-  traceIn($("#r-digit").querySelector("svg"), 1000);
-
-  $("#r-secret").innerHTML = digitSVG(R.n, "secret");
-  $("#r-count").innerHTML = "&nbsp;";
-  const svg = $("#r-secret").querySelector("svg");
-  $("#verdict").innerHTML = R.n + " objets &nbsp;→&nbsp; j'écris <em>" + R.n + "</em> &nbsp;→&nbsp; <b>" + R.n + " points</b>. C'est bien " + WORDS[R.n] + "&nbsp;!";
-  const f = $("#frise .fcell[data-d='" + R.n + "']");
+  clone.querySelectorAll(".item").forEach(e => e.classList.add("in", "counted"));
+  col.appendChild(clone); watchU(col);
+  say("Le secret du <em>" + R.n + "</em>", "");
+  $("#rstage").classList.remove("two");
+  $("#rwrite").hidden = true;
+  $("#r-ang").innerHTML = ""; $("#r-school").innerHTML = ""; $("#r-start").innerHTML = ""; $("#r-dots").innerHTML = "";
   document.querySelectorAll(".fcell.target").forEach(e => e.classList.remove("target"));
-  if(f) f.classList.add("target");
+  const f = $("#frise .fcell[data-d=\'" + R.n + "\']"); if(f) f.classList.add("target");
+  stepReveal();
+}
+function nextStep(){ if(phase !== "reveal") return; rvStep++; stepReveal(); }
 
-  later(() => {
-    const pts = dotsAlong(svg, R.n);
-    pts.forEach((p, i) => {
-      const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      c.setAttribute("cx", p.x); c.setAttribute("cy", p.y); c.setAttribute("r", 8.5);
-      c.setAttribute("class", "pt"); c.dataset.i = i;
-      svg.appendChild(c);
-    });
-    pts.forEach((p, i) => later(() => {
-      const c = svg.querySelector('.pt[data-i="'+i+'"]'); if(c) c.classList.add("on");
-      $("#r-count").textContent = Array.from({length:i+1}, (_,k) => k+1).join(" · ");
-      tone(500 + i*60, 0.18, "triangle", 0.14); speak(WORDS[i+1]);
-    }, 620 + i*680));
+function stepReveal(){
+  clearTimers();
+  const n = R.n;
+  if(rvStep === 0){
+    chain(2);
+    $("#rcap").innerHTML = "On repose les objets en <b>points</b>&nbsp;…";
+    $("#r-dots").innerHTML = "";
+    const from = posPips(n, {x0:6, x1:94, y0:4, y1:104});
+    for(let i=0;i<n;i++){
+      later(() => {
+        const g = svgEl("g", {class:"ptg"});
+        g.dataset.i = i;
+        g.style.transform = "translate(" + from[i].x + "px," + from[i].y + "px)";
+        g.appendChild(svgEl("circle", {class:"pt", r:9}));
+        const t = svgEl("text", {class:"ptn", x:0, y:0}); t.textContent = i + 1; g.appendChild(t);
+        $("#r-dots").appendChild(g);
+        tone(500 + i*60, 0.18, "triangle", 0.14); speak(WORDS[i+1]);
+        $("#rcap").innerHTML = "On compte les points&nbsp;: <b>" + (i+1) + "</b>";
+      }, 220 + i*620);
+    }
+    later(() => { $("#rcap").innerHTML = "<b>" + n + "</b> points, comme " + n + " objets."; speak("Il y en a " + WORDS[n]); },
+          300 + n*620);
+    buttons("Les points dans les coins →", nextStep, "", null);
+    return;
+  }
+  if(rvStep === 1){
+    chain(3);
+    $("#rcap").innerHTML = "Chaque point va se poser dans un <b>coin</b> du " + n + ".";
+    $("#r-ang").innerHTML = (ANG[n] ? ANG[n].s : []).map(d => '<path class="ang" d="' + d + '"/>').join("");
+    const tgt = (ANG[n] || {d:[]}).d;
+    const gs = Array.from($("#r-dots").children);
+    gs.forEach((g, i) => later(() => {
+      const t = tgt[i] || tgt[tgt.length-1] || [50,50];
+      g.style.transform = "translate(" + t[0] + "px," + t[1] + "px)";
+      tone(600 + i*45, 0.16, "sine", 0.12); speak(WORDS[i+1]);
+    }, 420 + i*520));
     later(() => {
-      $("#r-count").textContent = "→ " + R.n + " points, " + WORDS[R.n] + " !";
-      speak("Le " + WORDS[R.n] + " cache " + WORDS[R.n] + " points. C'est bien " + WORDS[R.n] + ".");
-      tone(880, 0.3, "triangle", 0.15);
-    }, 620 + R.n*680 + 250);
-  }, 1150);
+      $("#rcap").innerHTML = "Le " + n + " cache <b>" + n + " coins</b>&nbsp;: un pour chaque objet.";
+      speak("Le " + WORDS[n] + " cache " + WORDS[n] + " coins.");
+    }, 560 + n*520);
+    buttons("Le tracé du chiffre →", nextStep, "", null);
+    return;
+  }
+  if(rvStep === 2){
+    chain(4);
+    $("#rcap").innerHTML = "Le " + n + " se fonce… regarde bien son <b>tracé</b>.";
+    $("#rsvg").querySelectorAll(".ang").forEach(pa => pa.classList.add("dark"));
+    tone(220, 0.5, "triangle", 0.1);
+    later(() => {
+      $("#rsvg").querySelectorAll(".ang").forEach(pa => { pa.classList.remove("dark"); pa.classList.add("fade"); });
+      $("#r-school").innerHTML = (DIGITS[n] ? DIGITS[n].p : []).map(d => '<path class="trace" d="' + d + '"/>').join("");
+      const paths = Array.from($("#r-school").children);
+      traceIn($("#r-school"), 1100);
+      $("#r-start").innerHTML = "";
+      const marks = [];
+      paths.forEach((pa, i) => later(() => {
+        const p0 = pa.getPointAtLength(0);
+        let x = p0.x, y = p0.y;
+        marks.forEach(m => { if(Math.hypot(m.x - x, m.y - y) < 16){ x += 20; y -= 15; } });
+        marks.push({x:x, y:y});
+        const g = svgEl("g", {});
+        g.appendChild(svgEl("circle", {class:"startn", cx:x, cy:y, r:10}));
+        const t = svgEl("text", {class:"startt", x:x, y:y}); t.textContent = i + 1; g.appendChild(t);
+        $("#r-start").appendChild(g);
+        tone(700 + i*120, 0.2, "triangle", 0.12);
+      }, i * 640));
+      speak("On trace le " + WORDS[n] + " comme ça.");
+    }, 950);
+    buttons("À toi d'écrire →", nextStep, "", null);
+    return;
+  }
+  const who = picked || S.students[0];
+  const c = COLORS[who.color] || "#16284F";
+  chain(5);
+  $("#rcap").innerHTML = '<span style="color:' + c + '">' + who.name + '</span>, écris le <b>' + n + '</b> à côté du modèle.';
+  $("#rstage").classList.add("two");
+  $("#rwrite").hidden = false;
+  padWrite.setColor(c); padWrite.clear();
+  requestAnimationFrame(() => padWrite.fit());
+  speak(who.name + ", écris le " + WORDS[n] + " à côté.");
+  buttons("Nouvelle question", startRound, "⭐ Bien écrit !", () => {
+    who.stars++; save(); renderChips(who.id);
+    sfxWin(); toast("Une étoile pour " + who.name); speak("Bravo " + who.name + " !");
+  });
 }
 
 /* ---------------- panneau de la maitresse ---------------- */
@@ -1233,6 +1386,9 @@ function openPanel(o){
   $("#panel").hidden = !o; $("#scrim").hidden = !o;
   if(o) renderPanel();
 }
+$("#pad-clear").onclick = () => padBoard.clear();
+$("#pad2-clear").onclick = () => padWrite.clear();
+$("#rsvg").onclick = () => { if(phase === "reveal" && rvStep < 3) nextStep(); };
 $("#bin-a").onclick = () => takeBille("a");
 $("#bin-b").onclick = () => takeBille("b");
 $("#mode-sel").onchange = e => { S.mode = e.target.value; save(); renderChips(); toast(e.target.value === "deco" ? "Maison du nombre" : (e.target.value === "compter" ? "Compter et écrire" : "Les deux en alternance")); };
