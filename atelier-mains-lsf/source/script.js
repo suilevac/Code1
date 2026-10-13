@@ -95,9 +95,20 @@ const PRESETS={
   'O':pose(k=>({index:F(55,60,40,-2),majeur:F(58,62,42,0),annulaire:F(60,64,42,2),auriculaire:F(62,66,44,4)})[k],TH(45,30,25,30)),
   'Pince':pose(k=>k==='index'?F(45,55,35,0):F(0,0,0,together[k]),TH(45,20,20,20))
 };
-const S={mode:'pose',target:'debut',etapes:2,fleche:true,gauche:false,pose:clone(PRESETS['Dessin']),debut:null,fin:null,locks:{}};
+// État. Deux mains possibles (« D » droite, « G » gauche, la gauche étant la droite en miroir), et, en mode
+// mouvement, une suite d'ÉTAPES CLÉS : chacune porte sa propre configuration de doigts, son orientation et sa place,
+// donc un signe peut changer de configuration en cours de route (début → intermédiaire → fin).
+const S={mode:'pose',mains:'D',act:'D',cur:0,etapes:1,fleche:true,
+  fl:{style:'droite',sens:1,double:false,col:'#14201f'},
+  fond:{type:'aucun',col:'#ffffff',cadre:false},
+  ref:{style:'aucun',t:1,h:0,x:0,visage:true,reperes:false},
+  pose:{D:clone(PRESETS['Dessin']),G:null},cles:null,locks:{}};
 ALL.forEach(k=>S.locks[k]=SEGN[typ(k)].map(()=>false));
-const editable=()=>S.mode==='pose'?S.pose:(S.target==='debut'?S.debut:S.fin);
+const mainsOn=()=>S.mains==='DG'?['D','G']:[S.mains];
+const curSet=()=>S.mode==='pose'?S.pose:S.cles[S.cur];
+const editable=()=>curSet()[S.act]||curSet().D;
+// une main gauche, c'est la droite vue dans un miroir : mêmes angles de doigts, place et rotation retournées en x
+function mirror(p){const o=clone(p);o.pos=[-p.pos[0],p.pos[1],p.pos[2]];o.q=[p.q[0],-p.q[1],-p.q[2],p.q[3]];return o}
 
 /* ======================================================================
    Textures : dessin paume devant, dessin dos recalé derrière
@@ -254,6 +265,13 @@ const hullMatProto=()=>new THREE.ShaderMaterial({uniforms:{opacity:{value:1},pus
   vertexShader:HULL_VS,fragmentShader:HULL_FS,side:THREE.BackSide,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:4});
 const HPUSH=1.8;   // recul de la coque (× épaisseur du contour)
 let EDMAX=2.6;     // marche de profondeur au-delà de laquelle on ne trace plus de trait intérieur (unités)
+// Détecteur de plis (arêtes RENTRANTES). Le dessin ne porte que les traits d'une main à PLAT : rien ne dessine la
+// vallée entre deux doigts repliés qui se touchent, ni la cassure entre le dos de la main et les phalanges levées.
+// D'où les « pâtés » : le dos du poing était une tache verte vide. Un illustrateur trace un trait à chaque creux.
+// On le lit dans la profondeur : en traversant un creux la profondeur passe par un MAXIMUM local (laplacien < 0),
+// alors que sur une surface bombée (le corps d'un doigt) il est positif — aucun trait parasite sur les doigts.
+let CRV=.55;       // seuil : tangente du demi-angle du pli (.55 ≈ pli à partir de ~30° de versant)
+let CRMAX=1.6;     // plafond de l'écart de profondeur : au fond d'une crevasse, un trait et pas une tache
 function makeHand(skeletonOnly){
   const root=new THREE.Group(),mats=[],chainMats={},hullMat=hullMatProto(),meshes=[];mats.push(hullMat);
   const addSkin=(geos,key)=>{const f=skinMat(false),b=skinMat(true);mats.push(f,b);chainMats[key]=[f,b];if(key==='paume')[f,b].forEach(m=>m.side=THREE.DoubleSide);
@@ -550,7 +568,7 @@ function skinMesh(h,key,f){
 function applyPose(h,p,light){
   setJoints(h,p);
   if(light){h.root.updateMatrixWorld(true);return}
-  h.root.quaternion.fromArray(p.q);h.root.position.fromArray(p.pos);h.root.scale.x=S.gauche?-1:1;h.root.updateMatrixWorld(true);
+  h.root.quaternion.fromArray(p.q);h.root.position.fromArray(p.pos);h.root.scale.x=h.side||1;h.root.updateMatrixWorld(true);
   skinMesh(h,JSON.stringify(p.f),p.f);
 }
 function setLook(h,op){h.mats.forEach(m=>{if(m.uniforms)m.uniforms.opacity.value=op;else m.opacity=op;m.transparent=op<1;m.depthWrite=op>=1})}
@@ -639,20 +657,35 @@ const camera=new THREE.PerspectiveCamera(26,1,.5,500);
 const VIEWS={face:[0,0,52],signeur:[0,0,-52],profil:[52,0,0],dessus:[0,52,.1]};
 camera.position.fromArray(VIEWS.face);
 const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.update();
-const main=makeHand(),ghosts=[makeHand(),makeHand(),makeHand(),makeHand()];
+// Une main pleine par côté et une réserve de fantômes, créées seulement quand on s'en sert : une main coûte
+// 44 000 sommets à recalculer, donc rien n'existe tant qu'on n'affiche qu'une main sans mouvement.
+const HAND={D:Object.assign(makeHand(),{side:1,ghosts:[]})};
+const main=HAND.D;
+function handOf(s){if(!HAND[s])HAND[s]=Object.assign(makeHand(),{side:s==='G'?-1:1,ghosts:[]});return HAND[s]}
+const act=()=>handOf(S.act);
+const MAXG=()=>S.mains==='DG'?5:8;
+function ghostOf(H,i){while(H.ghosts.length<=i){const g=Object.assign(makeHand(),{side:H.side});g.root.visible=false;H.ghosts.push(g)}return H.ghosts[i]}
 $('loading').hidden=true;
-const arrow=new THREE.Group();scene.add(arrow);
-const arrowMat=new THREE.MeshBasicMaterial({color:0x00857f});
-const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,1,16),arrowMat),head=new THREE.Mesh(new THREE.ConeGeometry(.95,2.2,20),arrowMat);arrow.add(shaft,head);
 // passe « identité » : chaque partie dans sa couleur, pour tracer les contours intérieurs
-let idRT=null;
+let idRT=null,bgL=null,fgL=null;
 function ensureRT(w,h){if(idRT&&idRT.width===w&&idRT.height===h)return;if(idRT){idRT.depthTexture.dispose();idRT.dispose()}
   idRT=new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true});idRT.depthTexture=new THREE.DepthTexture(w,h);idRT.depthTexture.type=THREE.UnsignedIntType}
 const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
-  uniforms:{tId:{value:null},tDepth:{value:null},texel:{value:new THREE.Vector2()},cn:{value:.5},cf:{value:500},rad:{value:2},emax:{value:EDMAX}},
+  uniforms:{tId:{value:null},tDepth:{value:null},texel:{value:new THREE.Vector2()},cn:{value:.5},cf:{value:500},rad:{value:2},emax:{value:EDMAX},
+    crad:{value:1.4},crv:{value:1e4},crmax:{value:CRMAX},wpx:{value:.001}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
-  fragmentShader:`uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 texel;uniform float cn;uniform float cf;uniform float rad;uniform float emax;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 texel;uniform float cn;uniform float cf;uniform float rad;uniform float emax;
+  uniform float crad;uniform float crv;uniform float crmax;uniform float wpx;varying vec2 vUv;
   float lin(float d){float z=d*2.-1.;return 2.*cn*cf/(cf+cn-z*(cf-cn));}
+  // creux le long d'une direction : les DEUX voisins remontent vers l'œil ⇒ arête rentrante. On prend le plus
+  // petit des deux écarts : à un bord d'occlusion un seul côté remonte, donc le minimum est nul et rien ne sort
+  // (ce bord-là est l'affaire de sep()). Rapporté au pas en unités du modèle, c'est la tangente du versant :
+  // sans dimension, le seuil ne dépend donc ni de la distance ni du zoom.
+  float fold(float d0,vec2 u,float pas){
+    vec2 pa=vUv+u,pb=vUv-u;
+    if(texture2D(tId,pa).a<.5||texture2D(tId,pb).a<.5)return 0.;
+    float a=lin(texture2D(tDepth,pa).r),b=lin(texture2D(tDepth,pb).r);
+    return 2.*min(min(d0-a,d0-b),crmax)/pas;}
   // un trait intérieur là où la partie d'en face passe derrière
   bool sep(vec4 c,float d0,vec2 p){vec4 q=texture2D(tId,p);if(q.a<.5)return false;
     float dn=lin(texture2D(tDepth,p).r);
@@ -662,21 +695,25 @@ const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWr
     return c.g>.5&&dn-d0>.7&&dn-d0<emax;}                 // un doigt replié devant lui-même
   void main(){vec4 c=texture2D(tId,vUv);if(c.a<.5)discard;float d0=lin(texture2D(tDepth,vUv).r);float e=0.;
     for(int i=0;i<12;i++){float a=float(i)*.5235988;if(sep(c,d0,vUv+vec2(cos(a),sin(a))*rad*texel))e=1.;}
+    if(e<.5){float pas=crad*wpx*d0,m=0.;                // trois directions : un pli dans n'importe quel sens
+      for(int i=0;i<3;i++){float a=float(i)*1.0471976;m=max(m,fold(d0,vec2(cos(a),sin(a))*crad*texel,pas));}
+      if(m<crv)discard;e=1.;}
     if(e<.5)discard;gl_FragColor=vec4(.067,.067,.067,1.);}`});
 const edgeQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),edgeMat),edgeScene=new THREE.Scene(),edgeCam=new THREE.Camera();edgeScene.add(edgeQuad);
 function renderAll(){
   const size=renderer.getDrawingBufferSize(new THREE.Vector2());ensureRT(size.x,size.y);
-  // 1. identités (main pleine seulement)
+  // 1. identités (mains pleines seulement)
   const hidden=[];const hide=o=>{if(o.visible){o.visible=false;hidden.push(o)}};
-  ghosts.forEach(g=>hide(g.root));hide(arrow);
-  main.meshes.forEach(hide);main.skin.idm.visible=true;
+  const fulls=[];for(const k in HAND){const H=HAND[k];H.ghosts.forEach(g=>hide(g.root));if(H.root.visible)fulls.push(H)}
+  fulls.forEach(H=>{H.meshes.forEach(hide);H.skin.idm.visible=true});
   const cc=renderer.getClearColor(new THREE.Color()),ca=renderer.getClearAlpha();
   renderer.setRenderTarget(idRT);renderer.setClearColor(0,0);renderer.clear();renderer.render(scene,camera);renderer.setRenderTarget(null);
-  main.skin.idm.visible=false;hidden.forEach(o=>o.visible=true);
+  fulls.forEach(H=>H.skin.idm.visible=false);hidden.forEach(o=>o.visible=true);
   renderer.setClearColor(cc,ca);
   // 2. image normale (coque de la main entière : voir hullMatProto), 3. traits intérieurs par-dessus
-  const hu=main.skin.hm.uniforms;hu.push.value=HPUSH*main.skin.gR*HULL/SC;hu.tId.value=idRT.texture;hu.tDepth.value=idRT.depthTexture;
-  hu.res.value.set(size.x,size.y);hu.cn.value=camera.near;hu.cf.value=camera.far;
+  let gR=0;fulls.forEach(H=>{gR=Math.max(gR,H.skin.gR);
+    const hu=H.skin.hm.uniforms;hu.push.value=HPUSH*H.skin.gR*HULL/SC;hu.tId.value=idRT.texture;hu.tDepth.value=idRT.depthTexture;
+    hu.res.value.set(size.x,size.y);hu.cn.value=camera.near;hu.cf.value=camera.far});
   renderer.render(scene,camera);
   edgeMat.uniforms.tId.value=idRT.texture;edgeMat.uniforms.tDepth.value=idRT.depthTexture;edgeMat.uniforms.texel.value.set(1/size.x,1/size.y);
   // poids de trait CONSTANT : le rayon du détecteur suit l'épaisseur RÉELLE du contour (la coque, épaisse de HULL
@@ -685,24 +722,217 @@ function renderAll(){
   // Comme mesh.dz, la correction n'entre qu'une fois la pose quittée (gR) : « Dessin » reste exact au pixel près.
   const hd=Math.max(camera.position.distanceTo(controls.target),1e-3),r0=1.6*renderer.getPixelRatio();
   const ppu=size.y/2/(hd*Math.tan(camera.fov*Math.PI/360));          // pixels de rendu par unité du modèle
-  edgeMat.uniforms.rad.value=r0+main.skin.gR*(clamp(.4*HULL/SC*ppu,r0,5.5)-r0);
+  edgeMat.uniforms.rad.value=r0+gR*(clamp(.4*HULL/SC*ppu,r0,5.5)-r0);
   edgeMat.uniforms.emax.value=EDMAX;edgeMat.uniforms.cn.value=camera.near;edgeMat.uniforms.cf.value=camera.far;
+  // plis : rayon fin et fixe (le trait d'un creux est plus fin qu'un contour), et seuil qui s'ouvre avec gR, pour
+  // que la pose du dessin — une main à plat, sans aucun pli — reste exacte au pixel près.
+  edgeMat.uniforms.crad.value=Math.max(1.1,1.25*renderer.getPixelRatio());
+  edgeMat.uniforms.wpx.value=2*Math.tan(camera.fov*Math.PI/360)/size.y;
+  edgeMat.uniforms.crmax.value=CRMAX;edgeMat.uniforms.crv.value=CRV/Math.max(gR,1e-4);
   renderer.autoClear=false;renderer.render(edgeScene,edgeCam);renderer.autoClear=true;
 }
 let playing=null;
+// Les fantômes d'une main : les autres étapes clés, plus S.etapes images intermédiaires par intervalle.
+function ghostList(side){
+  const C=S.cles,out=[];
+  for(let i=0;i<C.length;i++)if(i!==S.cur)out.push({p:C[i][side],op:.34});
+  for(let i=0;i+1<C.length;i++)for(let j=1;j<=S.etapes;j++){const t=j/(S.etapes+1);out.push({p:lerpPose(C[i][side],C[i+1][side],t),op:.17})}
+  return out.slice(0,MAXG());
+}
 function render3D(){
   if(playing)return;
-  main.root.visible=true;setLook(main,1);
-  if(S.mode==='pose'){applyPose(main,S.pose);ghosts.forEach(g=>g.root.visible=false);arrow.visible=false;return}
-  const ef=S.target==='fin';applyPose(main,editable());
-  ghosts.forEach((g,i)=>{if(i<S.etapes){const t=ef?i/S.etapes:(i+1)/S.etapes;g.root.visible=true;setLook(g,.2+.3*(ef?t:1-t));applyPose(g,lerpPose(S.debut,S.fin,t))}else g.root.visible=false});
-  const a=new THREE.Vector3().fromArray(S.debut.pos).add(new THREE.Vector3(0,-7,5)),b=new THREE.Vector3().fromArray(S.fin.pos).add(new THREE.Vector3(0,-7,5));
-  const dist=a.distanceTo(b);arrow.visible=S.fleche&&dist>3;
-  if(arrow.visible){const dir=b.clone().sub(a).normalize(),len=dist-2.2;shaft.scale.y=len;shaft.position.copy(a).addScaledVector(dir,len/2);head.position.copy(a).addScaledVector(dir,len+1.1);
-    const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),dir);shaft.quaternion.copy(q);head.quaternion.copy(q)}
+  const on=mainsOn();on.forEach(handOf);
+  for(const k in HAND){const H=HAND[k],show=on.indexOf(k)>=0;H.root.visible=show;if(!show)H.ghosts.forEach(g=>g.root.visible=false)}
+  on.forEach(side=>{
+    const H=handOf(side),set=curSet();if(!set[side])set[side]=mirror(set[side==='G'?'D':'G']);
+    setLook(H,1);applyPose(H,set[side]);
+    const L=S.mode==='pose'?[]:ghostList(side);
+    L.forEach((it,i)=>{const g=ghostOf(H,i);g.root.visible=true;setLook(g,it.op);applyPose(g,it.p)});
+    for(let i=L.length;i<H.ghosts.length;i++)H.ghosts[i].root.visible=false;
+  });
+  drawOverlays();
 }
-function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();drawOverlays()}
 new ResizeObserver(resize).observe(stage);resize();
+/* ======================================================================
+   Décor et flèches : deux calques plats, l'un derrière la main (fond, référent), l'autre devant (flèches).
+   Tout est dessiné en 2D : une flèche de dictionnaire LSF est un SYMBOLE, pas un objet de la scène — elle doit
+   rester lisible quel que soit l'angle de la caméra. Les deux calques partent avec l'image exportée.
+   ====================================================================== */
+bgL=$('bgL');fgL=$('fgL');
+// longueur de la main au repos, en unités du modèle : toutes les proportions du référent en découlent
+const HL=(()=>{let a=1e9,b=-1e9;for(let i=1;i<3*MN;i+=3){if(MREST[i]<a)a=MREST[i];if(MREST[i]>b)b=MREST[i]}return b-a})();
+const INK='#14201f';
+function projTo(v,W,H){const q=v.clone().project(camera);return{x:(q.x+1)/2*W,y:(1-q.y)/2*H}}
+function ppuAt(v,H){return H/2/(Math.max(camera.position.distanceTo(v),1e-3)*Math.tan(camera.fov*Math.PI/360))}
+const mixW=(c,k)=>{const n=parseInt(c.slice(1),16),r=n>>16&255,g=n>>8&255,b=n&255,m=v=>Math.round(v+(255-v)*k);
+  return '#'+((1<<24)+(m(r)<<16)+(m(g)<<8)+m(b)).toString(16).slice(1)};
+function rrect(x,p,y,w,h,r){x.beginPath();x.moveTo(p+r,y);x.arcTo(p+w,y,p+w,y+h,r);x.arcTo(p+w,y+h,p,y+h,r);x.arcTo(p,y+h,p,y,r);x.arcTo(p,y,p+w,y,r);x.closePath()}
+
+/* ---- le référent : un buste de face, à qui appartiennent les mains ----------------------------------------
+   Les proportions sont données en longueurs de main (1 main ≈ 18,5 cm) : c'est la mesure que l'on a sous les yeux,
+   donc la silhouette reste juste quel que soit le zoom. Le point d'ancrage est le creux du cou. */
+const refAnchor=()=>new THREE.Vector3(S.ref.x/100*2*HL,.35*HL+S.ref.h/100*2*HL,-.5*HL);
+const BODY={ep:1.15,yEp:.10,yTa:1.92,taille:.74,cou:.215,yCou:-.16,menton:-.58,tete:.60,tw:.40};
+function drawRef(x,W,H){
+  const R=S.ref;if(R.style==='aucun')return;
+  const A=refAnchor(),a=projTo(A,W,H),u=ppuAt(A,H)*HL*R.t;
+  if(u<4||!isFinite(u)||!isFinite(a.x)||!isFinite(a.y))return;
+  const P=(bx,by)=>[a.x+bx*u,a.y+by*u];
+  const B=BODY,plein=R.style==='plein',hy=B.menton-B.tete,T=B.tete,w=B.tw;
+  x.save();x.lineJoin='round';x.lineCap='round';x.lineWidth=Math.max(1.2,.021*u);x.strokeStyle=INK;
+  const FILL=plein?'#dbe8e6':'rgba(255,255,255,.62)';
+  // remplir la forme FERMÉE, puis ne retracer que le CONTOUR ouvert : sinon le trait de fermeture barre le cou
+  const piece=f=>{x.beginPath();f();x.closePath();x.fillStyle=FILL;x.fill();x.beginPath();f();x.stroke()};
+
+  // --- pile de papier découpé : oreilles, cou, tronc, tête ---
+  [-1,1].forEach(sg=>{x.beginPath();x.ellipse(...P(sg*w*.99,hy+.04),.058*u,.105*u,0,0,6.2832);x.fillStyle=FILL;x.fill();x.stroke()});
+  x.beginPath();x.moveTo(...P(-B.cou,B.yCou+.12));x.lineTo(...P(-B.cou*.90,B.menton+.04));
+    x.lineTo(...P(B.cou*.90,B.menton+.04));x.lineTo(...P(B.cou,B.yCou+.12));x.closePath();x.fillStyle=FILL;x.fill();
+  x.beginPath();x.moveTo(...P(-B.cou,B.yCou+.12));x.lineTo(...P(-B.cou*.90,B.menton+.04));x.stroke();
+  x.beginPath();x.moveTo(...P(B.cou,B.yCou+.12));x.lineTo(...P(B.cou*.90,B.menton+.04));x.stroke();
+  piece(()=>{x.moveTo(...P(-B.cou,B.yCou));
+    x.bezierCurveTo(...P(-B.ep*.45,B.yEp-.17),...P(-B.ep*.90,B.yEp-.09),...P(-B.ep,B.yEp+.20));
+    x.bezierCurveTo(...P(-B.ep*.97,B.yEp+.82),...P(-B.taille*1.12,B.yTa-.55),...P(-B.taille,B.yTa));
+    x.quadraticCurveTo(...P(0,B.yTa+.09),...P(B.taille,B.yTa));
+    x.bezierCurveTo(...P(B.taille*1.12,B.yTa-.55),...P(B.ep*.97,B.yEp+.82),...P(B.ep,B.yEp+.20));
+    x.bezierCurveTo(...P(B.ep*.90,B.yEp-.09),...P(B.ep*.45,B.yEp-.17),...P(B.cou,B.yCou))});
+  // creux de l'aisselle : sépare le bras du buste, sinon la silhouette se lit comme une cape
+  x.save();x.lineWidth=Math.max(1,.014*u);x.globalAlpha=.7;
+  [-1,1].forEach(sg=>{x.beginPath();x.moveTo(...P(sg*B.ep*.88,B.yEp+.26));
+    x.bezierCurveTo(...P(sg*B.ep*.74,B.yEp+.80),...P(sg*B.taille*1.02,B.yTa-.55),...P(sg*B.taille*.97,B.yTa))  ;x.stroke()});
+  x.restore();
+  // tête : ovale à mâchoire fuyante (une ellipse donne un masque, pas un visage)
+  const tete=()=>{x.moveTo(...P(0,B.menton-2*T));
+    x.bezierCurveTo(...P(w*1.04,B.menton-2*T),...P(w*1.10,B.menton-.95*T),...P(w*.97,B.menton-.42*T));
+    x.bezierCurveTo(...P(w*.90,B.menton-.11*T),...P(w*.50,B.menton),...P(0,B.menton));
+    x.bezierCurveTo(...P(-w*.50,B.menton),...P(-w*.90,B.menton-.11*T),...P(-w*.97,B.menton-.42*T));
+    x.bezierCurveTo(...P(-w*1.10,B.menton-.95*T),...P(-w*1.04,B.menton-2*T),...P(0,B.menton-2*T))};
+  x.beginPath();tete();x.closePath();x.fillStyle=FILL;x.fill();x.stroke();
+  // chevelure : la calotte du crâne elle-même, découpée au-dessus de la ligne de cheveux — pas un bandeau
+  const YHL=B.menton-1.24*T,hl=()=>{x.moveTo(...P(-w*1.25,YHL));x.quadraticCurveTo(...P(0,YHL-.26*T),...P(w*1.25,YHL))};
+  x.save();x.beginPath();tete();x.closePath();x.clip();        // tout le cheveu reste DANS le crâne
+  if(plein){x.beginPath();hl();x.lineTo(...P(w*1.25,B.menton-2.4*T));x.lineTo(...P(-w*1.25,B.menton-2.4*T));x.closePath();
+    x.fillStyle=INK;x.globalAlpha=.86;x.fill();x.globalAlpha=1}
+  x.beginPath();hl();x.stroke();x.restore();
+
+  if(R.visage){
+    x.lineWidth=Math.max(1,.015*u);
+    [-1,1].forEach(sg=>{
+      const ex=sg*.175,ey=hy+.03;
+      x.beginPath();x.moveTo(...P(ex-.082,ey));x.quadraticCurveTo(...P(ex,ey-.080),...P(ex+.082,ey));
+      x.quadraticCurveTo(...P(ex,ey+.068),...P(ex-.082,ey));x.fillStyle='#fff';x.fill();x.stroke();
+      x.beginPath();x.arc(...P(ex,ey-.004),.030*u,0,6.2832);x.fillStyle=INK;x.fill();
+      x.beginPath();x.moveTo(...P(ex-.095,ey-.155));x.quadraticCurveTo(...P(ex,ey-.198),...P(ex+.095,ey-.158));x.stroke();
+    });
+    x.beginPath();x.moveTo(...P(-.045,hy+.25));x.quadraticCurveTo(...P(.005,hy+.30),...P(.055,hy+.23));x.stroke();   // nez
+    x.beginPath();x.moveTo(...P(-.105,hy+.40));x.quadraticCurveTo(...P(0,hy+.455),...P(.105,hy+.40));x.stroke();     // bouche
+  }
+  if(R.reperes){
+    x.save();x.setLineDash([.15*u,.12*u]);x.lineWidth=Math.max(1,.011*u);x.strokeStyle='rgba(20,32,31,.45)';
+    x.fillStyle='rgba(20,32,31,.6)';x.font='700 '+Math.max(9,.105*u)+'px '+getComputedStyle(document.body).fontFamily;x.textBaseline='bottom';
+    [[B.menton-1.24*T,'front'],[B.menton,'menton'],[B.yEp+.20,'épaules'],[(B.yEp+B.yTa)/2,'poitrine'],[B.yTa,'taille']].forEach(([by,lab])=>{
+      const [x0,y0]=P(-B.ep*1.38,by),[x1]=P(B.ep*1.38,by);
+      x.beginPath();x.moveTo(x0,y0);x.lineTo(x1,y0);x.stroke();x.fillText(lab,x0,y0-.03*u)});
+    x.restore();
+  }
+  x.restore();
+}
+
+/* ---- les flèches : une forme par manière de bouger ------------------------------------------------------- */
+const FLS=[['droite','Droite'],['arc','Arc'],['demi','Demi-cercle'],['vague','Vague'],['zigzag','Zigzag'],['boucle','Boucle']];
+function arrowPts(A,B,style,sens){
+  const dx=B.x-A.x,dy=B.y-A.y,L=Math.hypot(dx,dy)||1,nx=dx/L,ny=dy/L,px=-ny*sens,py=nx*sens,o=[];
+  const at=(t,k)=>({x:A.x+dx*t+px*k,y:A.y+dy*t+py*k});
+  if(style==='droite')return[{x:A.x,y:A.y},{x:B.x,y:B.y}];
+  if(style==='zigzag'){const n=5,amp=.11*L;for(let i=0;i<=n;i++)o.push(at(i/n,(i===0||i===n)?0:(i%2?1:-1)*amp));return o}
+  for(let i=0;i<=48;i++){const t=i/48;
+    if(style==='arc')o.push(at(t,Math.sin(Math.PI*t)*.20*L));
+    else if(style==='demi')o.push({x:(A.x+B.x)/2+(A.x-B.x)/2*Math.cos(Math.PI*t)+px*(L/2)*Math.sin(Math.PI*t),
+                                   y:(A.y+B.y)/2+(A.y-B.y)/2*Math.cos(Math.PI*t)+py*(L/2)*Math.sin(Math.PI*t)});
+    else if(style==='vague')o.push(at(t,Math.sin(2*Math.PI*2*t)*.10*L));
+    else if(style==='boucle'){
+      if(t<.3)o.push(at(t/.3*.34,0));
+      else if(t<.78){const a=(t-.3)/.48*6.2832,r=.22*L,c=at(.5,0);
+        o.push({x:c.x+nx*(-Math.sin(a))*r+px*(Math.cos(a)-1)*r,y:c.y+ny*(-Math.sin(a))*r+py*(Math.cos(a)-1)*r})}
+      else o.push(at(.66+(t-.78)/.22*.34,0));
+    }else o.push(at(t,0));
+  }
+  return o;
+}
+function head(x,p,q,lw){const dx=p.x-q.x,dy=p.y-q.y,l=Math.hypot(dx,dy)||1,ux=dx/l,uy=dy/l,h=3.6*lw,w=1.5*lw;
+  x.beginPath();x.moveTo(p.x,p.y);x.lineTo(p.x-ux*h+ -uy*w,p.y-uy*h+ux*w);x.lineTo(p.x-ux*h+uy*w,p.y-uy*h-ux*w);x.closePath();x.fill()}
+// la flèche qui part de l'étape i : chaque intervalle peut avoir la sienne (aller tout droit, puis revenir en
+// demi-cercle), sinon il prend le réglage courant. La couleur, elle, reste commune à toute la planche.
+const segFl=i=>(S.cles&&S.cles[i]&&S.cles[i].fl)||S.fl;
+const segIdx=()=>S.cles?Math.min(S.cur,S.cles.length-2):0;
+function drawArrow(x,A,B,lw,F){
+  const pts=arrowPts(A,B,F.style,F.sens);if(pts.length<2)return;
+  // la pointe mange la fin du trait, sinon elle déborde
+  x.save();x.strokeStyle=S.fl.col;x.fillStyle=S.fl.col;x.lineWidth=lw;x.lineCap='round';x.lineJoin='round';
+  x.beginPath();x.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)x.lineTo(pts[i].x,pts[i].y);x.stroke();
+  head(x,pts[pts.length-1],pts[Math.max(0,pts.length-3)],lw);
+  if(F.double)head(x,pts[0],pts[Math.min(pts.length-1,2)],lw);
+  x.restore();
+}
+function badge(x,p,n,lw){x.save();x.fillStyle='#fff';x.strokeStyle=S.fl.col;x.lineWidth=lw*.55;
+  x.beginPath();x.arc(p.x,p.y,lw*1.9,0,6.2832);x.fill();x.stroke();
+  x.fillStyle=S.fl.col;x.font='700 '+(lw*2.3)+'px '+getComputedStyle(document.body).fontFamily;x.textAlign='center';x.textBaseline='middle';
+  x.fillText(String(n),p.x,p.y+lw*.08);x.restore()}
+function drawArrows(x,W,H){
+  if(S.mode!=='mouvement'||!S.fleche||!S.cles)return;
+  const lw=Math.max(2.4,.0105*Math.min(W,H)),off=new THREE.Vector3(0,-.38*HL,.28*HL);
+  mainsOn().forEach(side=>{
+    const pts=S.cles.map(c=>projTo(new THREE.Vector3().fromArray((c[side]||c.D).pos).add(off),W,H));
+    for(let i=0;i+1<pts.length;i++)if(Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y)>lw*7)drawArrow(x,pts[i],pts[i+1],lw,segFl(i));
+    if(S.cles.length>2)pts.forEach((p,i)=>badge(x,p,i+1,lw));
+  });
+}
+
+/* ---- fond ---- */
+function drawFond(x,W,H){
+  const F=S.fond;if(F.type==='aucun')return;
+  x.save();
+  if(F.cadre){const r=Math.min(W,H)*.035,m=Math.min(W,H)*.012;rrect(x,m,m,W-2*m,H-2*m,r);x.clip()}
+  if(F.type==='degrade'){const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,mixW(F.col,.55));g.addColorStop(1,F.col);x.fillStyle=g}
+  else x.fillStyle=F.col;
+  x.fillRect(0,0,W,H);x.restore();
+}
+function paintBack(x,W,H){x.clearRect(0,0,W,H);drawFond(x,W,H);drawRef(x,W,H)}
+function paintFront(x,W,H){x.clearRect(0,0,W,H);drawArrows(x,W,H)}
+function drawOverlays(){
+  const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h||!bgL)return;
+  const r=Math.min(devicePixelRatio||1,2),W=Math.round(w*r),Hh=Math.round(h*r);
+  [bgL,fgL].forEach(c=>{if(c.width!==W||c.height!==Hh){c.width=W;c.height=Hh}});
+  paintBack(bgL.getContext('2d'),W,Hh);paintFront(fgL.getContext('2d'),W,Hh);
+}
+controls.addEventListener('change',drawOverlays);
+
+/* ---- cadrage : tout ce qui est à l'écran doit tenir dans l'image ----------------------------------------
+   Avec deux mains, plusieurs étapes et un buste de 3,7 longueurs de main, la vue de départ (une main plein cadre)
+   ne suffit plus. On recadre quand le contenu déborde, jamais au milieu d'un geste de l'utilisateur. */
+function contentBox(){
+  const b=new THREE.Box3(),V=THREE.Vector3,add=(p,r)=>{b.expandByPoint(new V(p.x-r,p.y-r,p.z-r));b.expandByPoint(new V(p.x+r,p.y+r,p.z+r))};
+  const sets=S.mode==='pose'?[S.pose]:(S.cles||[S.pose]);
+  mainsOn().forEach(side=>sets.forEach(c=>{if(c&&c[side])add(new V().fromArray(c[side].pos),.8*HL)}));
+  if(S.ref.style!=='aucun'){const A=refAnchor(),t=S.ref.t*HL;
+    add(new V(A.x,A.y+2.15*t,A.z),.02);add(new V(A.x,A.y-1.95*t,A.z),.02);
+    add(new V(A.x-1.25*t,A.y,A.z),.02);add(new V(A.x+1.25*t,A.y,A.z),.02)}
+  return b}
+function fitView(){
+  const b=contentBox();if(b.isEmpty())return;
+  const V=THREE.Vector3,c=b.getCenter(new V()),z=b.getSize(new V());
+  const vf=camera.fov*Math.PI/180,hf=2*Math.atan(Math.tan(vf/2)*camera.aspect);
+  const d=Math.max(z.y/2/Math.tan(vf/2),z.x/2/Math.tan(hf/2))*1.14+z.z/2;
+  const dir=camera.position.clone().sub(controls.target);if(dir.lengthSq()<1e-6)dir.set(0,0,1);
+  controls.target.copy(c);camera.position.copy(c).addScaledVector(dir.normalize(),Math.max(d,8));controls.update()}
+function fitIfNeeded(force){
+  if(force)return fitView();
+  const b=contentBox();if(b.isEmpty())return;const V=THREE.Vector3;let m=0;
+  for(let i=0;i<8;i++){const q=new V(i&1?b.max.x:b.min.x,i&2?b.max.y:b.min.y,i&4?b.max.z:b.min.z).project(camera);m=Math.max(m,Math.abs(q.x),Math.abs(q.y))}
+  if(m>1)fitView()}
+$('fit').onclick=()=>fitView();
+
 renderer.setAnimationLoop(()=>{controls.update();renderAll()});
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{camera.position.fromArray(VIEWS[b.dataset.view]);controls.target.set(0,0,0);controls.update()});
 
@@ -721,17 +951,17 @@ function hull(P){P=P.slice().sort((a,b)=>a.x-b.x||a.y-b.y);const cr=(o,a,b)=>(a.
 function inPoly(p,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++)if(((P[i].y>p.y)!==(P[j].y>p.y))&&(p.x<(P[j].x-P[i].x)*(p.y-P[i].y)/(P[j].y-P[i].y)+P[i].x))c=!c;return c}
 function pick(e){
   const r=cv.getBoundingClientRect(),m=new THREE.Vector2(e.clientX-r.left,e.clientY-r.top);let best=null;
-  ALL.forEach(k=>SEGN[typ(k)].forEach((_,g)=>{const [a,b]=segEnds(main,k,g),w=SEGW[k][g];
+  ALL.forEach(k=>SEGN[typ(k)].forEach((_,g)=>{const [a,b]=segEnds(act(),k,g),w=SEGW[k][g];
     const tol=Math.max(10,pxPerUnit(a)*w*1.1),d=distSeg(m,scr(a),scr(b)),depth=a.clone().add(b).multiplyScalar(.5).distanceTo(camera.position);
     if(d<tol){const sc=d/tol+depth*.02;if(!best||sc<best.sc)best={k,g,sc}}}));
   if(best)return best;
-  const rim=hull(PALM_RIM.map(v=>scr(v.clone().applyMatrix4(main.root.matrixWorld))));
+  const rim=hull(PALM_RIM.map(v=>scr(v.clone().applyMatrix4(act().root.matrixWorld))));
   return inPoly(m,rim)?{k:null}:null;
 }
 const label=s=>!s?'':s.k===null?'Main · tourner (Maj : déplacer)':`${NOMS[s.k]} · ${SEGN[typ(s.k)][s.g]}${S.locks[s.k][s.g]?' 🔒':''}`;
 let hovered=null;
 function setHL(s){const key=s?(s.k===null?'paume':s.k):null;if(key===hovered)return;
-  hovered=key;main.skinMats.forEach(m=>{m.uniforms.hl.value=key?1:0;m.uniforms.hlPart.value=key?ID[key]:-10})}
+  hovered=key;for(const k in HAND)HAND[k].skinMats.forEach(m=>{const on=key&&HAND[k]===act();m.uniforms.hl.value=on?1:0;m.uniforms.hlPart.value=on?ID[key]:-10})}
 
 /* ======================================================================
    Marionnette
@@ -745,7 +975,7 @@ let drag=null;
 // Alt + glisser : les quatre doigts ensemble (plier, écarter en éventail ou serrer)
 const FAN={index:1,majeur:.15,annulaire:-.6,auriculaire:-1.2};
 function grabAxes(p,s,shift,group){
-  const k=s.k,t=typ(k),axes=[],j=main.joints[k];group=group&&k!=='pouce';
+  const k=s.k,t=typ(k),H=act(),axes=[],j=H.joints[k];group=group&&k!=='pouce';
   let set=GRAB[t][s.g];
   if(shift){set={};LOCKJ[t][s.g].forEach(n=>{if(n!=='ab'&&n!=='rap')set[n]=1})}
   const js=Object.keys(set).filter(n=>shift||!locked(k,n));
@@ -756,7 +986,7 @@ function grabAxes(p,s,shift,group){
     else{const st=p.f[k][n];axes.push({set:c=>p.f[k][n]=st+c})}}
   const end=()=>wp(j[s.g+1]||j.tip),base=wp(j[0]);
   const snap=clone(p.f);
-  axes.forEach(a=>{p.f=clone(snap);applyPose(main,p);const w0=end(),e0=scr(w0);a.set(3);applyPose(main,p);const w1=end(),e1=scr(w1);p.f=clone(snap);applyPose(main,p);
+  axes.forEach(a=>{p.f=clone(snap);applyPose(H,p);const w0=end(),e0=scr(w0);a.set(3);applyPose(H,p);const w1=end(),e1=scr(w1);p.f=clone(snap);applyPose(H,p);
     a.dir=e1.clone().sub(e0).divideScalar(3);
     if(a.flex){const toCam=camera.position.clone().sub(w0).normalize(),depth=Math.abs(w1.clone().sub(w0).dot(toCam))*pxPerUnit(w0)/3,ub=scr(base).sub(e0);
       if(ub.lengthSq()>1)a.dir.addScaledVector(ub.normalize(),depth*.6)}});
@@ -825,24 +1055,108 @@ function applyPreset(name){const p=editable(),tg=constrain(clone(PRESETS[name]))
 document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>applyPreset(b.dataset.preset));
 function syncSliders(){sliders.forEach(s=>{const v=Math.round(s.get());s.el.value=v;s.out.textContent=v+s.unit;if(s.lb)s.lb.setAttribute('aria-pressed',s.lock.get())})}
 const press=(a,b,f)=>{a.setAttribute('aria-pressed',f);b.setAttribute('aria-pressed',!f)};
+const press3=(l,v)=>l.forEach(([b,k])=>$(b).setAttribute('aria-pressed',k===v));
+// une main gauche n'existe que si on la demande : on la fabrique en miroir de la droite, et on écarte les deux
+function ensureSide(side){const o=side==='G'?'D':'G',sg=k=>k==='D'?-1:1;
+  const fix=set=>{if(set[side])return;const b=set[o]||(set[o]=clone(PRESETS['Dessin']));
+    if(Math.abs(b.pos[0])<6)b.pos[0]=sg(o)*9;set[side]=mirror(b)};
+  fix(S.pose);if(S.cles)S.cles.forEach(fix);}
+function setMains(v){S.mains=v;mainsOn().forEach(ensureSide);if(mainsOn().indexOf(S.act)<0)S.act=mainsOn()[0];setHL(null);refresh();fitIfNeeded()}
+
+/* ---- bandeau des étapes clés ---- */
+function stepStrip(){
+  const box=$('stepStrip');if(S.mode!=='mouvement'||!S.cles){box.innerHTML='';return}
+  const n=S.cles.length;
+  box.innerHTML=S.cles.map((_,i)=>`<button data-step="${i}" aria-pressed="${i===S.cur}">${i===0?'Début':i===n-1?'Fin':'Étape '+(i+1)}</button>`).join('')
+    +(n<5?'<button class="add" id="stepAdd">+ étape</button>':'');
+  box.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{S.cur=+b.dataset.step;refresh()});
+  const a=$('stepAdd');if(a)a.onclick=()=>{
+    const i=S.cur,last=i===S.cles.length-1,c={};
+    mainsOn().forEach(k=>{c[k]=last?clone(S.cles[i][k]):lerpPose(S.cles[i][k],S.cles[i+1][k],.5);if(last)c[k].pos[0]+=12});
+    S.cles.splice(i+1,0,c);S.cur=i+1;refresh();fitIfNeeded()};
+  $('stepDel').disabled=n<=2;
+}
+
+/* ---- styles et couleurs de flèche ---- */
+function flIcon(st){const A={x:5,y:20},B={x:47,y:20},pts=arrowPts(A,B,st,1),n=pts.length;
+  const q=pts[Math.max(0,n-3)],e=pts[n-1],g=Math.atan2(e.y-q.y,e.x-q.x),hd=(d)=>`${(e.x-7*Math.cos(g+d)).toFixed(1)},${(e.y-7*Math.sin(g+d)).toFixed(1)}`;
+  return `<svg viewBox="-3 -6 58 34" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
+    +`<polyline points="${pts.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')}"/>`
+    +`<polyline points="${hd(-.42)} ${e.x.toFixed(1)},${e.y.toFixed(1)} ${hd(.42)}"/></svg>`}
+const FLCOL=[['#14201f','Encre'],['#00857f','Vert INJS'],['#b3261e','Rouge'],['#1a5fb4','Bleu']];
+function flSet(k,v){const i=segIdx();if(S.cles&&S.cles.length>1){const c=S.cles[i];c.fl=Object.assign({},segFl(i),{[k]:v});Object.assign(S.fl,c.fl)}else S.fl[k]=v}
+function flUI(){
+  const F=segFl(segIdx()),i=segIdx();
+  $('flSeg').textContent=S.cles&&S.cles.length>2?`Flèche de l'étape ${i+1} vers ${i+2}`:'Trajectoire';
+  $('flStyles').innerHTML=FLS.map(([k,l])=>`<button data-fls="${k}" aria-pressed="${F.style===k}" title="${l}">${flIcon(k)}<span>${l}</span></button>`).join('');
+  document.querySelectorAll('[data-fls]').forEach(b=>b.onclick=()=>{flSet('style',b.dataset.fls);refresh()});
+  $('flCols').innerHTML=FLCOL.map(([c,l])=>`<button data-flc="${c}" aria-pressed="${S.fl.col===c}" title="${l}" aria-label="${l}" style="background:${c}"></button>`).join('');
+  document.querySelectorAll('[data-flc]').forEach(b=>b.onclick=()=>{S.fl.col=b.dataset.flc;refresh()});
+}
+
+/* ---- décor ---- */
+const FONDC=[['#ffffff','Blanc'],['#fdf6e7','Crème'],['#e8f3f1','Vert pâle'],['#eef2f1','Gris'],['#e9f0f8','Bleu pâle'],['#14201f','Encre']];
+function decorUI(){
+  press3([['rf0','aucun'],['rf1','trait'],['rf2','plein']],S.ref.style);
+  press3([['fd0','aucun'],['fd1','uni'],['fd2','degrade']],S.fond.type);
+  $('refOpts').hidden=S.ref.style==='aucun';$('fondOpts').hidden=S.fond.type==='aucun';
+  $('refT').value=Math.round(S.ref.t*100);$('refTOut').textContent=Math.round(S.ref.t*100)+'%';
+  $('refH').value=S.ref.h;$('refHOut').textContent=S.ref.h;
+  $('refX').value=S.ref.x;$('refXOut').textContent=S.ref.x;
+  $('refVisage').checked=S.ref.visage;$('refRep').checked=S.ref.reperes;
+  $('fondCadre').checked=S.fond.cadre;$('fondPick').value=S.fond.col;
+  $('fondCols').innerHTML=FONDC.map(([c,l])=>`<button data-fc="${c}" aria-pressed="${S.fond.col.toLowerCase()===c}" title="${l}" aria-label="${l}" style="background:${c}"></button>`).join('');
+  document.querySelectorAll('[data-fc]').forEach(b=>b.onclick=()=>{S.fond.col=b.dataset.fc;if(S.fond.type==='aucun')S.fond.type='uni';refresh()});
+}
+
 function refresh(){
-  syncSliders();press($('mainD'),$('mainG'),!S.gauche);press($('modePose'),$('modeMvt'),S.mode==='pose');press($('editD'),$('editF'),S.target==='debut');
-  $('mvtOn').hidden=S.mode!=='mouvement';$('mvtOff').hidden=S.mode==='mouvement';$('etapes').value=S.etapes;$('etapesOut').textContent=S.etapes;$('fleche').checked=S.fleche;
-  $('status').innerHTML=`<span class="chip">Main ${S.gauche?'gauche':'droite'}</span>`+(S.mode==='pose'?`<span class="chip on">Pose fixe</span>`:`<span class="chip ${S.target==='debut'?'debut':'fin'}">Main pleine : ${S.target==='debut'?'début':'fin'}</span>`);
+  syncSliders();
+  press3([['mainD','D'],['mainG','G'],['mainDG','DG']],S.mains);
+  press($('modePose'),$('modeMvt'),S.mode==='pose');
+  $('actWrap').hidden=$('mirWrap').hidden=S.mains!=='DG';press($('actD'),$('actG'),S.act==='D');
+  $('mvtOn').hidden=S.mode!=='mouvement';$('mvtOff').hidden=S.mode==='mouvement';
+  $('etapes').value=S.etapes;$('etapesOut').textContent=S.etapes;
+  $('fleche').checked=S.fleche;$('flWrap').hidden=!S.fleche;$('flDouble').checked=segFl(segIdx()).double;
+  stepStrip();flUI();decorUI();
+  const nomMain={D:'droite',G:'gauche',DG:'les deux'}[S.mains];
+  $('status').innerHTML=`<span class="chip">Main ${nomMain}${S.mains==='DG'?' · je pose la '+(S.act==='D'?'droite':'gauche'):''}</span>`
+    +(S.mode==='pose'?`<span class="chip on">Pose fixe</span>`
+      :`<span class="chip ${S.cur===0?'debut':'fin'}">${S.cles.length>2?'Étape '+(S.cur+1)+'/'+S.cles.length:(S.cur===0?'Début':'Fin')}</span>`);
   render3D();
 }
-$('mainD').onclick=()=>{S.gauche=false;refresh()};$('mainG').onclick=()=>{S.gauche=true;refresh()};
+$('mainD').onclick=()=>setMains('D');$('mainG').onclick=()=>setMains('G');$('mainDG').onclick=()=>setMains('DG');
+$('actD').onclick=()=>{S.act='D';setHL(null);refresh()};$('actG').onclick=()=>{S.act='G';setHL(null);refresh()};
+$('miroir').onclick=()=>{const o=S.act==='G'?'D':'G',set=curSet();set[o]=mirror(set[S.act]);refresh()};
 $('resetOrient').onclick=()=>{editable().q=[0,0,0,1];refresh()};
 $('unlockAll').onclick=()=>{for(const k in S.locks)S.locks[k]=S.locks[k].map(()=>false);refresh()};
 $('modePose').onclick=()=>{S.mode='pose';refresh()};
-$('modeMvt').onclick=()=>{if(!S.debut){S.debut=clone(S.pose);S.fin=clone(S.pose);S.fin.pos[0]+=14}S.mode='mouvement';refresh()};
-$('editD').onclick=()=>{S.target='debut';refresh()};$('editF').onclick=()=>{S.target='fin';refresh()};
-$('copyDF').onclick=()=>{const p=S.fin.pos;S.fin=clone(S.debut);S.fin.pos=p;refresh()};
-$('copyFD').onclick=()=>{const p=S.debut.pos;S.debut=clone(S.fin);S.debut.pos=p;refresh()};
+$('modeMvt').onclick=()=>{if(!S.cles){const a=clone(S.pose),b=clone(S.pose);for(const k in b)if(b[k])b[k].pos[0]+=14;S.cles=[a,b]}
+  S.mode='mouvement';S.cur=Math.min(S.cur,S.cles.length-1);mainsOn().forEach(ensureSide);refresh();fitIfNeeded()};
+$('stepDup').onclick=()=>{S.cles.splice(S.cur+1,0,clone(S.cles[S.cur]));S.cur++;refresh()};
+$('stepDel').onclick=()=>{if(S.cles.length<=2)return;S.cles.splice(S.cur,1);S.cur=Math.min(S.cur,S.cles.length-1);refresh()};
 $('etapes').oninput=e=>{S.etapes=+e.target.value;$('etapesOut').textContent=S.etapes;render3D()};
-$('fleche').onchange=e=>{S.fleche=e.target.checked;render3D()};
-$('play').onclick=()=>{if(playing)return;ghosts.forEach(g=>g.root.visible=false);arrow.visible=false;const t0=performance.now(),dur=1400;playing=true;
-  (function step(now){const k=Math.min(1,(now-t0)/dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;applyPose(main,lerpPose(S.debut,S.fin,e));
+$('fleche').onchange=e=>{S.fleche=e.target.checked;refresh()};
+$('flDouble').onchange=e=>{flSet('double',e.target.checked);refresh()};
+$('flSens').onclick=()=>{flSet('sens',-segFl(segIdx()).sens);refresh()};
+let camAvantRef=null;
+['rf0','rf1','rf2'].forEach((b,i)=>$(b).onclick=()=>{
+  const v=['aucun','trait','plein'][i],av=S.ref.style;if(v===av)return;S.ref.style=v;refresh();
+  if(av==='aucun'&&v!=='aucun'){camAvantRef={p:camera.position.toArray(),c:controls.target.toArray()};fitView()}
+  else if(v==='aucun'&&camAvantRef){camera.position.fromArray(camAvantRef.p);controls.target.fromArray(camAvantRef.c);controls.update();camAvantRef=null}});
+['fd0','fd1','fd2'].forEach((b,i)=>$(b).onclick=()=>{S.fond.type=['aucun','uni','degrade'][i];refresh()});
+$('refT').oninput=e=>{S.ref.t=+e.target.value/100;$('refTOut').textContent=e.target.value+'%';drawOverlays()};
+$('refH').oninput=e=>{S.ref.h=+e.target.value;$('refHOut').textContent=e.target.value;drawOverlays()};
+$('refX').oninput=e=>{S.ref.x=+e.target.value;$('refXOut').textContent=e.target.value;drawOverlays()};
+$('refVisage').onchange=e=>{S.ref.visage=e.target.checked;drawOverlays()};
+$('refRep').onchange=e=>{S.ref.reperes=e.target.checked;drawOverlays()};
+$('fondCadre').onchange=e=>{S.fond.cadre=e.target.checked;drawOverlays()};
+$('fondPick').oninput=e=>{S.fond.col=e.target.value;if(S.fond.type==='aucun')S.fond.type='uni';refresh()};
+$('play').onclick=()=>{if(playing||S.mode!=='mouvement')return;
+  const on=mainsOn();for(const k in HAND)HAND[k].ghosts.forEach(g=>g.root.visible=false);
+  fgL.getContext('2d').clearRect(0,0,fgL.width,fgL.height);
+  const n=S.cles.length-1,t0=performance.now(),dur=900*n;playing=true;
+  (function step(now){const k=Math.min(1,(now-t0)/dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,u=e*n,i=Math.min(n-1,Math.floor(u));
+    on.forEach(side=>applyPose(handOf(side),lerpPose(S.cles[i][side],S.cles[i+1][side],u-i)));
     if(k<1)requestAnimationFrame(step);else setTimeout(()=>{playing=null;render3D()},600)})(t0)};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));
   document.querySelectorAll('[data-pane]').forEach(p=>p.hidden=p.dataset.pane!==b.dataset.tab)});
@@ -850,14 +1164,31 @@ document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.query
 /* ======================================================================
    Sauvegarde, JSON, export
    ====================================================================== */
-function snapshot(){const o={version:7,mode:S.mode,gauche:S.gauche,verrous:clone(S.locks),vue:{pos:camera.position.toArray().map(v=>+v.toFixed(2)),cible:controls.target.toArray().map(v=>+v.toFixed(2))}};
-  if(S.mode==='pose')o.pose=clone(S.pose);else{o.debut=clone(S.debut);o.fin=clone(S.fin);o.etapes=S.etapes;o.fleche=S.fleche}return o}
+function snapshot(){const o={version:8,mode:S.mode,mains:S.mains,act:S.act,verrous:clone(S.locks),
+  decor:{fond:clone(S.fond),ref:clone(S.ref)},fl:clone(S.fl),fleche:S.fleche,etapes:S.etapes,
+  vue:{pos:camera.position.toArray().map(v=>+v.toFixed(2)),cible:controls.target.toArray().map(v=>+v.toFixed(2))}};
+  if(S.mode==='pose')o.pose=clone(S.pose);else{o.cles=clone(S.cles);o.cur=S.cur}return o}
 const okPose=p=>p&&p.f&&ALL.every(k=>p.f[k])&&p.f.pouce.av!==undefined&&Array.isArray(p.q)&&Array.isArray(p.pos);
+const okSet=c=>c&&(okPose(c.D)||okPose(c.G));
 function load(o){
-  if(!o||(o.version!==7&&o.version!==6))throw new Error('format d\'une ancienne version de l\'atelier');
-  if(o.mode==='mouvement'){if(!okPose(o.debut)||!okPose(o.fin))throw new Error('début ou fin manquant');S.debut=clone(o.debut);S.fin=clone(o.fin);S.etapes=o.etapes||2;S.fleche=o.fleche!==false;S.mode='mouvement';S.target='fin';S.pose=clone(o.fin)}
-  else{if(!okPose(o.pose))throw new Error('pose manquante');S.pose=clone(o.pose);S.mode='pose'}
-  S.gauche=!!o.gauche;if(o.verrous)for(const k in S.locks)if(o.verrous[k])S.locks[k]=o.verrous[k].slice();
+  if(!o||[6,7,8].indexOf(o.version)<0)throw new Error('format d\'une ancienne version de l\'atelier');
+  if(o.version<8){   // versions 6-7 : une seule main, un début et une fin
+    const c=o.gauche?'G':'D';S.mains=c;S.act=c;
+    if(o.mode==='mouvement'){if(!okPose(o.debut)||!okPose(o.fin))throw new Error('début ou fin manquant');
+      S.cles=[{[c]:clone(o.debut)},{[c]:clone(o.fin)}];S.pose={[c]:clone(o.fin)};S.mode='mouvement';S.cur=0;S.etapes=Math.max(0,(o.etapes||2)-1)}
+    else{if(!okPose(o.pose))throw new Error('pose manquante');S.pose={[c]:clone(o.pose)};S.cles=null;S.mode='pose'}
+    S.fleche=o.fleche!==false;
+  }else{
+    S.mains=['D','G','DG'].indexOf(o.mains)<0?'D':o.mains;S.act=o.act==='G'?'G':'D';
+    if(o.mode==='mouvement'){if(!Array.isArray(o.cles)||o.cles.length<2||!o.cles.every(okSet))throw new Error('étapes manquantes');
+      S.cles=clone(o.cles);S.cur=Math.min(o.cur||0,S.cles.length-1);S.mode='mouvement';S.pose=clone(S.cles[S.cles.length-1])}
+    else{if(!okSet(o.pose))throw new Error('pose manquante');S.pose=clone(o.pose);S.cles=null;S.mode='pose'}
+    S.etapes=o.etapes==null?1:Math.max(0,Math.min(3,o.etapes));S.fleche=o.fleche!==false;
+    if(o.fl)Object.assign(S.fl,o.fl);
+    if(o.decor){if(o.decor.fond)Object.assign(S.fond,o.decor.fond);if(o.decor.ref)Object.assign(S.ref,o.decor.ref)}
+  }
+  if(mainsOn().indexOf(S.act)<0)S.act=mainsOn()[0];mainsOn().forEach(ensureSide);mainsOn().forEach(handOf);
+  if(o.verrous)for(const k in S.locks)if(o.verrous[k])S.locks[k]=o.verrous[k].slice();
   if(o.vue&&o.vue.pos){camera.position.fromArray(o.vue.pos);controls.target.fromArray(o.vue.cible||[0,0,0]);controls.update()}refresh();
 }
 let db=null,items=[];const libMsg=h=>$('lib').innerHTML=h;
@@ -882,10 +1213,14 @@ $('copyJson').onclick=()=>{const txt=JSON.stringify(snapshot());$('json').value=
 $('importJson').onclick=()=>{try{load(JSON.parse($('json').value));$('jsonMsg').textContent='Configuration chargée.'}catch(e){$('jsonMsg').textContent='JSON illisible : '+(e.message||'format inattendu')}};
 let downloads=null;(async()=>{try{if(window.claude&&window.claude.use)downloads=await window.claude.use('downloads')}catch(e){}})();
 $('export').onclick=async()=>{const m=$('exportMsg');m.className='msg';m.textContent='Rendu en cours…';
-  const size=+$('taille').value,white=$('fondBlanc').checked,w=stage.clientWidth,h=stage.clientHeight,old=renderer.getPixelRatio();
-  setHL(null);renderer.setPixelRatio(size/Math.max(w,h));renderer.setSize(w,h,false);if(white)renderer.setClearColor(0xffffff,1);
-  renderAll();let out=renderer.domElement;if(!white)out=cropAlpha(out);const blob=await new Promise(r=>out.toBlob(r,'image/png'));
-  renderer.setClearColor(0,0);renderer.setPixelRatio(old);resize();
+  const size=+$('taille').value,w=stage.clientWidth,h=stage.clientHeight,old=renderer.getPixelRatio();
+  setHL(null);renderer.setPixelRatio(size/Math.max(w,h));renderer.setSize(w,h,false);
+  renderAll();
+  // on recompose à plat : le fond et le référent derrière, la 3D, puis les flèches — comme à l'écran
+  const gl=renderer.domElement,c=document.createElement('canvas');c.width=gl.width;c.height=gl.height;
+  const x=c.getContext('2d');paintBack(x,c.width,c.height);x.drawImage(gl,0,0);paintFront(x,c.width,c.height);
+  let out=$('recadre').checked?cropAlpha(c):c;const blob=await new Promise(r=>out.toBlob(r,'image/png'));
+  renderer.setPixelRatio(old);resize();drawOverlays();
   const nom=($('nom').value.trim()||'main-lsf').replace(/[^\w\-àâäéèêëîïôöùûüç ]/gi,'').replace(/\s+/g,'-');
   if(downloads){try{await downloads.save({filename:nom+'.png',data:blob});m.textContent='Image enregistrée.';return}catch(e){if(e&&e.code==='declined'){m.textContent='Export annulé.';return}}}
   $('imgOut').src=URL.createObjectURL(blob);$('imgDlg').showModal();m.textContent=''};
@@ -896,7 +1231,7 @@ function cropAlpha(src){const c=document.createElement('canvas');c.width=src.wid
   if(x1<0)return c;const pad=Math.round(c.width*.02);x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(c.width,x1+pad);y1=Math.min(c.height,y1+pad);
   const o=document.createElement('canvas');o.width=x1-x0;o.height=y1-y0;o.getContext('2d').drawImage(c,x0,y0,o.width,o.height,0,0,o.width,o.height);return o}
 
-window.__atelier={renderer,setPron:v=>{PRONA=v;main.skin.key=''},setKnk:v=>{KNG=v;main.skin.key=''},setEdmax:v=>{EDMAX=v;edgeMat.uniforms.emax.value=v},S,refresh,main,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,constrain,solve,renderAll,
+window.__atelier={renderer,setPron:v=>{PRONA=v;for(const k in HAND)HAND[k].skin.key=''},setKnk:v=>{KNG=v;for(const k in HAND)HAND[k].skin.key=''},setEdmax:v=>{EDMAX=v;edgeMat.uniforms.emax.value=v},setCrv:v=>{CRV=v},setCrmax:v=>{CRMAX=v},S,refresh,main,HAND,handOf,act,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,curSet,mirror,constrain,solve,renderAll,drawOverlays,load,snapshot,
   // surface de mise au point (balayage anti-déformation, mesures) : rien de tout cela n'est utilisé par l'interface
   applyPose,settle,lerpF,palmH,SC,HD,MN,NT,MREST,MINDEX,ALL,FING,SEGW,probe,thumbReach,REACH};
 refresh();

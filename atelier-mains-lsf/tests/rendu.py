@@ -23,7 +23,7 @@ CASES = [
     ("Pince", [20, 8, 22], [2, 5, 0]),
     ("Repos", [-8, 16, -14], [1, 10, 0]),                    # gros plan dos / ongles
 ]
-ST = """()=>{const A=window.__atelier,f=A.S.pose.f,r=o=>Object.values(o).map(Math.round).join('/');
+ST = """()=>{const A=window.__atelier,f=A.editable().f,r=o=>Object.values(o).map(Math.round).join('/');
  return 'pen '+A.penetration(f).toFixed(1)+' | '+['pouce','index','majeur','annulaire','auriculaire'].map(k=>k.slice(0,3)+':'+r(f[k])).join(' ')}"""
 
 async def main():
@@ -35,9 +35,9 @@ async def main():
         shots = []
         for i, (act, cam, tgt) in enumerate(CASES):
             if isinstance(act, str):
-                await pg.evaluate("n=>{const A=window.__atelier;A.S.pose.f=JSON.parse(JSON.stringify(A.PRESETS['Dessin'].f));A.applyPreset(n)}", act)
+                await pg.evaluate("n=>{const A=window.__atelier;A.editable().f=JSON.parse(JSON.stringify(A.PRESETS['Dessin'].f));A.applyPreset(n)}", act)
             else:
-                await pg.evaluate("""([patch])=>{const A=window.__atelier,p=A.S.pose;p.f=JSON.parse(JSON.stringify(A.PRESETS['Dessin'].f));
+                await pg.evaluate("""([patch])=>{const A=window.__atelier,p=A.editable();p.f=JSON.parse(JSON.stringify(A.PRESETS['Dessin'].f));
                   const t=JSON.parse(JSON.stringify(p.f));for(const k in patch)Object.assign(t[k],patch[k]);A.constrain({f:t});p.f=A.solve(p.f,t);A.refresh()}""", [act])
             await pg.evaluate("([c,t])=>{const A=window.__atelier;A.camera.position.set(...c);A.camera.lookAt(...t)}", [cam, tgt])
             await pg.wait_for_timeout(700)

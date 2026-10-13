@@ -13,6 +13,9 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
 3. **Mode marionnette.** On attrape un doigt et on tire : tout le doigt suit depuis sa base. Le clic droit bloque une articulation (cadenas). Maj + glisser fait bouger une seule articulation.
 4. **Anatomie humaine stricte.** Aucune pose impossible, aucun doigt qui traverse la paume ou un autre doigt. Fermer tous les doigts donne un poing, et le pouce reste libre tant qu'on ne le bouge pas.
 5. **Rendu naturel.** Pas de « boudins » (segments posés bout à bout), pas d'ongles déformés, pas de doigt qui s'allonge, pas de formes géométriques qui apparaissent.
+6. **Une planche de classe, pas seulement une main.** Un référent de face à qui appartiennent les mains (l'emplacement
+   sur le corps est un paramètre du signe en LSF), **les deux mains**, un mouvement en **plusieurs étapes clés**
+   dont chacune a sa propre configuration de doigts, une **flèche** (demi-cercle, zigzag, vague, boucle…) et un **fond**.
 
 ## Approches déjà essayées et REJETÉES (ne pas y revenir)
 
@@ -150,6 +153,50 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
 - Essayé et écarté à l'intégration : partage linéaire des palmures entre deux doigts (essai C) par-dessus le déformeur en arc (fente/pointe entre annulaire et majeur, poing d'un seul doigt) ; trait épais tiré de la passe identité pour le pouce devant la paume (taches sur le contour dos).
 - Les photos de la main de l'utilisateur (profil, poing, pince, O…) ont servi de référence de volumes ; elles ne sont pas dans le dépôt.
 
+## La planche : référent, deux mains, étapes, flèches, fond (v9)
+
+État (`S`, dans `script.js`) :
+
+```js
+S = {
+  mode:'pose'|'mouvement',
+  mains:'D'|'G'|'DG',      // mains à l'écran      act:'D'|'G'  // main que le panneau manipule
+  pose:{D:pose, G:pose},   // mode pose fixe
+  cles:[{D:pose,G:pose}…], // mode mouvement : 2 à 5 ÉTAPES CLÉS   cur:index de celle qu'on pose
+  etapes:0–3,              // fantômes intermédiaires par intervalle
+  fl:{style,sens,double,col}, fond:{type,col,cadre}, ref:{style,t,h,x,visage,reperes}
+}
+```
+
+- **Deux mains.** La gauche est la droite *dans un miroir* : `mirror(pose)` retourne `pos.x` et le quaternion
+  (`x,-y,-z,w`), et l'instance porte `root.scale.x = -1`. Chaque main pleine est créée à la demande (`handOf`),
+  ses fantômes aussi (`ghostOf`) : tant qu'on n'affiche qu'une main sans mouvement, rien d'autre n'existe.
+  Budget de fantômes : 8 par main, 5 dès qu'il y a deux mains (`MAXG`).
+  Conventions d'axes : la droite est en **x négatif**, la gauche en x positif — face au signeur, sa main droite
+  est à notre gauche ; vu de dos (« signeur ») l'axe s'inverse tout seul et la droite revient à droite.
+- **Étapes clés.** `S.cles` remplace l'ancien couple début/fin. Chaque étape porte une pose COMPLÈTE par main :
+  changer de configuration de doigts en cours de mouvement est donc natif. Les fantômes (`ghostList`) sont les
+  autres étapes clés (opacité .34) plus `S.etapes` interpolations par intervalle (.17). « Jouer » parcourt
+  toute la suite.
+- **Deux calques plats** (`#bgL` derrière la 3D, `#fgL` devant) dessinés au canvas 2D. Une flèche de dictionnaire
+  LSF est un SYMBOLE, pas un objet de la scène : elle doit rester lisible quel que soit l'angle de la caméra,
+  donc elle est tracée à plat. L'export recompose fond → référent → rendu 3D → flèches sur un seul canvas,
+  puis recadre sur l'alpha.
+- **Référent** : buste de face, proportions données en **longueurs de main** (`HL`, mesurée sur la géométrie au
+  repos ; 1 main ≈ 18,5 cm, épaules 2,3 mains, buste 3,7 mains), donc la silhouette reste juste à n'importe quel
+  zoom. Ancré au creux du cou, réglable en taille / hauteur / latéral. Option « repères d'emplacement »
+  (front, menton, épaules, poitrine, taille) : ce sont les lieux d'articulation du signe.
+- **Flèches** : `arrowPts(A,B,style,sens)` en coordonnées écran — droite, arc, demi-cercle (vrai demi-cercle de
+  rayon L/2), vague, zigzag, boucle ; pointe simple ou aller-retour ; quatre couleurs. Les icônes du panneau
+  sont générées par la même fonction, donc elles ne peuvent pas mentir. Au-delà de deux étapes, chaque étape
+  reçoit une pastille numérotée.
+- **Cadrage** (`contentBox` / `fitView` / `fitIfNeeded`) : la vue de départ montre une main plein cadre ; dès qu'on
+  ajoute un buste (3,7 mains de haut), une deuxième main ou des étapes écartées, le contenu sort du cadre.
+  On recadre **seulement quand il déborde** (ou de force quand on allume le référent, et on restaure la vue
+  précédente quand on l'éteint), jamais au milieu d'un geste. Bouton « Cadrer » sur le plateau.
+- **Format d'échange v8** : `{version:8, mode, mains, act, pose|cles, cur, etapes, fleche, fl, decor:{fond,ref}, verrous, vue}`.
+  `load()` relit les versions 6 et 7 (une main, début/fin) et les convertit.
+
 ## Architecture précédente (v7)
 
 ```
@@ -188,10 +235,23 @@ dist/           page construite (+ .local.html ouvrable directement dans un navi
   - pouce : trapézo-métacarpienne au poignet (`CMC_IMG`) avec avancer / rapprocher + pronation (`PRON=-1`). Sa MCP ne plie loin que pouce avancé, et son bout ne pointe jamais vers le poignet.
 - **Collisions** (`penetration` / `solve`) : doigt contre paume (tissus mous : `SOFT=12` px d'appui permis), pouce contre doigts, doigts voisins, doigt contre lui-même, posture du pouce. Le solveur s'arrête au contact sans jamais traverser.
 - **Rendu** : aplat + une ombre franche (style du dessin), contour noir par coque inversée. Une passe « identité » trace les traits intérieurs quand une partie passe devant une autre (pouce devant la paume, doigt devant doigt).
+  S'y ajoute un **détecteur de plis** (`CRV`, `CRMAX`) : le dessin ne porte que les traits d'une main à PLAT, donc
+  rien ne dessine la vallée entre deux doigts repliés qui se touchent. On la lit dans la profondeur — en traversant
+  un creux, les DEUX voisins remontent vers l'œil (on prend le plus petit des deux écarts, sinon un bord d'occlusion
+  suffirait à déclencher) ; rapporté au pas en unités du modèle c'est la tangente du versant, donc le seuil ne
+  dépend ni de la distance ni du zoom. Sur une surface bombée le signe s'inverse : aucun trait parasite sur le
+  corps d'un doigt. Comme `mesh.dz`, il n'entre qu'une fois la pose du dessin quittée (`gR`), donc le repos reste
+  exact au pixel près. Mesuré : il ajoute des traits sur 54 des 60 vues de contrôle (presets × face/dos/profil/¾),
+  surtout dans les crevasses pouce–doigts et entre doigts repliés. **Il ne montre rien sur le dos du poing** : à
+  cet endroit la surface est réellement lisse et convexe, le manque est géométrique (pas de relief d'articulation
+  ni de sillon inter-doigts côté dos), pas un problème de trait.
 - **Marionnette** : la direction écran de chaque articulation est mesurée en la poussant de 3°. Résolution par moindres carrés (`grabAxes` / `onDrag`). Couplage naturel `GRAB` (bout tiré → MCP .85, IPP 1, IPD .7).
 - **Configurations de départ** (`PRESETS`) : Dessin, Repos, B, A, Poing serré, 1, V, L, Y, C, O, Pince. Pour O, Pince et Poing serré, `thumbReach` amène le pouce sur sa cible.
 - **Bibliothèque** : capacité `db` de claude.ai (`window.claude.use('db')`, collection `configurations`). Hors claude.ai elle est indisponible, et l'échange JSON prend le relais. **Export PNG** : capacité `downloads`, sinon image dans une boîte de dialogue.
-- **Débogage** : `window.__atelier` expose `renderer, S, refresh, main, camera, PRESETS, applyPreset, penetration, constrain, solve, setPron`.
+- **Débogage** : `window.__atelier` expose `renderer, S, refresh, main, HAND, handOf, act, camera, PRESETS,
+  applyPreset, editable, curSet, mirror, penetration, constrain, solve, setPron, setCrv, setCrmax, drawOverlays,
+  load, snapshot`. **La pose modifiable n'est plus `S.pose` mais `editable()`** (elle dépend de la main active et
+  de l'étape clé en cours) : les scripts de contrôle passent par là.
 
 ## Construire et vérifier
 

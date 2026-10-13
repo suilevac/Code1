@@ -95,7 +95,7 @@ MESURE = r"""
  for(const p of poses){const f=JSON.parse(JSON.stringify(dessin));
    for(const k in p.f)Object.assign(f[k],p.f[k]);
    if(p.preset){const e=A.editable();e.f=JSON.parse(JSON.stringify(dessin));A.applyPreset(p.preset);
-     out.push(Object.assign({nom:p.nom},mesure(A.S.pose.f),{f:A.S.pose.f}));continue;}
+     out.push(Object.assign({nom:p.nom},mesure(A.editable().f),{f:A.editable().f}));continue;}
    A.constrain({f});if(p.solve)Object.assign(f,A.solve(dessin,f));
    out.push(Object.assign({nom:p.nom},mesure(f),{f}));}
  return {NT,NE,NR,res:out};}
@@ -178,7 +178,7 @@ async def main():
         if a.images:
             el = await pg.query_selector('#stage canvas')
             for i, d in enumerate(res[:a.images]):
-                await pg.evaluate("""([ff])=>{const A=window.__atelier;A.S.pose.f=ff;A.refresh();
+                await pg.evaluate("""([ff])=>{const A=window.__atelier;A.editable().f=ff;A.refresh();
                   A.camera.position.set(34,6,26);A.controls.target.set(0,0,0);A.controls.update()}""", [d['f']])
                 await pg.wait_for_timeout(350)
                 await el.screenshot(path='%s/%02d_%s.png' % (a.out, i, d['nom'].replace('/', '-').replace(' ', '_').replace('=', '')))

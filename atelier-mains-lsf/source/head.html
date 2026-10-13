@@ -6,7 +6,26 @@ __STYLE__
 .presets{display:flex;flex-wrap:wrap;gap:6px}
 .presets button{font:inherit;font-size:.85rem;font-weight:700;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer}
 .presets button:hover{border-color:var(--accent);color:var(--accent)}
-.tabs{grid-template-columns:repeat(4,1fr)}
+.tabs{grid-template-columns:repeat(5,1fr)}
+.tabs button{font-size:.8rem;padding:13px 2px 10px}
+.stage canvas.layer{position:absolute;inset:0;pointer-events:none}
+#bgL{z-index:0}#fgL{z-index:2}
+.seg3{display:grid;grid-template-columns:1fr 1fr 1fr;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.seg3 button{font:inherit;font-weight:700;font-size:.9rem;padding:9px 4px;background:transparent;border:0;color:var(--muted);cursor:pointer}
+.seg3 button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.steps{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.steps button{font:inherit;font-size:.82rem;font-weight:700;border:1.5px solid var(--line);background:transparent;color:var(--muted);border-radius:9px;padding:6px 11px;cursor:pointer}
+.steps button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.steps .add{border-style:dashed}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.swatches button{width:30px;height:30px;border-radius:8px;border:2px solid var(--line);cursor:pointer;padding:0}
+.swatches button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
+.flstyles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.flstyles button{border:1.5px solid var(--line);background:transparent;border-radius:9px;padding:5px 2px 2px;cursor:pointer;color:var(--ink);display:grid;justify-items:center;gap:2px}
+.flstyles button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.flstyles svg{width:52px;height:22px}
+.flstyles span{font-size:.68rem;font-weight:700;color:var(--muted)}
+.flstyles button[aria-pressed="true"] span{color:var(--accent)}
 .loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-weight:700;z-index:1}
 </style>
 
@@ -17,6 +36,8 @@ __STYLE__
       <div class="status" id="status"></div>
     </header>
     <div class="stage" id="stage">
+      <canvas class="layer" id="bgL"></canvas>
+      <canvas class="layer" id="fgL"></canvas>
       <div class="loading" id="loading">Construction de la main 3D…</div>
       <div class="tip" id="tip" hidden></div>
       <div class="over tr"><span class="hint">Tire un doigt pour le plier · clic droit : bloquer · fond : tourner la vue</span></div>
@@ -25,6 +46,7 @@ __STYLE__
         <button class="btn" data-view="signeur">Dos (signeur)</button>
         <button class="btn" data-view="profil">Profil</button>
         <button class="btn" data-view="dessus">Dessus</button>
+        <button class="btn" id="fit">Cadrer</button>
       </div>
     </div>
   </section>
@@ -34,6 +56,7 @@ __STYLE__
       <button role="tab" aria-selected="true" data-tab="doigts">Doigts</button>
       <button role="tab" aria-selected="false" data-tab="main">Main</button>
       <button role="tab" aria-selected="false" data-tab="mvt">Mouvement</button>
+      <button role="tab" aria-selected="false" data-tab="decor">Décor</button>
       <button role="tab" aria-selected="false" data-tab="lib">Biblio</button>
     </nav>
 
@@ -55,9 +78,15 @@ __STYLE__
     <div class="pane" data-pane="main" hidden>
       <div class="howto"><p>Attrape la <b>paume</b> pour tourner la main dans tous les sens. <kbd>Maj</kbd> + paume pour la déplacer.</p></div>
       <div class="field">
-        <span class="label">Main</span>
-        <div class="seg"><button id="mainD" aria-pressed="true">Droite</button><button id="mainG" aria-pressed="false">Gauche</button></div>
+        <span class="label">Mains à l'écran</span>
+        <div class="seg3"><button id="mainD" aria-pressed="true">Droite</button><button id="mainG" aria-pressed="false">Gauche</button><button id="mainDG" aria-pressed="false">Les deux</button></div>
       </div>
+      <div class="field" id="actWrap" hidden>
+        <span class="label">Main que je manipule</span>
+        <div class="seg"><button id="actD" aria-pressed="true">Droite</button><button id="actG" aria-pressed="false">Gauche</button></div>
+        <p class="note">Les réglages, les configurations et les étapes du mouvement s'appliquent à cette main-là.</p>
+      </div>
+      <div class="actions" id="mirWrap" hidden><button class="btn" id="miroir">Recopier en miroir sur l'autre main</button></div>
       <div class="block"><h3>Orientation</h3><div id="orientRows"></div></div>
       <div class="actions"><button class="btn" id="resetOrient">Remettre la main de face</button></div>
     </div>
@@ -69,18 +98,54 @@ __STYLE__
       </div>
       <div id="mvtOn" hidden style="display:flex;flex-direction:column;gap:14px">
         <div class="field">
-          <span class="label">La main pleine est</span>
-          <div class="seg"><button class="d" id="editD" aria-pressed="true">Début</button><button id="editF" aria-pressed="false">Fin</button></div>
-          <p class="note">Tu manipules la main pleine ; l'autre extrémité et les étapes restent en fantômes.</p>
+          <span class="label">Étape que je pose</span>
+          <div class="steps" id="stepStrip"></div>
+          <p class="note">Chaque étape garde sa propre configuration de doigts, son orientation et sa place. La main pleine est l'étape choisie ; les autres restent en fantômes.</p>
         </div>
-        <div class="actions"><button class="btn" id="copyDF">Copier début → fin</button><button class="btn" id="copyFD">Copier fin → début</button></div>
+        <div class="actions"><button class="btn" id="stepDup">Dupliquer cette étape</button><button class="btn danger" id="stepDel">Supprimer</button></div>
         <div class="block"><h3>Décomposition</h3>
-          <div class="row nolock"><label for="etapes">Étapes</label><input type="range" id="etapes" min="1" max="4" step="1" value="2"><output id="etapesOut">2</output></div>
-          <label class="check" style="padding:6px 0"><input type="checkbox" id="fleche" checked> Flèche de trajectoire</label>
+          <div class="row nolock"><label for="etapes">Fantômes</label><input type="range" id="etapes" min="0" max="3" step="1" value="1"><output id="etapesOut">1</output></div>
+          <p class="note" style="margin-top:2px">Images intermédiaires dessinées entre deux étapes.</p>
+        </div>
+        <div class="block"><h3>Flèche</h3>
+          <label class="check" style="padding:4px 0"><input type="checkbox" id="fleche" checked> Montrer la trajectoire</label>
+          <div id="flWrap">
+            <div class="label" id="flSeg" style="padding:4px 0 6px">Trajectoire</div>
+            <div class="flstyles" id="flStyles"></div>
+            <label class="check" style="padding:8px 0 2px"><input type="checkbox" id="flDouble"> Aller-retour (deux pointes)</label>
+            <div class="actions" style="padding-bottom:6px"><button class="btn" id="flSens">Inverser la courbure</button></div>
+            <div class="field"><span class="label">Couleur</span><div class="swatches" id="flCols"></div></div>
+          </div>
         </div>
         <button class="btn primary" id="play">▶ Jouer le mouvement</button>
       </div>
-      <p class="note" id="mvtOff">En mode Mouvement, tu poses une main de début et une main de fin. L'atelier dessine les étapes intermédiaires en fantômes, comme pour « cent » qui glisse sur les zéros.</p>
+      <p class="note" id="mvtOff">En mode Mouvement, tu poses une main de début et une main de fin — et autant d'étapes intermédiaires que tu veux, chacune avec sa propre configuration de doigts. L'atelier dessine les images intermédiaires en fantômes et relie le tout par une flèche, comme pour « cent » qui glisse sur les zéros.</p>
+    </div>
+
+    <div class="pane" data-pane="decor" hidden>
+      <div class="howto"><p>Le décor est dessiné <b>derrière</b> les mains et part avec l'image exportée : un référent de face donne l'emplacement du signe sur le corps, le fond donne une planche prête à coller dans Canva.</p></div>
+      <div class="block"><h3>Référent</h3>
+        <div class="field"><span class="label">Silhouette</span>
+          <div class="seg3"><button id="rf0" aria-pressed="true">Aucun</button><button id="rf1" aria-pressed="false">Trait</button><button id="rf2" aria-pressed="false">Plein</button></div>
+        </div>
+        <div id="refOpts" hidden>
+          <div class="row nolock"><label for="refT">Taille</label><input type="range" id="refT" min="60" max="170" step="1" value="100"><output id="refTOut">100%</output></div>
+          <div class="row nolock"><label for="refH">Hauteur</label><input type="range" id="refH" min="-60" max="60" step="1" value="0"><output id="refHOut">0</output></div>
+          <div class="row nolock"><label for="refX">Latéral</label><input type="range" id="refX" min="-60" max="60" step="1" value="0"><output id="refXOut">0</output></div>
+          <label class="check" style="padding:6px 0"><input type="checkbox" id="refVisage" checked> Visage neutre (yeux, sourcils, bouche)</label>
+          <label class="check" style="padding:2px 0"><input type="checkbox" id="refRep"> Repères d'emplacement (front, menton, épaules, poitrine)</label>
+        </div>
+      </div>
+      <div class="block"><h3>Fond</h3>
+        <div class="field"><span class="label">Type</span>
+          <div class="seg3"><button id="fd0" aria-pressed="true">Transparent</button><button id="fd1" aria-pressed="false">Uni</button><button id="fd2" aria-pressed="false">Dégradé</button></div>
+        </div>
+        <div id="fondOpts" hidden>
+          <div class="field" style="margin-top:8px"><span class="label">Couleur</span><div class="swatches" id="fondCols"></div></div>
+          <div class="field" style="margin-top:8px"><label class="label" for="fondPick">Autre couleur</label><input type="color" id="fondPick" value="#ffffff" style="height:38px;padding:2px"></div>
+          <label class="check" style="padding:8px 0 0"><input type="checkbox" id="fondCadre"> Cadre arrondi</label>
+        </div>
+      </div>
     </div>
 
     <div class="pane" data-pane="lib" hidden>
@@ -97,7 +162,8 @@ __STYLE__
         <h3>Export image</h3>
         <div class="row nolock"><label for="taille">Taille</label>
           <select id="taille" style="font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:4px"><option value="1024">1024 px</option><option value="2048" selected>2048 px</option></select><span></span></div>
-        <label class="check" style="padding:6px 0"><input type="checkbox" id="fondBlanc"> Fond blanc (sinon transparent, recadré)</label>
+        <label class="check" style="padding:6px 0"><input type="checkbox" id="recadre" checked> Recadrer au plus juste</label>
+        <p class="note">Le fond et le référent viennent de l'onglet <b>Décor</b> ; sans fond, l'image est transparente.</p>
         <div class="actions"><button class="btn primary" id="export">Exporter en PNG</button></div>
         <p class="msg" id="exportMsg"></p>
       </div>
