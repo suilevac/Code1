@@ -845,7 +845,7 @@ function applyPose(h,p,light){
   h.root.quaternion.fromArray(p.q);h.root.position.fromArray(p.pos);h.root.scale.x=h.side||1;h.root.updateMatrixWorld(true);
   skinMesh(h,JSON.stringify(p.f),p.f);
 }
-function setLook(h,op){h.mats.forEach(m=>{if(m.uniforms)m.uniforms.opacity.value=op;else m.opacity=op;m.transparent=op<1;m.depthWrite=op>=1})}
+function setLook(h,op){repaint();h.mats.forEach(m=>{if(m.uniforms)m.uniforms.opacity.value=op;else m.opacity=op;m.transparent=op<1;m.depthWrite=op>=1})}
 function lerpF(a,b,t){const o=clone(a);for(const k in o)for(const j in o[k])o[k][j]=a[k][j]+(b[k][j]-a[k][j])*t;return o}
 function lerpPose(a,b,t){const o=clone(a);o.f=lerpF(a.f,b.f,t);o.q=new THREE.Quaternion().fromArray(a.q).slerp(new THREE.Quaternion().fromArray(b.q),t).toArray();o.pos=a.pos.map((v,i)=>v+(b.pos[i]-v)*t);return o}
 
@@ -942,6 +942,10 @@ function ghostOf(H,i){while(H.ghosts.length<=i){const g=Object.assign(makeHand()
 $('loading').hidden=true;
 // passe « identité » : chaque partie dans sa couleur, pour tracer les contours intérieurs
 let idRT=null,bgL=null,fgL=null;
+// On ne redessine que si quelque chose a bougé. Avec un référent, deux mains et plusieurs étapes, la scène peut
+// compter une dizaine de peaux de 44 000 sommets : repeindre 60 fois par seconde une image identique ferait
+// chauffer la machine pour rien. Deux images de marge, le temps que l'amortissement des contrôles se termine.
+let dirty=2;const repaint=()=>{dirty=2};
 function ensureRT(w,h){if(idRT&&idRT.width===w&&idRT.height===h)return;if(idRT){idRT.depthTexture.dispose();idRT.dispose()}
   idRT=new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true});idRT.depthTexture=new THREE.DepthTexture(w,h);idRT.depthTexture.type=THREE.UnsignedIntType}
 const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
@@ -1140,8 +1144,14 @@ function head(x,p,q,lw){const dx=p.x-q.x,dy=p.y-q.y,l=Math.hypot(dx,dy)||1,ux=dx
 // demi-cercle), sinon il prend le réglage courant. La couleur, elle, reste commune à toute la planche.
 const segFl=i=>(S.cles&&S.cles[i]&&S.cles[i].fl)||S.fl;
 const segIdx=()=>S.cles?Math.min(S.cur,S.cles.length-2):0;
+// raccourcir la ligne à ses deux bouts : la pointe ne doit pas finir sous la pastille de l'étape suivante
+function trim(p,d){
+  const cut=(q,d)=>{let r=d;while(q.length>2){const l=Math.hypot(q[1].x-q[0].x,q[1].y-q[0].y);
+    if(l>r){const t=r/l;q[0]={x:q[0].x+(q[1].x-q[0].x)*t,y:q[0].y+(q[1].y-q[0].y)*t};return q}r-=l;q.shift()}return q};
+  return cut(cut(p.slice(),d).reverse(),d).reverse()}
 function drawArrow(x,A,B,lw,F){
-  const pts=arrowPts(A,B,F.style,F.sens);if(pts.length<2)return;
+  let pts=arrowPts(A,B,F.style,F.sens);if(pts.length<2)return;
+  if(pts.length>2)pts=trim(pts,lw*2.6);
   // la pointe mange la fin du trait, sinon elle déborde
   x.save();x.strokeStyle=S.fl.col;x.fillStyle=S.fl.col;x.lineWidth=lw;x.lineCap='round';x.lineJoin='round';
   x.beginPath();x.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)x.lineTo(pts[i].x,pts[i].y);x.stroke();
@@ -1158,8 +1168,11 @@ function drawArrows(x,W,H){
   const lw=Math.max(2.4,.0105*Math.min(W,H)),off=new THREE.Vector3(0,-.38*HL,.28*HL);
   mainsOn().forEach(side=>{
     const pts=S.cles.map(c=>projTo(new THREE.Vector3().fromArray((c[side]||c.D).pos).add(off),W,H));
-    for(let i=0;i+1<pts.length;i++)if(Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y)>lw*7)drawArrow(x,pts[i],pts[i+1],lw,segFl(i));
-    if(S.cles.length>2)pts.forEach((p,i)=>badge(x,p,i+1,lw));
+    let tracee=false;
+    for(let i=0;i+1<pts.length;i++)if(Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y)>lw*7){drawArrow(x,pts[i],pts[i+1],lw,segFl(i));tracee=true}
+    // pastilles dès qu'il y a plus de deux étapes, et aussi quand la main ne se déplace pas : sans elles, rien
+    // ne dirait dans quel ordre lire deux configurations posées au même endroit
+    if(S.cles.length>2||!tracee)pts.forEach((p,i)=>badge(x,p,i+1,lw));
   });
 }
 
@@ -1172,15 +1185,18 @@ function drawFond(x,W,H){
   else x.fillStyle=F.col;
   x.fillRect(0,0,W,H);x.restore();
 }
-function paintBack(x,W,H){x.clearRect(0,0,W,H);drawFond(x,W,H);drawRef(x,W,H)}
-function paintFront(x,W,H){x.clearRect(0,0,W,H);drawArrows(x,W,H)}
+// ces deux-là n'effacent RIEN : à l'export elles peignent l'une après l'autre sur le même canvas, avec le rendu 3D
+// pris en sandwich. C'est l'appelant qui efface, parce que lui seul sait s'il repart d'une surface vide.
+function paintBack(x,W,H){drawFond(x,W,H);drawRef(x,W,H)}
+function paintFront(x,W,H){drawArrows(x,W,H)}
 function drawOverlays(){
+  repaint();
   const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h||!bgL)return;
   const r=Math.min(devicePixelRatio||1,2),W=Math.round(w*r),Hh=Math.round(h*r);
-  [bgL,fgL].forEach(c=>{if(c.width!==W||c.height!==Hh){c.width=W;c.height=Hh}});
+  [bgL,fgL].forEach(c=>{if(c.width!==W||c.height!==Hh){c.width=W;c.height=Hh}else c.getContext('2d').clearRect(0,0,W,Hh)});
   paintBack(bgL.getContext('2d'),W,Hh);paintFront(fgL.getContext('2d'),W,Hh);
 }
-controls.addEventListener('change',drawOverlays);
+controls.addEventListener('change',()=>{repaint();drawOverlays()});
 
 /* ---- cadrage : tout ce qui est à l'écran doit tenir dans l'image ----------------------------------------
    Avec deux mains, plusieurs étapes et un buste de 3,7 longueurs de main, la vue de départ (une main plein cadre)
@@ -1207,7 +1223,7 @@ function fitIfNeeded(force){
   if(m>1)fitView()}
 $('fit').onclick=()=>fitView();
 
-renderer.setAnimationLoop(()=>{controls.update();renderAll()});
+renderer.setAnimationLoop(()=>{if(controls.update())dirty=2;if(dirty>0){dirty--;renderAll()}});
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{camera.position.fromArray(VIEWS[b.dataset.view]);controls.target.set(0,0,0);controls.update()});
 
 /* ======================================================================
@@ -1431,7 +1447,7 @@ $('play').onclick=()=>{if(playing||S.mode!=='mouvement')return;
   const n=S.cles.length-1,t0=performance.now(),dur=900*n;playing=true;
   (function step(now){const k=Math.min(1,(now-t0)/dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,u=e*n,i=Math.min(n-1,Math.floor(u));
     on.forEach(side=>applyPose(handOf(side),lerpPose(S.cles[i][side],S.cles[i+1][side],u-i)));
-    if(k<1)requestAnimationFrame(step);else setTimeout(()=>{playing=null;render3D()},600)})(t0)};
+      repaint();if(k<1)requestAnimationFrame(step);else setTimeout(()=>{playing=null;render3D()},600)})(t0)};
 document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));
   document.querySelectorAll('[data-pane]').forEach(p=>p.hidden=p.dataset.pane!==b.dataset.tab)});
 
