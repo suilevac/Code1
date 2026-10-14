@@ -56,6 +56,36 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   la paume au lieu de glisser dans son plan (colonne du pouce antérieure). La pronation explicite (`PRONA`)
   suit l'OPPOSITION, pas « avancer » : elle démarre avec l'abduction palmaire et ne culmine qu'une fois le
   pouce ramené vers les doigts (42° en abduction radiale → 99° en opposition). À (0, 0) : aucune pronation.
+- **Vis sans fin de la trapézo-métacarpienne, et un solveur qui ne recule plus (piste V)**. Grief de l'utilisateur :
+  « la main n'est toujours pas naturelle, il y a des incohérences quand on bouge les doigts et surtout le pouce ».
+  Mesuré, pas supposé — balayage du pouce sur toute sa course par le chemin RÉEL de l'application (curseur →
+  `constrain` → `solve`), pénétration relevée à chaque pose :
+  1. On demandait « rapprocher 40 » et on obtenait **21,4**, avec « avancer » ramené de 10 à **6,1** et la base
+     de 20 à **10,7**. Une commande en déplaçait trois, et le pouce ne traversait jamais la paume.
+     Cause : `solve` commençait par une interpolation GLOBALE en arrière pour sortir de la pénétration, ce qui
+     ramenait aussi les articulations que l'utilisateur n'avait pas touchées. Il part maintenant de la pose de
+     départ et pousse chaque articulation vers sa cible aussi loin que le contact le permet, **celles qui dégagent
+     de la place d'abord** (mesuré : une évaluation de pénétration par articulation), puis un second tour pour
+     celles qu'un voisin bloquait. C'est l'ordre que `settle` appliquait à la main depuis toujours (écarter le
+     pouce, fermer les doigts, ramener le pouce) ; déduit ici, il vaut pour TOUTES les poses.
+  2. Le pouce butait sur la paume parce qu'il restait dans son plan. À la trapézo-métacarpienne, flexion/adduction,
+     abduction et rotation axiale sont COUPLÉES (Hollister 1992 ; les études in vivo parlent de « screw-home ») :
+     ce ne sont pas trois commandes indépendantes. `AVC` = 0,7 : rapprocher le pouce des doigts le fait sortir du
+     plan de la paume, donc il passe DEVANT elle au lieu de dedans. La valeur n'est pas choisie à l'œil — le
+     balayage donne : au-delà du plan (avancer < 15°) le rapprochement bute vers 21°, et il atteint 40° dès que
+     l'abduction palmaire dépasse 20° ; 0,7 suit exactement cette frontière.
+  Résultat mesuré : 9 poses de pouce sur 10 atteignent EXACTEMENT la valeur demandée, pénétration nulle (la 10e,
+  pouce ramené sur un poing déjà fermé, est arrêtée par un vrai contact). Sur la planche de contrôle, `Poing serré`
+  passe de `pou:44/14/55/-20` (bout en hyperextension, pouce plaqué à plat) à `pou:45/35/40/25`, la valeur même du
+  preset, et les quatre doigts de `Index (1)` se replient enfin à égalité (l'annulaire restait à 75°).
+  **Repos face et dos inchangés au pixel près.**
+- **Fléchisseur profond commun** : `dip ≥ 0,45 (pip − 55)`. On ne tient pas l'articulation du milieu pliée à fond
+  avec le bout parfaitement tendu ; ce doigt-là se lisait comme une pièce mécanique. (La borne haute
+  `dip ≤ 25 + 0,65 pip` existait déjà : le couplage est maintenant dans les deux sens.)
+- **Fantômes et lecture** : ils interpolaient les angles SANS butée ni solveur, donc entre deux poses valides les
+  images intermédiaires pouvaient montrer le pouce dans la paume ou deux doigts qui se traversent.
+  `lerpPoseSafe` passe par `constrain` puis `solve` (≈ 3 ms, contre 13 ms de peau par image : à ce prix-là aucune
+  image n'a d'excuse), avec un petit cache pour les fantômes, dont la pose ne change pas à chaque rafraîchissement.
 - **Rides et plis qui suivent la flexion (piste R)** : les traits du dessin ne sont plus figés.
   `rig3d.py` range les plis dans `texCrease`. Un pli ou une ride est un trait FIN plus sombre que l'aplat voisin,
   l'ombre franche est une plage LARGE : une fermeture morphologique de rayon `CRR` = 5 px efface les traits et garde
