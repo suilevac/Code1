@@ -248,14 +248,58 @@ main{padding:18px 20px 28px; max-width:1060px; margin:0 auto}
 .encadre .signe{color:var(--doux); font-size:.8em}
 .etiq-nbs{display:flex; flex-wrap:wrap; gap:clamp(8px,2vw,16px); justify-content:center; margin:10px 0 0}
 .etiq{
+  color:var(--encre);
   font-family:var(--lecture); font-weight:700; font-size:clamp(24px,5.4vw,46px);
   background:var(--fond-2); border:3px solid var(--trait); border-radius:14px;
   padding:.1em .45em; transition:background .25s, border-color .25s;
 }
 .etiq--range{background:#fff; border-color:var(--accent)}
 .etiq--piege{border-style:dashed}
-.ordre{display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:clamp(6px,1.6vw,14px); margin:18px 0 0}
-.ordre .signe{font-family:var(--titre); font-size:clamp(22px,4.6vw,38px); font-weight:700; color:var(--accent)}
+
+/* ---------- ranger : les cartes, les cases et la bouche ---------- */
+.ranger{margin:16px 0 0}
+.ranger__pool{
+  display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center;
+  min-height:clamp(70px,13vw,104px); padding:12px;
+  border:2px dashed var(--trait); border-radius:16px; background:var(--fond-2);
+}
+.ranger__pool:empty::after{content:'Toutes les cartes sont posées'; color:var(--doux); font-size:14px}
+.ranger__piste{display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:center; margin-top:16px}
+.slot{
+  width:clamp(74px,15vw,124px); height:clamp(64px,12vw,98px);
+  border:3px dashed var(--trait); border-radius:14px; background:var(--papier);
+  display:grid; place-items:center; cursor:pointer;
+}
+.slot--plein{border-style:solid; border-color:var(--accent); cursor:default}
+.slot--cible{border-color:var(--accent); background:var(--accent-pale)}
+.etiq--carte{cursor:pointer}
+.etiq--main{border-color:var(--accent); box-shadow:0 0 0 5px var(--accent-pale)}
+.etiq--pose{border:0; background:transparent; padding:0 .1em}
+.etiq--juste{border-color:var(--vert); background:var(--vert-pale)}
+.signe-btn{
+  width:clamp(40px,8vw,68px); height:clamp(48px,10vw,80px); border:0; background:transparent;
+  cursor:pointer; display:grid; place-items:center; border-radius:12px;
+  font-family:var(--titre); font-weight:700; font-size:clamp(26px,5.5vw,46px); color:var(--doux);
+}
+.signe-btn:hover{background:var(--fond-2)}
+.bouche{width:100%; height:100%; overflow:visible}
+.bouche line{stroke:var(--accent); stroke-width:9; stroke-linecap:round; fill:none}
+.bouche--droite{transform:scaleX(-1)}
+.bouche__haut,.bouche__bas{transform-box:view-box; transform-origin:10px 30px}
+.croque .bouche line{stroke:var(--or)}
+.croque .bouche__haut{animation:machoire-haut .66s ease-in-out}
+.croque .bouche__bas{animation:machoire-bas .66s ease-in-out}
+@keyframes machoire-haut{0%{transform:rotate(0)}35%{transform:rotate(-17deg)}72%{transform:rotate(7deg)}100%{transform:rotate(0)}}
+@keyframes machoire-bas{0%{transform:rotate(0)}35%{transform:rotate(17deg)}72%{transform:rotate(-7deg)}100%{transform:rotate(0)}}
+.etiq--mange{animation:avale .66s ease-in-out}
+@keyframes avale{
+  0%{transform:none}
+  40%{transform:translateX(var(--dx,0)) scale(.84); background:var(--or-pale); border-color:var(--or)}
+  72%{transform:translateX(calc(var(--dx,0) / 3)) scale(1.04)}
+  100%{transform:none}
+}
+.legende{margin:14px 0 0; text-align:center; font-size:clamp(14px,2vw,17px); color:var(--doux)}
+.legende b{color:var(--or)}
 
 /* ---------- actions ---------- */
 .actions{display:flex; flex-wrap:wrap; gap:10px; margin:18px 0 0; align-items:center}
@@ -1111,7 +1155,8 @@ function sauver(){
 }
 /* la clé d'un exercice, pour la liste « à revoir » */
 function nettoyer(it){ const c=Object.assign({},it);
-  delete c.revu; delete c.rejoue; delete c.repris; delete c.propose; return c; }
+  delete c.revu; delete c.rejoue; delete c.repris; delete c.propose;
+  delete c.place; delete c.signes; delete c.main; return c; }
 function cleItem(onglet,it){
   return onglet==='nombres' ? it.nb+'·'+it.sens : JSON.stringify(nettoyer(it));
 }
@@ -1520,11 +1565,17 @@ function rendreDroite(){
     barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>corrigerEncadrer(sc,it)}]);
   }
   else if(it.type==='ranger'){
-    sc.appendChild(consigne('Range-les <em>'+(it.sens==='croissant'?'du plus petit au plus grand':'du plus grand au plus petit')+'</em>.',it));
-    const w=el('div','etiq-nbs');
-    it.nbs.forEach(v=>{ const e=el('span','etiq',String(v)); e.dataset.v=String(v); w.appendChild(e); });
-    sc.appendChild(w);
-    const ordre=el('div','ordre'); ordre.hidden=true; sc.appendChild(ordre);
+    sc.appendChild(consigne('Range-les <em>'+(it.sens==='croissant'?'du plus petit au plus grand':'du plus grand au plus petit')+'</em>, puis choisis les signes.',it));
+    if(!it.place || it.place.length!==it.nbs.length){
+      it.place=it.nbs.map(()=>null);
+      it.signes=it.nbs.slice(0,-1).map(()=>'?');
+    }
+    const z=el('div','ranger');
+    z.appendChild(el('div','ranger__pool'));
+    z.appendChild(el('div','ranger__piste'));
+    sc.appendChild(z);
+    const lg=el('p','legende'); lg.hidden=true; sc.appendChild(lg);
+    majRanger(sc,it);
     barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>corrigerRanger(sc,it)}]);
   }
   else if(it.type==='fleche'){
@@ -1560,6 +1611,7 @@ function clicPourPlacer(boite,it){
 }
 function corrigerEncadrer(sc,it){
   stopMinuteurs();
+  barre(sc,[]);
   const lo=Math.floor(it.nb/it.pas)*it.pas, hi=lo+it.pas;
   const trous=$$('.trou',sc);
   plusTard(0,()=>{ trous[0].textContent=lo; trous[0].classList.add('trou--plein');
@@ -1574,26 +1626,113 @@ function corrigerEncadrer(sc,it){
   });
   plusTard(1500,()=>finBoutons(sc,'droite',false));
 }
+/* la bouche qui croque : elle s'ouvre toujours du côté du plus grand */
+function bouche(signe){
+  const svg=sv('svg',{viewBox:'0 0 60 60', class:'bouche'+(signe==='>'?' bouche--droite':''), 'aria-hidden':'true'});
+  const h=sv('g',{class:'bouche__haut'}); h.appendChild(sv('line',{x1:11,y1:30,x2:52,y2:9}));
+  const b=sv('g',{class:'bouche__bas'});  b.appendChild(sv('line',{x1:11,y1:30,x2:52,y2:51}));
+  svg.appendChild(h); svg.appendChild(b);
+  return svg;
+}
+const SIGNES=['?','<','>','='];
+function poserCarte(it,i,v){
+  const j=it.place.indexOf(v); if(j>=0) it.place[j]=null;
+  it.place[i]=v;
+}
+function majRanger(sc,it){
+  const pool=$('.ranger__pool',sc), piste=$('.ranger__piste',sc);
+  if(!pool||!piste) return;
+  pool.textContent=''; piste.textContent='';
+  const posees=new Set(it.place.filter(v=>v!=null));
+  it.nbs.forEach(v=>{
+    if(posees.has(v)) return;
+    const c=el('button','etiq etiq--carte'+(it.main===v?' etiq--main':''),String(v));
+    c.type='button'; c.draggable=true; c.dataset.v=String(v);
+    c.setAttribute('aria-label','carte '+v);
+    c.addEventListener('click',()=>{ it.main=(it.main===v?null:v); majRanger(sc,it); });
+    c.addEventListener('dragstart',e=>{ it.main=v;
+      try{ e.dataTransfer.setData('text/plain',String(v)); }catch(err){} });
+    pool.appendChild(c);
+  });
+  it.place.forEach((v,i)=>{
+    if(i){
+      const sg=it.signes[i-1]||'?';
+      const b=el('button','signe-btn'); b.type='button';
+      b.setAttribute('aria-label','signe entre la case '+i+' et la case '+(i+1)+' : '+(sg==='?'?'à choisir':sg));
+      if(sg==='<'||sg==='>') b.appendChild(bouche(sg)); else b.textContent=sg;
+      b.addEventListener('click',()=>{
+        it.signes[i-1]=SIGNES[(SIGNES.indexOf(sg)+1)%SIGNES.length];
+        majRanger(sc,it);
+      });
+      piste.appendChild(b);
+    }
+    const s=el('div','slot'+(v!=null?' slot--plein':''));
+    s.dataset.i=String(i);
+    if(v!=null){
+      const c=el('button','etiq etiq--pose',String(v)); c.type='button';
+      c.setAttribute('aria-label','retirer '+v+' de la case '+(i+1));
+      c.addEventListener('click',e=>{ e.stopPropagation(); it.place[i]=null; majRanger(sc,it); });
+      s.appendChild(c);
+    }
+    s.addEventListener('click',()=>{
+      if(v==null && it.main!=null){ poserCarte(it,i,it.main); it.main=null; majRanger(sc,it); }
+    });
+    s.addEventListener('dragover',e=>{ e.preventDefault(); s.classList.add('slot--cible'); });
+    s.addEventListener('dragleave',()=>s.classList.remove('slot--cible'));
+    s.addEventListener('drop',e=>{
+      e.preventDefault(); s.classList.remove('slot--cible');
+      let v2=NaN; try{ v2=parseInt(e.dataTransfer.getData('text/plain'),10); }catch(err){}
+      if(isNaN(v2)) v2=it.main;
+      if(v2!=null && !isNaN(v2)){ poserCarte(it,i,v2); it.main=null; majRanger(sc,it); }
+    });
+    piste.appendChild(s);
+  });
+}
+function croquer(sc,i){
+  const boutons=$$('.signe-btn',sc), cases=$$('.slot',sc);
+  const b=boutons[i]; if(!b) return;
+  b.classList.add('croque');
+  const g=cases[i], d=cases[i+1];
+  const vg=parseInt(($('.etiq',g)||{}).textContent,10), vd=parseInt(($('.etiq',d)||{}).textContent,10);
+  const grand = vg>vd ? g : d;
+  const carte=$('.etiq',grand);
+  if(carte){
+    carte.style.setProperty('--dx', (grand===d?'-20px':'20px'));
+    carte.classList.add('etiq--mange');
+  }
+  plusTard(700,()=>{
+    b.classList.remove('croque');
+    if(carte){ carte.classList.remove('etiq--mange'); carte.classList.add('etiq--juste'); }
+  });
+}
 function corrigerRanger(sc,it){
   stopMinuteurs();
-  const tri=[...it.nbs].sort((a,b)=> it.sens==='croissant'? a-b : b-a);
-  const ordre=$('.ordre',sc); ordre.hidden=false; ordre.textContent='';
-  let t=0;
-  tri.forEach((v,k)=>{
-    plusTard(t,()=>{
-      if(k){ const s=el('span','signe', it.sens==='croissant'?'<':'>'); ordre.appendChild(s); }
-      const e=el('span','etiq etiq--range',String(v)); ordre.appendChild(e);
-      const src=sc.querySelector('.etiq-nbs .etiq[data-v="'+v+'"]');
-      if(src) src.classList.add('etiq--range');
-      if(!doux()) e.animate([{transform:'translateY(-18px) scale(.6)',opacity:0},{transform:'translateY(0) scale(1)',opacity:1}],
-        {duration:420,easing:'cubic-bezier(.2,1.1,.3,1)'});
-    });
-    t+=380;
+  barre(sc,[]);
+  const tri=it.nbs.slice().sort((a,b)=> it.sens==='croissant'? a-b : b-a);
+  const complet=it.place.every(v=>v!=null);
+  const ordreJuste=complet && it.place.every((v,i)=>v===tri[i]);
+  const signesPoses=it.signes.some(x=>x!=='?');
+  const signesJustes=complet && it.signes.every((x,i)=>{
+    const a=it.place[i], b=it.place[i+1];
+    return x==='<' ? a<b : x==='>' ? a>b : x==='=' ? a===b : false;
   });
-  plusTard(t+300,()=>finBoutons(sc,'droite',false));
+  /* on remet tout en ordre, avec les bons signes */
+  it.place=tri.slice();
+  it.signes=tri.slice(0,-1).map(()=> it.sens==='croissant'?'<':'>');
+  it.main=null;
+  majRanger(sc,it);
+  let t=450;
+  it.signes.forEach((x,i)=>{ plusTard(t,()=>croquer(sc,i)); t+=760; });
+  plusTard(t,()=>{
+    const lg=$('.legende',sc);
+    if(lg){ lg.hidden=false; lg.innerHTML='La bouche s’ouvre toujours du côté du <b>plus grand</b> : elle le croque.'; }
+  });
+  const juste = ordreJuste && (!signesPoses || signesJustes);
+  plusTard(t+450,()=>finBoutons(sc,'droite',juste));
 }
 function corrigerFleche(sc,it){
   stopMinuteurs();
+  barre(sc,[]);
   const boite=$('.droite',sc);
   const neuf=dessinerDroite(it.ligne,{fleche:it.cible,etiquette:it.cible});
   boite.replaceChildren(...neuf.childNodes);
@@ -1606,6 +1745,7 @@ function corrigerFleche(sc,it){
 }
 function corrigerPlacer(sc,it){
   stopMinuteurs();
+  barre(sc,[]);
   const boite=$('.droite',sc);
   const juste = it.propose===it.cible;
   const neuf=dessinerDroite(it.ligne,{fleche:it.cible,etiquette:it.cible,anime:true});
