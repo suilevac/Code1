@@ -97,7 +97,8 @@ button{font:inherit}
 .onglets button[aria-selected="true"]{
   background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700;
 }
-.reglages{display:flex; align-items:center; gap:14px; font-size:13px; color:var(--doux)}
+.ico{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; flex:none}
+.btn--outil{display:inline-flex; align-items:center; gap:8px; padding:9px 14px; font-size:15px}
 .bascule{display:inline-flex; align-items:center; gap:6px; cursor:pointer; user-select:none}
 .bascule input{width:16px; height:16px; accent-color:var(--accent); margin:0}
 .court{display:none}
@@ -115,7 +116,8 @@ main{padding:18px 20px 28px; max-width:1060px; margin:0 auto}
   background:var(--accent-pale); border-radius:999px; padding:4px 10px;
 }
 .palier__nom{font-family:var(--titre); font-size:17px; font-weight:700; margin:0}
-.palier__note{flex:1 1 100%; margin:2px 0 0; font-size:13.5px; color:var(--doux); max-width:72ch}
+.chip{font-family:var(--titre); font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--or); background:var(--or-pale); border-radius:999px; padding:4px 10px}
 
 .pastilles{display:flex; gap:7px; margin:0 0 12px; flex-wrap:wrap}
 .pastille{
@@ -164,7 +166,8 @@ main{padding:18px 20px 28px; max-width:1060px; margin:0 auto}
 .tk--rond .tk__t{padding:0 .13em}
 .tk--rond{margin:0 .04em}
 .tk__forme{position:absolute; left:0; right:0; top:.05em; bottom:.03em; overflow:visible; pointer-events:none}
-.tk--muette .tk__t{text-decoration:underline; text-decoration-thickness:.05em; text-underline-offset:.14em; color:#8c959f}
+.tk--muette .tk__t{text-decoration:underline; text-decoration-thickness:.05em; text-underline-offset:.14em}
+.scene--muettes-grises .tk--muette{color:#8c959f}
 .tk--siff .tk__t{text-decoration:underline double; text-decoration-thickness:.045em; text-underline-offset:.13em}
 
 /* la décomposition */
@@ -281,12 +284,7 @@ main{padding:18px 20px 28px; max-width:1060px; margin:0 auto}
 .bilan .actions{justify-content:center}
 
 /* ---------- pied ---------- */
-.pied{
-  max-width:1060px; margin:0 auto; padding:0 20px 34px;
-  display:flex; flex-wrap:wrap; gap:12px 20px; align-items:center;
-  font-size:13px; color:var(--doux);
-}
-.journal{display:flex; align-items:center; gap:5px}
+.journal{display:flex; align-items:center; gap:5px; flex-wrap:wrap; font-size:13px; color:var(--doux)}
 .journal i{
   width:12px; height:12px; border-radius:50%; background:var(--trait); display:inline-block;
 }
@@ -294,8 +292,6 @@ main{padding:18px 20px 28px; max-width:1060px; margin:0 auto}
 .journal i[data-note="2"]{background:#9cc96f}
 .journal i[data-note="1"]{background:#e2b23c}
 .journal i[data-note="0"]{background:var(--rouge)}
-.liens{display:flex; gap:14px; margin-left:auto; flex-wrap:wrap}
-.liens button{background:none; border:0; color:var(--accent); cursor:pointer; padding:0; font-size:13px; text-decoration:underline}
 
 /* ---------- applaudissements ---------- */
 .bravo{
@@ -344,15 +340,37 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
 @media (max-width:620px){
   .tete{padding:10px 16px}
   main{padding:14px 16px 24px}
-  .pied{padding:0 16px 28px}
   .scene{padding:18px 14px 20px}
   .btn{padding:11px 15px; font-size:15px}
   .onglets button{font-size:13.5px; padding:9px 8px}
-  .reglages{order:4; flex:1 1 100%}
+  .btn--outil span{display:none}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001s !important; transition-duration:.001s !important}
 }
+
+/* ---------- le panneau de réglages ---------- */
+.reg{padding:14px 0; border-top:1px solid var(--trait)}
+.reg:first-child{border-top:0; padding-top:4px}
+.reg h3{margin:0 0 8px; font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--doux)}
+.reg__aide{margin:0 0 8px; font-size:13px; color:var(--doux)}
+.reg__ligne{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin:8px 0 0}
+.reg__ligne label{font-size:14px; min-width:150px}
+.reg select{font:inherit; font-size:14px; padding:7px 9px; border:1px solid var(--trait);
+  border-radius:9px; background:var(--papier); color:var(--encre); flex:1 1 180px; min-width:0}
+.reg__cases{display:flex; flex-wrap:wrap; gap:7px; margin-top:8px}
+.case-fam{display:inline-flex; align-items:center; gap:6px; cursor:pointer; user-select:none;
+  border:1px solid var(--trait); border-radius:999px; padding:6px 12px; font-size:14px; background:var(--papier)}
+.case-fam input{accent-color:var(--accent); margin:0; width:15px; height:15px}
+.case-fam--on{border-color:var(--accent); background:var(--accent-pale); color:var(--accent-fonce); font-weight:700}
+.case-fam--off{opacity:.5}
+.segm{display:inline-flex; flex-wrap:wrap; gap:4px; background:var(--fond-2); border-radius:11px; padding:4px}
+.segm button{font-family:var(--titre); font-size:14px; font-weight:700; cursor:pointer; border:0;
+  background:transparent; color:var(--doux); padding:7px 13px; border-radius:8px}
+.segm button[aria-pressed="true"]{background:var(--papier); color:var(--encre); box-shadow:var(--ombre)}
+.revoir-liste{display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px}
+.revoir-liste span{font-family:var(--lecture); font-weight:700; font-size:17px;
+  background:var(--or-pale); color:var(--or); border-radius:8px; padding:3px 9px}
 
 /* ---------- la droite graduée (SVG) ---------- */
 .axe{stroke:var(--encre); stroke-width:4; stroke-linecap:round}
@@ -376,7 +394,6 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
 <header class="tete">
   <div class="tete__id">
     <h1>Le rituel des nombres</h1>
-    <p class="tete__sous">Dispositif 1 · ardoise et correction collective</p>
   </div>
 
   <div class="compteur">
@@ -388,14 +405,10 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
     <button class="rond" id="rituel-plus" type="button" aria-label="Rituel suivant">+</button>
   </div>
 
-  <div class="reglages">
-    <label class="bascule"><input type="checkbox" id="opt-son" checked> Applaudissements</label>
-    <label class="bascule" for="opt-nb">Nombres :
-      <select id="opt-nb" style="font:inherit;padding:3px 6px;border:1px solid var(--trait);border-radius:8px;background:var(--papier);color:var(--encre)">
-        <option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option>
-      </select>
-    </label>
-  </div>
+  <button class="btn btn--outil" id="btn-reglages" type="button" aria-haspopup="dialog">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6.5h9M19 6.5h2M3 12h3M13 12h8M3 17.5h11M21 17.5h0"></path><circle cx="15.5" cy="6.5" r="2.2"></circle><circle cx="9.5" cy="12" r="2.2"></circle><circle cx="17.5" cy="17.5" r="2.2"></circle></svg>
+    <span>Réglages</span>
+  </button>
 
   <nav class="onglets" role="tablist" aria-label="Les deux rituels du jour">
     <button role="tab" id="tab-nombres" aria-selected="true" aria-controls="panneau-nombres" type="button"><span class="long">1 · Lire et écrire les nombres</span><span class="court">1 · Les nombres</span></button>
@@ -408,7 +421,6 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
     <div class="palier">
       <span class="palier__etiq" id="nb-palier-etiq">Palier 1</span>
       <h2 class="palier__nom" id="nb-palier-nom">—</h2>
-      <p class="palier__note" id="nb-palier-note"></p>
     </div>
     <div class="pastilles" id="nb-pastilles" aria-label="Avancement du rituel"></div>
     <div id="nb-zone"></div>
@@ -418,21 +430,91 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
     <div class="palier">
       <span class="palier__etiq" id="dr-palier-etiq">Palier 1</span>
       <h2 class="palier__nom" id="dr-palier-nom">—</h2>
-      <p class="palier__note" id="dr-palier-note"></p>
     </div>
     <div class="pastilles" id="dr-pastilles" aria-label="Avancement du rituel"></div>
     <div id="dr-zone"></div>
   </section>
 </main>
 
-<footer class="pied">
-  <div class="journal" id="journal" title="Les dix derniers rituels">Journal :</div>
-  <div class="liens">
-    <button type="button" id="lien-memo">Mémo du code</button>
-    <button type="button" id="lien-progression">La progression de l’année</button>
-    <button type="button" id="lien-aide">Mode d’emploi</button>
+<dialog id="dlg-reglages">
+  <div class="dlg__barre"><strong>Réglages</strong>
+    <button class="btn" type="button" data-ferme="dlg-reglages">Fermer</button></div>
+  <div class="dlg__corps">
+
+    <section class="reg">
+      <h3>Aujourd’hui</h3>
+      <p id="reg-aujourdhui" style="margin:0"></p>
+    </section>
+
+    <section class="reg">
+      <h3>Difficulté</h3>
+      <label class="bascule"><input type="checkbox" id="reg-auto" checked> Suivre la progression du rituel</label>
+      <div class="reg__ligne"><label for="reg-palier-nb">Les nombres</label>
+        <select id="reg-palier-nb"></select></div>
+      <div class="reg__ligne"><label for="reg-palier-dr">La droite graduée</label>
+        <select id="reg-palier-dr"></select></div>
+    </section>
+
+    <section class="reg">
+      <h3>Les nombres à convoquer</h3>
+      <p class="reg__aide">Par défaut, le palier choisit. Cochez vous-même les familles déjà travaillées pour
+        les faire revenir.</p>
+      <label class="bascule"><input type="checkbox" id="reg-fam-auto" checked> Laisser le palier choisir</label>
+      <div class="reg__cases" id="reg-familles"></div>
+    </section>
+
+    <section class="reg">
+      <h3>Dans quel sens ?</h3>
+      <div class="segm" id="reg-sens">
+        <button type="button" data-v="auto">Selon le palier</button>
+        <button type="button" data-v="lettres">Lettres → chiffres</button>
+        <button type="button" data-v="chiffres">Chiffres → lettres</button>
+        <button type="button" data-v="deux">Les deux</button>
+      </div>
+    </section>
+
+    <section class="reg">
+      <h3>Combien d’exercices</h3>
+      <div class="reg__ligne"><label for="reg-nb-nombres">Les nombres</label>
+        <select id="reg-nb-nombres"><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></div>
+      <div class="reg__ligne"><label for="reg-nb-droite">La droite graduée</label>
+        <select id="reg-nb-droite"><option value="0">Selon le palier</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
+    </section>
+
+    <section class="reg">
+      <h3>Affichage</h3>
+      <div class="reg__ligne"><label>Lettres muettes</label>
+        <div class="segm" id="reg-muettes">
+          <button type="button" data-v="couleur">Couleur du son</button>
+          <button type="button" data-v="gris">En gris</button>
+        </div></div>
+      <div class="reg__ligne"><label class="bascule"><input type="checkbox" id="reg-son"> Applaudissements</label></div>
+    </section>
+
+    <section class="reg">
+      <h3>À revoir</h3>
+      <p class="reg__aide">Les nombres marqués « À revoir » reviennent à la fin du rituel, puis au début du
+        suivant, jusqu’à ce qu’ils soient bien écrits.</p>
+      <div class="revoir-liste" id="reg-revoir"></div>
+      <button class="btn" type="button" id="reg-revoir-vider">Vider la liste</button>
+    </section>
+
+    <section class="reg">
+      <h3>Journal</h3>
+      <div class="journal" id="journal" title="Les dix derniers rituels"></div>
+    </section>
+
+    <section class="reg">
+      <h3>Les mémos</h3>
+      <div class="actions" style="margin-top:0">
+        <button class="btn" type="button" id="lien-memo">Le code de la classe</button>
+        <button class="btn" type="button" id="lien-progression">La progression</button>
+        <button class="btn" type="button" id="lien-aide">Mode d’emploi</button>
+      </div>
+    </section>
+
   </div>
-</footer>
+</dialog>
 
 <dialog id="dlg-memo">
   <div class="dlg__barre"><strong>Mémo du code de la classe</strong>
@@ -448,6 +530,8 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
       le <em>g</em> et le <em>t</em> de <em>vingt</em>, le <em>s</em> de <em>quatre-vingts</em>.<br>
       <strong>Double trait</strong> : la lettre fait le son [s] — le <em>c</em> de <em>cinq</em> et de <em>cent</em>,
       le <em>x</em> de <em>six</em>, <em>dix</em> et <em>soixante</em>.</p>
+    <p>Une lettre muette garde la couleur et la forme de son son : le <em>e</em> final de <em>quatre</em> reste
+      dans la famille du [e], avec son trait. Les réglages permettent de les afficher en gris à la place.</p>
     <p>Le codage des mots-nombres est celui de l’affichage de la classe, repris de <em>Lire en couleurs</em> :
       dans <em>vingt-deux</em>, le <em>t</em> garde son trait de lettre muette, comme sur l’affiche.</p>
   </div>
@@ -475,8 +559,9 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
   <div class="dlg__corps">
     <h3>Le déroulé</h3>
     <ol>
-      <li>Le nombre s’affiche écrit en lettres, codé comme sur l’affichage de la classe. Les élèves l’écrivent
-        en chiffres sur l’ardoise.</li>
+      <li>Le nombre s’affiche écrit en lettres, codé comme sur l’affichage de la classe : chaque lettre garde
+        la couleur et la forme de son son, les lettres muettes comprises, soulignées d’un trait simple.
+        Les élèves l’écrivent en chiffres sur l’ardoise.</li>
       <li>On lève les ardoises, puis <strong>Correction</strong> : les mots glissent dans les cases et deviennent
         des chiffres. Un élève peut aussi venir écrire dans les cases avant la correction — si c’est juste,
         les applaudissements partent tout seuls.</li>
@@ -491,9 +576,16 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
     <h3>Le s</h3>
     <p>Dès qu’un nombre contient <em>vingt</em>, <em>cent</em> ou <em>mille</em>, la règle du <em>s</em> s’affiche
       à la correction, avec le <em>s</em> en évidence quand il en faut un et barré quand il n’en faut pas.</p>
+    <h3>Les réglages</h3>
+    <p>Le bouton <strong>Réglages</strong> ouvre tout ce qui se règle : monter ou descendre d’un palier,
+      choisir soi-même les familles de nombres à convoquer parmi celles déjà travaillées, forcer le sens,
+      changer le nombre d’exercices, et afficher les lettres muettes en couleur ou en gris.</p>
+    <h3>À revoir</h3>
+    <p>Un nombre marqué <strong>À revoir</strong> revient une fois en fin de rituel, puis au début des rituels
+      suivants, jusqu’à ce qu’il soit bien écrit. La liste se consulte et se vide dans les réglages.</p>
     <h3>Garder sa place</h3>
-    <p>Le numéro du rituel et les résultats sont gardés dans ce navigateur. Si la mémoire est perdue
-      (navigation privée, autre ordinateur), il suffit de retaper le numéro du jour dans le bandeau.</p>
+    <p>Le numéro du rituel, les réglages et les résultats sont gardés dans ce navigateur. Si la mémoire est
+      perdue (navigation privée, autre ordinateur), il suffit de retaper le numéro du jour dans le bandeau.</p>
     <h3>Ce que la page ne peut pas faire</h3>
     <p>L’impression n’est pas possible depuis une page publiée : le rituel se mène à l’écran, au vidéoprojecteur
       ou au TNI.</p>
@@ -552,7 +644,13 @@ const MOTS = {
 
 function jeton(src,cle){
   const t={src:src, k:'c', fam:null, forme:null, mark:'none'};
-  if(cle==='_'){ t.k='m'; }
+  if(cle==='_'){
+    /* une lettre muette garde la couleur et la forme de son son (tableau Aloé) ;
+       le trait simple dit qu'elle ne se prononce pas */
+    t.k='m';
+    const son=DEFAUT[String(src).toLowerCase()];
+    if(son && SONS[son]){ t.fam=SONS[son].f; t.forme=SONS[son].forme; }
+  }
   else if(cle==='s2'){ t.k='c'; t.mark='double'; }
   else if(SONS[cle]){ t.k='v'; t.fam=SONS[cle].f; t.forme=SONS[cle].forme; }
   return t;
@@ -586,7 +684,7 @@ function elJetons(jetons){
   const f=document.createDocumentFragment();
   for(const tk of jetons){
     const sp=el('span','tk');
-    if(tk.k==='v'){
+    if(tk.k==='v' || (tk.k==='m' && tk.fam)){
       sp.classList.add('tk--v');
       sp.style.setProperty('--c', FAMILLES[tk.fam]);
       if(tk.forme==='rond'){ sp.classList.add('tk--rond'); sp.appendChild(formeRond()); }
@@ -684,19 +782,19 @@ function planCorrection(n, segs){
 function secret(n){
   const r=n%100, d=Math.floor(r/10), u=r%10, motDix=U[10+u];
   if(d===7) return {titre:'Le 1 secret du 7',
-    html:`<b>soixante</b>, c’est 6 dizaines. Et <b>${motDix}</b> cache <span class="gold">encore 1 dizaine</span>.
-          6 + 1 = <span class="gold">7 dizaines</span> → on écrit un <span class="gold">7</span>.`};
+    html:`<b>soixante</b> → 6 dizaines. <b>${motDix}</b> → encore <span class="gold">1 dizaine</span>.
+          6 + 1 = <span class="gold">7 dizaines</span>.`};
   if(d===9) return {titre:'Le 1 secret du 9',
-    html:`<b>quatre-vingt</b>, c’est 8 dizaines. Et <b>${motDix}</b> cache <span class="gold">encore 1 dizaine</span>.
-          8 + 1 = <span class="gold">9 dizaines</span> → on écrit un <span class="gold">9</span>.`};
+    html:`<b>quatre-vingt</b> → 8 dizaines. <b>${motDix}</b> → encore <span class="gold">1 dizaine</span>.
+          8 + 1 = <span class="gold">9 dizaines</span>.`};
   if(d===8) return {titre:'Quatre-vingts',
-    html:`<b>quatre-vingts</b>, c’est 4 paquets de 20 : 20 + 20 + 20 + 20 = 80 → <span class="gold">8 dizaines</span>.`};
+    html:`4 paquets de 20 → <span class="gold">8 dizaines</span>.`};
   if(d===6) return {titre:'Soixante',
-    html:`<b>soixante</b>, c’est 6 dizaines → on écrit un <span class="gold">6</span>, et rien ne se cache.`};
+    html:`<b>soixante</b> → <span class="gold">6 dizaines</span>, rien de caché.`};
   if(r>=11&&r<=19) return {titre:'Le 1 caché',
-    html:`<b>${U[r]}</b>, c’est <span class="gold">1 dizaine</span> et ${r-10} unité${r-10>1?'s':''} → on écrit <span class="gold">1</span> puis ${r-10}.`};
+    html:`<b>${U[r]}</b> → <span class="gold">1 dizaine</span> et ${r-10}.`};
   if(r===10) return {titre:'Dix',
-    html:`<b>dix</b>, c’est <span class="gold">1 dizaine</span> et 0 unité → <span class="gold">1</span> puis <span class="gold">0</span>.`};
+    html:`<b>dix</b> → <span class="gold">1 dizaine</span> et <span class="gold">0</span>.`};
   return null;
 }
 
@@ -704,15 +802,15 @@ function secret(n){
 function regleS(n){
   const r=n%100, c=(n>=100&&n<1000)?Math.floor(n/100):0, d=Math.floor(r/10), u=r%10;
   const lignes=[];
-  if(n>=1000) lignes.push('<b>mille</b> ne prend <em>jamais</em> de s.');
-  if(c===1) lignes.push('<b>cent</b> tout seul : jamais de s.');
+  if(n>=1000) lignes.push('<b>mille</b> : jamais de s.');
+  if(c===1) lignes.push('<b>cent</b> seul : jamais de s.');
   if(c>=2) lignes.push(r===0
-    ? `on écrit <b>${U[c]} cent<span class="ess">s</span></b> : plusieurs centaines et <em>rien derrière</em> → cent prend un s.`
-    : `on écrit <b>${U[c]} cent<span class="pass">s</span></b> : un nombre vient derrière → cent ne prend <em>pas</em> de s.`);
-  if(r===80) lignes.push('on écrit <b>quatre-vingt<span class="ess">s</span></b> : rien ne vient derrière → un s.');
-  else if(d===8) lignes.push(`on écrit <b>quatre-vingt<span class="pass">s</span>-${U[u]}</b> : un nombre vient derrière → pas de s.`);
-  else if(d===9) lignes.push(`on écrit <b>quatre-vingt<span class="pass">s</span>-${U[10+u]}</b> : un nombre vient derrière → pas de s.`);
-  else if(d===2) lignes.push('<b>vingt</b> ne prend un s que dans <b>quatre-vingts</b>.');
+    ? `<b>${U[c]} cent<span class="ess">s</span></b> : rien derrière → un s.`
+    : `<b>${U[c]} cent<span class="pass">s</span></b> : un nombre derrière → pas de s.`);
+  if(r===80) lignes.push('<b>quatre-vingt<span class="ess">s</span></b> : rien derrière → un s.');
+  else if(d===8) lignes.push(`<b>quatre-vingt<span class="pass">s</span>-${U[u]}</b> : un nombre derrière → pas de s.`);
+  else if(d===9) lignes.push(`<b>quatre-vingt<span class="pass">s</span>-${U[10+u]}</b> : un nombre derrière → pas de s.`);
+  else if(d===2) lignes.push('<b>vingt</b> : un s seulement dans <b>quatre-vingts</b>.');
   return lignes;
 }
 
@@ -757,6 +855,22 @@ const PALIERS_NB=[
  {de:60, nom:'De 0 à mille', pool:[0,999], fixes:[[1000]], rappel:[60,99], inverse:0.5, piege:true,
   note:'Mille entre en scène : quatre cases, et un mot qui ne prend jamais de s.'}
 ];
+const FAM_NB=[
+ {cle:'p16', nom:'1 à 16',              pool:[1,16]},
+ {cle:'t19', nom:'17 à 19',             pool:[17,19]},
+ {cle:'dz',  nom:'dizaines entières',   liste:[20,30,40,50,60,70,80,90]},
+ {cle:'20',  nom:'20 à 59',             pool:[20,59]},
+ {cle:'60',  nom:'60 à 69',             pool:[60,69]},
+ {cle:'70',  nom:'70 à 79',             pool:[70,79]},
+ {cle:'80',  nom:'80 à 89',             pool:[80,89]},
+ {cle:'90',  nom:'90 à 99',             pool:[90,99]},
+ {cle:'c00', nom:'centaines entières',  liste:[100,200,300,400,500,600,700,800,900]},
+ {cle:'c1',  nom:'100 à 199',           pool:[100,199]},
+ {cle:'c2',  nom:'200 à 999',           pool:[200,999]},
+ {cle:'m',   nom:'mille',               liste:[1000]}
+];
+const tirerFam=(f,rnd)=> f.liste ? choix(rnd,f.liste) : tire(rnd,f.pool[0],f.pool[1]);
+
 function palier(table,n){ let p=table[0]; for(const q of table) if(n>=q.de) p=q; return p; }
 function rangPalier(table,n){ let r=0; table.forEach((q,i)=>{ if(n>=q.de) r=i; }); return r; }
 
@@ -766,23 +880,37 @@ function pieger(v,rnd,max){
   const v2=c+choix(rnd,[6,7,8,9])*10+u;
   return v2<=max ? v2 : v;
 }
-function genNombres(n,k){
-  const p=palier(PALIERS_NB,n), rnd=graine(n*7919+101);
+function genNombres(n,k,o){
+  o=o||{};
+  const p = (o.palierIdx!=null && PALIERS_NB[o.palierIdx]) ? PALIERS_NB[o.palierIdx] : palier(PALIERS_NB,n);
+  const fams = (o.familles && o.familles.length) ? FAM_NB.filter(f=>o.familles.indexOf(f.cle)>=0) : null;
+  const sens = o.sens || 'auto';
+  const sel = (o.palierIdx!=null?(o.palierIdx+1)*331:0) + (fams?fams.length*37+11:0)
+            + (sens==='lettres'?2:sens==='chiffres'?3:sens==='deux'?5:0);
+  const rnd=graine(n*7919+101+sel);
   const vus=new Set(), liste=[];
   const pose=v=>{ if(v==null||vus.has(v)) return false; vus.add(v); liste.push(v); return true; };
-  if(p.vedettes) pose(choix(rnd,p.vedettes));
-  if(p.fixes) p.fixes.forEach(f=>{ if(liste.length<k) pose(choix(rnd,f)); });
-  if(p.rappel && liste.length<k) pose(tire(rnd,p.rappel[0],p.rappel[1]));
-  if(p.vedettes && k>=5 && liste.length<k) pose(choix(rnd,p.vedettes));
   let garde=0;
-  while(liste.length<k && garde++<400){
-    let v=tire(rnd,p.pool[0],p.pool[1]);
-    if(p.piege && rnd()<0.45) v=pieger(v,rnd,p.pool[1]);
-    pose(v);
+  if(fams){
+    fams.forEach(f=>{ if(liste.length<k) pose(tirerFam(f,rnd)); });
+    while(liste.length<k && garde++<400) pose(tirerFam(choix(rnd,fams),rnd));
+  }else{
+    if(p.vedettes) pose(choix(rnd,p.vedettes));
+    if(p.fixes) p.fixes.forEach(f=>{ if(liste.length<k) pose(choix(rnd,f)); });
+    if(p.rappel && liste.length<k) pose(tire(rnd,p.rappel[0],p.rappel[1]));
+    if(p.vedettes && k>=5 && liste.length<k) pose(choix(rnd,p.vedettes));
+    while(liste.length<k && garde++<400){
+      let v=tire(rnd,p.pool[0],p.pool[1]);
+      if(p.piege && rnd()<0.45) v=pieger(v,rnd,p.pool[1]);
+      pose(v);
+    }
   }
   brasser(liste,rnd);
-  const items=liste.slice(0,k).map(v=>({nb:v, sens:(p.inverse>0 && rnd()<p.inverse)?'chiffres':'lettres'}));
-  if(p.inverse>0){
+  const part = sens==='lettres'?0 : sens==='chiffres'?1 : sens==='deux'?0.5 : p.inverse;
+  const items=liste.slice(0,k).map(v=>({nb:v, sens:(part>0 && rnd()<part)?'chiffres':'lettres'}));
+  if(part>=1) items.forEach(i=>i.sens='chiffres');
+  else if(part<=0) items.forEach(i=>i.sens='lettres');
+  else if(items.length>1){
     if(!items.some(i=>i.sens==='chiffres')) items[items.length-1].sens='chiffres';
     if(!items.some(i=>i.sens==='lettres'))  items[0].sens='lettres';
   }
@@ -846,9 +974,12 @@ function nbPiege(rnd,max){
   const v = cent + d*10 + tire(rnd,0,9);
   return v>=max ? Math.max(2, max-1-tire(rnd,0,9)) : Math.max(2,v);
 }
-function genDroite(n){
-  const p=palier(PALIERS_DR,n), rnd=graine(n*104729+7);
-  const k=p.items;
+function genDroite(n,o){
+  o=o||{};
+  const idx = (o.palierIdx!=null && PALIERS_DR[o.palierIdx]) ? o.palierIdx : rangPalier(PALIERS_DR,n);
+  const p = PALIERS_DR[idx];
+  const rnd=graine(n*104729+7+(o.palierIdx!=null?(o.palierIdx+1)*277:0)+(o.items||0)*13);
+  const k=o.items||p.items;
   const types=[];
   types.push('encadrer'); types.push('ranger');
   types.push((n%2===0 && p.types.includes('placer')) ? 'placer' : 'fleche');
@@ -888,7 +1019,7 @@ function genDroite(n){
       const pasTotal=Math.round((L.b-L.a)/L.pas);
       let k2=tire(rnd,1,pasTotal-1);
       /* à partir du palier 5, viser une graduation sans étiquette */
-      if(rangPalier(PALIERS_DR,n)>=4){
+      if(idx>=4){
         let garde=0;
         while(((L.a+k2*L.pas)%L.lab===0) && garde++<40) k2=tire(rnd,1,pasTotal-1);
       }
@@ -938,9 +1069,10 @@ function dessinerDroite(L,opts){
    7. L’état du rituel
    ============================================================= */
 const CLE='rituel.nombres.v1';
-const ETAT={ rituel:1, onglet:'nombres', son:true, nbNombres:5,
+const ETAT={ rituel:1, onglet:'nombres', son:true, nbNombres:5, nbDroite:0,
+  muettes:'couleur', auto:true, palierNb:0, palierDr:0, familles:[], sens:'auto',
   idx:{nombres:0,droite:0}, items:{nombres:[],droite:[]}, res:{nombres:[],droite:[]},
-  histo:{nombres:{},droite:{}} };
+  histo:{nombres:{},droite:{}}, revoir:{nombres:[],droite:[]} };
 
 function charger(){
   try{
@@ -949,7 +1081,15 @@ function charger(){
     if(Number.isFinite(o.rituel)) ETAT.rituel=Math.min(200,Math.max(1,o.rituel|0));
     if(o.onglet==='droite'||o.onglet==='nombres') ETAT.onglet=o.onglet;
     if(typeof o.son==='boolean') ETAT.son=o.son;
-    if(Number.isFinite(o.nbNombres)) ETAT.nbNombres=Math.min(7,Math.max(3,o.nbNombres|0));
+    if(Number.isFinite(o.nbNombres)) ETAT.nbNombres=Math.min(8,Math.max(3,o.nbNombres|0));
+    if(Number.isFinite(o.nbDroite)) ETAT.nbDroite=Math.min(5,Math.max(0,o.nbDroite|0));
+    if(o.muettes==='gris'||o.muettes==='couleur') ETAT.muettes=o.muettes;
+    if(typeof o.auto==='boolean') ETAT.auto=o.auto;
+    if(Number.isFinite(o.palierNb)) ETAT.palierNb=o.palierNb|0;
+    if(Number.isFinite(o.palierDr)) ETAT.palierDr=o.palierDr|0;
+    if(Array.isArray(o.familles)) ETAT.familles=o.familles.filter(c=>FAM_NB.some(f=>f.cle===c));
+    if(['auto','lettres','chiffres','deux'].indexOf(o.sens)>=0) ETAT.sens=o.sens;
+    if(o.revoir&&Array.isArray(o.revoir.nombres)) ETAT.revoir=o.revoir;
     if(o.histo&&o.histo.nombres) ETAT.histo=o.histo;
     if(o.enCours===ETAT.rituel && o.idx && o.res){ ETAT.idx=o.idx; ETAT.res=o.res; ETAT.reprise=true; }
   }catch(e){}
@@ -957,12 +1097,38 @@ function charger(){
 function sauver(){
   try{
     localStorage.setItem(CLE, JSON.stringify({ rituel:ETAT.rituel, onglet:ETAT.onglet, son:ETAT.son,
-      nbNombres:ETAT.nbNombres, histo:ETAT.histo, enCours:ETAT.rituel, idx:ETAT.idx, res:ETAT.res }));
+      nbNombres:ETAT.nbNombres, nbDroite:ETAT.nbDroite, muettes:ETAT.muettes, auto:ETAT.auto,
+      palierNb:ETAT.palierNb, palierDr:ETAT.palierDr, familles:ETAT.familles, sens:ETAT.sens,
+      revoir:ETAT.revoir, histo:ETAT.histo, enCours:ETAT.rituel, idx:ETAT.idx, res:ETAT.res }));
   }catch(e){}
 }
+/* la clé d'un exercice, pour la liste « à revoir » */
+function nettoyer(it){ const c=Object.assign({},it);
+  delete c.revu; delete c.rejoue; delete c.repris; delete c.propose; return c; }
+function cleItem(onglet,it){
+  return onglet==='nombres' ? it.nb+'·'+it.sens : JSON.stringify(nettoyer(it));
+}
+function ajouterRevoir(onglet,it){
+  const l=ETAT.revoir[onglet], c=cleItem(onglet,it);
+  if(l.some(x=>cleItem(onglet,x)===c)) return;
+  l.unshift(nettoyer(it)); if(l.length>12) l.length=12;
+}
+function retirerRevoir(onglet,it){
+  const c=cleItem(onglet,it);
+  ETAT.revoir[onglet]=ETAT.revoir[onglet].filter(x=>cleItem(onglet,x)!==c);
+}
+
 function preparer(reset){
-  ETAT.items.nombres=genNombres(ETAT.rituel, ETAT.nbNombres);
-  ETAT.items.droite=genDroite(ETAT.rituel);
+  const pIdx = ETAT.auto ? null : rangActif(PALIERS_NB,ETAT.palierNb);
+  const dIdx = ETAT.auto ? null : rangActif(PALIERS_DR,ETAT.palierDr);
+  const base=genNombres(ETAT.rituel, ETAT.nbNombres,
+    {palierIdx:pIdx, familles:ETAT.familles, sens:ETAT.sens});
+  const rev=ETAT.revoir.nombres.slice(0,2).map(it=>Object.assign({},it,{revu:true}));
+  const dejaVus=new Set(rev.map(i=>i.nb));
+  ETAT.items.nombres=rev.concat(base.filter(i=>!dejaVus.has(i.nb))).slice(0,ETAT.nbNombres);
+  const baseD=genDroite(ETAT.rituel,{palierIdx:dIdx, items:ETAT.nbDroite||0});
+  const revD=ETAT.revoir.droite.slice(0,1).map(it=>Object.assign({},it,{revu:true}));
+  ETAT.items.droite=revD.concat(baseD).slice(0, Math.max(2,baseD.length));
   if(reset || !ETAT.reprise){
     ETAT.idx={nombres:0,droite:0};
     ETAT.res={nombres:[],droite:[]};
@@ -1099,6 +1265,13 @@ function htmlDecomp(segs,n){
   return parts.map(p=>'<b>'+p+'</b>').join('<span class="plus"> + </span>')+'<span class="plus"> = </span><b>'+n+'</b>';
 }
 
+function consigne(html,it){
+  const p=el('p','consigne'); p.innerHTML=html;
+  if(it && (it.revu||it.repris)){
+    const c=el('span','chip','on le revoit'); c.style.marginLeft='10px'; p.appendChild(c);
+  }
+  return p;
+}
 function barre(sc, boutons){
   let b=$('.actions',sc);
   if(!b){ b=el('div','actions'); sc.appendChild(b); }
@@ -1118,11 +1291,10 @@ function rendreNombres(){
   majPastilles('nombres');
   if(i>=items.length){ z.appendChild(bilan('nombres')); return; }
   const it=items[i];
-  const sc=el('section','scene');
+  const sc=el('section','scene'+(ETAT.muettes==='gris'?' scene--muettes-grises':''));
 
   if(it.sens==='lettres'){
-    const cg=el('p','consigne'); cg.innerHTML='Lis ce nombre, puis écris-le <em>en chiffres</em> sur ton ardoise.';
-    sc.appendChild(cg);
+    sc.appendChild(consigne('Écris ce nombre <em>en chiffres</em>.',it));
     sc.appendChild(blocMot(it.nb));
     const dec=el('div','decomp'); dec.hidden=true; sc.appendChild(dec);
     sc.appendChild(blocCases(it.nb,true));
@@ -1140,11 +1312,10 @@ function rendreNombres(){
     const lancer=()=>corrigerLettres(sc,it);
     barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:lancer}]);
   }else{
-    const cg=el('p','consigne'); cg.innerHTML='Lis ce nombre, puis écris-le <em>en lettres</em> sur ton ardoise.';
-    sc.appendChild(cg);
+    sc.appendChild(consigne('Écris ce nombre <em>en lettres</em>.',it));
     sc.appendChild(blocCases(it.nb,false));
     const rep=el('div','reponse');
-    const lab=el('label','', 'Ce que la classe a écrit (facultatif)'); lab.htmlFor='saisie-lettres';
+    const lab=el('label','', 'Ce que la classe a écrit'); lab.htmlFor='saisie-lettres';
     const inp=document.createElement('input');
     inp.type='text'; inp.id='saisie-lettres'; inp.autocomplete='off';
     inp.placeholder='par exemple : quatre-vingts';
@@ -1161,8 +1332,17 @@ function rendreNombres(){
 
 function finBoutons(sc,onglet,juste){
   const suite=etat=>{
-    ETAT.res[onglet][ETAT.idx[onglet]]=etat;
-    if(etat==='ok') applaudir();
+    const i=ETAT.idx[onglet], items=ETAT.items[onglet], it=items[i];
+    ETAT.res[onglet][i]=etat;
+    if(etat==='ok'){ applaudir(); if(it) retirerRevoir(onglet,it); }
+    if(etat==='revoir' && it){
+      ajouterRevoir(onglet,it);
+      if(!it.rejoue){   /* on le remet une fois en fin de rituel */
+        it.rejoue=true;
+        items.push(Object.assign({},nettoyer(it),{rejoue:true,repris:true}));
+        ETAT.res[onglet].push(null);
+      }
+    }
     plusTard(etat==='ok'?900:0, ()=>{
       ETAT.idx[onglet]=ETAT.idx[onglet]+1; sauver();
       onglet==='nombres'?rendreNombres():rendreDroite();
@@ -1185,8 +1365,7 @@ function corrigerLettres(sc,it){
   const complet=saisi.length===attendu.length && saisi.every(v=>v!=='');
   const juste=complet && saisi.join('')===attendu.join('');
   const aDiz=segs.some(s=>s.role==='dizaine');
-  barre(sc,[{txt:'Correction en cours…',cls:'btn',fn:()=>{}}]);
-  $$('.actions .btn',sc).forEach(b=>b.disabled=true);
+  barre(sc,[]);
 
   let t=0;
   segs.forEach((s,i)=>{
@@ -1231,7 +1410,7 @@ function corrigerLettres(sc,it){
   const rs=regleS(n);
   if(rs.length){
     plusTard(t,()=>{ const b=$('.regle',sc); b.hidden=false;
-      b.innerHTML='<h3>Le s, on le met ou pas ?</h3><p>'+rs.join('<br>')+'</p>'; });
+      b.innerHTML='<h3>Le s</h3><p>'+rs.join('<br>')+'</p>'; });
     t+=300;
   }
   plusTard(t+200,()=>finBoutons(sc,'nombres',juste));
@@ -1272,8 +1451,7 @@ function corrigerChiffres(sc,it){
   const saisie=($('#saisie-lettres',sc)||{}).value||'';
   const bon=enLettres(n);
   const etat = !saisie.trim() ? 'vide' : (normal(saisie)===normal(bon) ? 'ok' : (sansS(saisie)===sansS(bon) ? 'presque' : 'non'));
-  barre(sc,[{txt:'Correction en cours…',cls:'btn',fn:()=>{}}]);
-  $$('.actions .btn',sc).forEach(b=>b.disabled=true);
+  barre(sc,[]);
 
   const mot=$('.mot',sc);
   mot.hidden=false;
@@ -1292,7 +1470,7 @@ function corrigerChiffres(sc,it){
   const rs=regleS(n);
   if(rs.length){
     plusTard(t,()=>{ const b=$('.regle',sc); b.hidden=false;
-      b.innerHTML='<h3>Le s, on le met ou pas ?</h3><p>'+rs.join('<br>')+'</p>'; });
+      b.innerHTML='<h3>Le s</h3><p>'+rs.join('<br>')+'</p>'; });
     t+=340;
   }
   plusTard(t,()=>{
@@ -1321,12 +1499,10 @@ function rendreDroite(){
   majPastilles('droite');
   if(i>=items.length){ z.appendChild(bilan('droite')); return; }
   const it=items[i];
-  const sc=el('section','scene');
+  const sc=el('section','scene'+(ETAT.muettes==='gris'?' scene--muettes-grises':''));
 
   if(it.type==='encadrer'){
-    const cg=el('p','consigne');
-    cg.innerHTML='Encadre <em>'+it.nb+'</em> '+motEnc(it.pas)+', sur ton ardoise.';
-    sc.appendChild(cg);
+    sc.appendChild(consigne('Encadre <em>'+it.nb+'</em> '+motEnc(it.pas)+'.',it));
     const row=el('div','encadre');
     const t1=el('span','trou','?'), t2=el('span','trou','?');
     row.appendChild(t1); row.appendChild(el('span','signe','<'));
@@ -1337,9 +1513,7 @@ function rendreDroite(){
     barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>corrigerEncadrer(sc,it)}]);
   }
   else if(it.type==='ranger'){
-    const cg=el('p','consigne');
-    cg.innerHTML='Range ces nombres <em>'+(it.sens==='croissant'?'du plus petit au plus grand':'du plus grand au plus petit')+'</em> sur ton ardoise.';
-    sc.appendChild(cg);
+    sc.appendChild(consigne('Range-les <em>'+(it.sens==='croissant'?'du plus petit au plus grand':'du plus grand au plus petit')+'</em>.',it));
     const w=el('div','etiq-nbs');
     it.nbs.forEach(v=>{ const e=el('span','etiq',String(v)); e.dataset.v=String(v); w.appendChild(e); });
     sc.appendChild(w);
@@ -1347,20 +1521,14 @@ function rendreDroite(){
     barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>corrigerRanger(sc,it)}]);
   }
   else if(it.type==='fleche'){
-    const cg=el('p','consigne');
-    cg.innerHTML='Quel nombre montre la flèche ? Écris-le <em>en chiffres</em> sur ton ardoise.';
-    sc.appendChild(cg);
+    sc.appendChild(consigne('Quel nombre montre la flèche ?',it));
     sc.appendChild(dessinerDroite(it.ligne,{fleche:it.cible}));
     barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>corrigerFleche(sc,it)}]);
   }
   else{
-    const cg=el('p','consigne');
-    cg.innerHTML='Où se place <em>'+it.cible+'</em> sur cette droite ? Clique sur la graduation, ou montre-la au tableau.';
-    sc.appendChild(cg);
+    sc.appendChild(consigne('Où se place <em>'+it.cible+'</em> ?',it));
     const d=dessinerDroite(it.ligne,{});
     sc.appendChild(d);
-    const aide=el('p','palier__note','La droite va de '+it.ligne.a+' à '+it.ligne.b+', les graduations avancent de '+it.ligne.pas+' en '+it.ligne.pas+'.');
-    aide.style.textAlign='center'; sc.appendChild(aide);
     clicPourPlacer(d,it);
     barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>corrigerPlacer(sc,it)}]);
   }
@@ -1425,7 +1593,7 @@ function corrigerFleche(sc,it){
   const nb=$('.fleche__nb',boite);
   if(nb && !doux()) nb.animate([{opacity:0},{opacity:1}],{duration:500});
   const info=el('div','secret');
-  info.innerHTML='<h3>On vérifie</h3><p>La flèche est sur <b>'+it.cible+'</b> : '+enLettres(it.cible)+'.</p>';
+  info.innerHTML='<p><b>'+it.cible+'</b> — '+enLettres(it.cible)+'</p>';
   sc.insertBefore(info,$('.actions',sc));
   plusTard(700,()=>finBoutons(sc,'droite',false));
 }
@@ -1438,8 +1606,8 @@ function corrigerPlacer(sc,it){
   if(it.propose!=null){
     const info=el('div','secret');
     info.innerHTML = juste
-      ? '<h3>On vérifie</h3><p>C’était bien là : <b>'+it.cible+'</b> 👏</p>'
-      : '<h3>On vérifie</h3><p>La classe avait montré <b>'+it.propose+'</b> ; '+it.cible+' se place ici.</p>';
+      ? '<p>C’était bien là : <b>'+it.cible+'</b> 👏</p>'
+      : '<p>La classe avait montré <b>'+it.propose+'</b> ; <b>'+it.cible+'</b> se place ici.</p>';
     sc.insertBefore(info,$('.actions',sc));
   }
   plusTard(900,()=>finBoutons(sc,'droite',juste));
@@ -1504,15 +1672,20 @@ function majJournal(){
 /* =============================================================
    12. Bandeau, onglets, fenêtres
    ============================================================= */
+function rangActif(table,idx){
+  return ETAT.auto ? rangPalier(table,ETAT.rituel) : Math.min(table.length-1,Math.max(0,idx|0));
+}
 function majPalier(){
-  const pn=palier(PALIERS_NB,ETAT.rituel), rn=rangPalier(PALIERS_NB,ETAT.rituel);
-  $('#nb-palier-etiq').textContent='Palier '+(rn+1);
-  $('#nb-palier-nom').textContent=pn.nom;
-  $('#nb-palier-note').textContent=pn.note;
-  const pd=palier(PALIERS_DR,ETAT.rituel), rd=rangPalier(PALIERS_DR,ETAT.rituel);
-  $('#dr-palier-etiq').textContent='Palier '+(rd+1);
+  const rn=rangActif(PALIERS_NB,ETAT.palierNb), pn=PALIERS_NB[rn];
+  const rd=rangActif(PALIERS_DR,ETAT.palierDr), pd=PALIERS_DR[rd];
+  const suffixe=ETAT.auto?'':' · choisi';
+  $('#nb-palier-etiq').textContent='Palier '+(rn+1)+suffixe;
+  $('#nb-palier-nom').textContent=ETAT.familles.length?'Familles choisies':pn.nom;
+  $('#dr-palier-etiq').textContent='Palier '+(rd+1)+suffixe;
   $('#dr-palier-nom').textContent=pd.nom;
-  $('#dr-palier-note').textContent=pd.note;
+  const a=$('#reg-aujourdhui');
+  if(a) a.innerHTML='<strong>Les nombres — '+pn.nom+'</strong><br>'+pn.note
+    +'<br><br><strong>La droite graduée — '+pd.nom+'</strong><br>'+pd.note;
 }
 function choisirOnglet(nom){
   ETAT.onglet=nom; sauver();
@@ -1526,7 +1699,7 @@ function choisirOnglet(nom){
 function reglerRituel(n){
   n=Math.min(200,Math.max(1,n|0));
   ETAT.rituel=n; $('#rituel-num').value=n;
-  preparer(true); majPalier(); majJournal(); sauver();
+  preparer(true); majPalier(); majReglages(); sauver();
   ETAT.onglet==='nombres'?rendreNombres():rendreDroite();
 }
 function remplirMemo(){
@@ -1560,14 +1733,83 @@ function remplirEchelles(){
 }
 
 /* =============================================================
+   12 bis. Le panneau de réglages
+   ============================================================= */
+function rendreActif(){ ETAT.onglet==='nombres'?rendreNombres():rendreDroite(); }
+function appliquer(){ preparer(true); majPalier(); majReglages(); sauver(); rendreActif(); }
+function famParDefaut(){
+  const p = ETAT.auto ? palier(PALIERS_NB,ETAT.rituel) : (PALIERS_NB[ETAT.palierNb]||PALIERS_NB[0]);
+  const max = p.pool[1];
+  return FAM_NB.filter(f => (f.liste?Math.min.apply(null,f.liste):f.pool[0]) <= max).map(f=>f.cle);
+}
+function monterReglages(){
+  const sn=$('#reg-palier-nb'), sd=$('#reg-palier-dr');
+  PALIERS_NB.forEach((p,i)=>{ const o=document.createElement('option');
+    o.value=String(i); o.textContent=(i+1)+' · '+p.nom; sn.appendChild(o); });
+  PALIERS_DR.forEach((p,i)=>{ const o=document.createElement('option');
+    o.value=String(i); o.textContent=(i+1)+' · '+p.nom; sd.appendChild(o); });
+  const fz=$('#reg-familles');
+  FAM_NB.forEach(f=>{
+    const l=el('label','case-fam');
+    const i=document.createElement('input'); i.type='checkbox'; i.value=f.cle;
+    l.appendChild(i); l.appendChild(document.createTextNode(f.nom));
+    i.addEventListener('change',()=>{
+      ETAT.familles=$$('#reg-familles input').filter(x=>x.checked).map(x=>x.value);
+      appliquer();
+    });
+    fz.appendChild(l);
+  });
+  $('#reg-auto').addEventListener('change',e=>{ ETAT.auto=e.target.checked; appliquer(); });
+  $('#reg-fam-auto').addEventListener('change',e=>{
+    ETAT.familles = e.target.checked ? [] : famParDefaut();
+    appliquer();
+  });
+  sn.addEventListener('change',e=>{ ETAT.palierNb=parseInt(e.target.value,10)||0; ETAT.auto=false; appliquer(); });
+  sd.addEventListener('change',e=>{ ETAT.palierDr=parseInt(e.target.value,10)||0; ETAT.auto=false; appliquer(); });
+  $('#reg-nb-nombres').addEventListener('change',e=>{ ETAT.nbNombres=parseInt(e.target.value,10)||5; appliquer(); });
+  $('#reg-nb-droite').addEventListener('change',e=>{ ETAT.nbDroite=parseInt(e.target.value,10)||0; appliquer(); });
+  $('#reg-son').addEventListener('change',e=>{ ETAT.son=e.target.checked; sauver(); });
+  $$('#reg-sens button').forEach(b=>b.addEventListener('click',()=>{ ETAT.sens=b.dataset.v; appliquer(); }));
+  $$('#reg-muettes button').forEach(b=>b.addEventListener('click',()=>{
+    ETAT.muettes=b.dataset.v; sauver(); majReglages(); rendreActif(); }));
+  $('#reg-revoir-vider').addEventListener('click',()=>{
+    ETAT.revoir={nombres:[],droite:[]}; sauver(); majReglages(); });
+}
+function majReglages(){
+  $('#reg-auto').checked=ETAT.auto;
+  const sn=$('#reg-palier-nb'), sd=$('#reg-palier-dr');
+  sn.value=String(rangActif(PALIERS_NB,ETAT.palierNb));
+  sd.value=String(rangActif(PALIERS_DR,ETAT.palierDr));
+  const famAuto=!ETAT.familles.length;
+  $('#reg-fam-auto').checked=famAuto;
+  $$('#reg-familles input').forEach(i=>{
+    i.checked=ETAT.familles.indexOf(i.value)>=0;
+    i.parentNode.classList.toggle('case-fam--on', i.checked);
+    i.parentNode.classList.toggle('case-fam--off', famAuto);
+  });
+  $$('#reg-sens button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===ETAT.sens)));
+  $$('#reg-muettes button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===ETAT.muettes)));
+  $('#reg-nb-nombres').value=String(ETAT.nbNombres);
+  $('#reg-nb-droite').value=String(ETAT.nbDroite);
+  $('#reg-son').checked=ETAT.son;
+  const rz=$('#reg-revoir'); rz.textContent='';
+  const noms=ETAT.revoir.nombres.map(i=>String(i.nb));
+  const dr=ETAT.revoir.droite.map(i=> i.type==='ranger' ? 'ranger' :
+    i.type==='encadrer' ? 'encadrer '+i.nb : (i.type==='fleche'?'flèche ':'placer ')+i.cible);
+  const tout=noms.concat(dr);
+  if(!tout.length) rz.appendChild(el('p','reg__aide','Rien pour l’instant.'));
+  else tout.forEach(t=>rz.appendChild(el('span','',t)));
+  majJournal();
+}
+
+/* =============================================================
    13. Démarrage
    ============================================================= */
 charger();
 preparer(false);
 $('#rituel-num').value=ETAT.rituel;
-$('#opt-son').checked=ETAT.son;
-$('#opt-nb').value=String(ETAT.nbNombres);
-majPalier(); remplirMemo(); remplirEchelles();
+monterReglages();
+majPalier(); majReglages(); remplirMemo(); remplirEchelles();
 
 $('#rituel-moins').addEventListener('click',()=>reglerRituel(ETAT.rituel-1));
 $('#rituel-plus').addEventListener('click',()=>reglerRituel(ETAT.rituel+1));
@@ -1575,18 +1817,13 @@ $('#rituel-num').addEventListener('change',e=>{
   const n=Math.min(200,Math.max(1,parseInt(e.target.value,10)||1));
   if(n!==ETAT.rituel) reglerRituel(n); else e.target.value=n;
 });
-$('#opt-son').addEventListener('change',e=>{ ETAT.son=e.target.checked; sauver(); });
-$('#opt-nb').addEventListener('change',e=>{
-  ETAT.nbNombres=parseInt(e.target.value,10)||5;
-  ETAT.items.nombres=genNombres(ETAT.rituel,ETAT.nbNombres);
-  ETAT.res.nombres=ETAT.items.nombres.map(()=>null);
-  ETAT.idx.nombres=0; sauver(); if(ETAT.onglet==='nombres') rendreNombres();
-});
+$('#btn-reglages').addEventListener('click',()=>{ majReglages(); $('#dlg-reglages').showModal(); });
 $('#tab-nombres').addEventListener('click',()=>choisirOnglet('nombres'));
 $('#tab-droite').addEventListener('click',()=>choisirOnglet('droite'));
-$('#lien-memo').addEventListener('click',()=>$('#dlg-memo').showModal());
-$('#lien-progression').addEventListener('click',()=>$('#dlg-progression').showModal());
-$('#lien-aide').addEventListener('click',()=>$('#dlg-aide').showModal());
+const ouvrirMemo=id=>{ const r=$('#dlg-reglages'); if(r.open) r.close(); $('#'+id).showModal(); };
+$('#lien-memo').addEventListener('click',()=>ouvrirMemo('dlg-memo'));
+$('#lien-progression').addEventListener('click',()=>ouvrirMemo('dlg-progression'));
+$('#lien-aide').addEventListener('click',()=>ouvrirMemo('dlg-aide'));
 $$('[data-ferme]').forEach(b=>b.addEventListener('click',()=>$('#'+b.dataset.ferme).close()));
 
 choisirOnglet(ETAT.onglet);
