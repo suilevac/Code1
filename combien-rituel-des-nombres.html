@@ -203,7 +203,9 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
 .verdict b{color:var(--red)}
 
 /* ---------- pied : frise + action ---------- */
-.foot{display:flex; align-items:flex-end; gap:clamp(8px,1.5vw,18px); padding-bottom:calc(clamp(8px,1.4vh,16px) + env(safe-area-inset-bottom,0px)); flex-wrap:wrap}
+.foot{display:flex; align-items:flex-end; gap:clamp(8px,1.5vw,18px)}
+.foot .actions{margin-left:auto}
+.foot{ padding-bottom:calc(clamp(8px,1.4vh,16px) + env(safe-area-inset-bottom,0px)); flex-wrap:wrap}
 .frise{display:flex; gap:clamp(4px,.7vw,9px); flex:1; min-width:0}
 .fcell{flex:1; min-width:0; background:var(--card); border-radius:14px; box-shadow:0 1px 0 rgba(22,40,79,.07);
   padding:clamp(4px,.8vh,9px) 2px 3px; display:flex; flex-direction:column; align-items:center; gap:2px; opacity:.42; transition:opacity .2s, transform .14s}
@@ -269,7 +271,17 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 .tpill{display:flex; align-items:center; gap:8px; border-radius:999px; border:3px solid var(--c); background:#fff;
   padding:3px 14px 3px 4px; opacity:.38; font-family:var(--font-display); font-weight:600; color:var(--c);
   font-size:clamp(13px,1.5vw,21px); transition:opacity .2s}
-.tpill.now{opacity:1; box-shadow:var(--lift)}
+.tpill.now{opacity:1; box-shadow:var(--lift); transform:scale(1.12)}
+.tpill .ord{background:var(--c); color:#fff; min-width:1.5em; height:1.5em; border-radius:50%;
+  display:grid; place-items:center; font-size:.68em; margin-right:-2px}
+.tarrow{font-family:var(--font-display); font-weight:700; color:var(--ink-faint); font-size:clamp(15px,1.8vw,26px); align-self:center}
+
+/* ---------- l'annonce plein ecran de celui qui passe ---------- */
+.annonce{position:fixed; inset:0; display:grid; place-items:center; z-index:30; pointer-events:none}
+.annonce .card{background:var(--c,#2A68CC); color:#fff; font-family:var(--font-display); font-weight:700;
+  font-size:clamp(36px,8vw,110px); padding:.22em .6em; border-radius:.35em; box-shadow:0 30px 70px -30px rgba(22,40,79,.75);
+  animation:annin 1.6s ease forwards}
+@keyframes annin{0%{transform:scale(.4); opacity:0}16%{transform:scale(1.06); opacity:1}78%{transform:scale(1); opacity:1}100%{transform:scale(1.02); opacity:0}}
 .tpill.done{opacity:.85; border-color:var(--rule); color:var(--ink-soft)}
 .okdeco{font-size:.85em; background:#F2F6FD; border-radius:8px; padding:1px 7px; color:var(--ink-faint)}
 .tpill .av{width:clamp(24px,2.5vw,36px); aspect-ratio:1; border-radius:50%; background:var(--c); color:#fff;
@@ -281,11 +293,11 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 .bigbin.empty{opacity:.3}
 .handsrow{display:flex; align-items:flex-end; justify-content:center; gap:clamp(4px,.9vw,14px)}
 .handcard{display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:1px}
-.hs{display:flex; gap:clamp(1px,.3vw,6px); align-items:flex-end; height:clamp(72px,15vh,184px)}
+.hs{display:flex; gap:clamp(1px,.3vw,6px); align-items:flex-end; height:clamp(82px,18vh,215px)}
 .hs svg{height:100%; width:auto; max-height:100%}
-.handcard b{font-family:var(--font-display); font-weight:700; font-size:clamp(22px,3.6vw,54px); line-height:1}
-.opsign{font-family:var(--font-display); font-weight:700; font-size:clamp(18px,2.6vw,38px); color:var(--ink-faint); align-self:flex-end; padding-bottom:clamp(8px,1.6vh,22px)}
-.tot{font-family:var(--font-display); font-weight:700; font-size:clamp(24px,4vw,58px); color:var(--ink); align-self:flex-end; padding-bottom:0}
+.handcard b{font-family:var(--font-display); font-weight:700; font-size:clamp(34px,6vw,96px); line-height:1}
+.opsign{font-family:var(--font-display); font-weight:700; font-size:clamp(28px,4.6vw,72px); color:var(--ink-faint); align-self:flex-end; padding-bottom:clamp(2px,.4vh,8px)}
+.tot{font-family:var(--font-display); font-weight:700; font-size:clamp(34px,6vw,96px); color:var(--ink); align-self:flex-end; padding-bottom:0}
 .tot.wait{color:var(--rule-strong)}
 .binpile{display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(3px,.5vw,8px); justify-items:center; align-content:center}
 .binpile i{width:clamp(15px,2vw,32px); aspect-ratio:1; border-radius:50%;
@@ -453,7 +465,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
       <option value="compter">Compter et écrire seulement</option>
       <option value="deco">Décomposer seulement</option>
     </select>
-    <label class="lab"><input type="checkbox" id="opt-both"> Obliger à piocher dans les deux boîtes</label>
+    <label class="lab"><input type="checkbox" id="opt-both"> Interdire les paquets vides (sinon : un seul paquet vide par nombre)</label>
     <p class="note">Dans la maison du nombre, chacun passe à son tour et doit trouver une décomposition que personne n'a encore posée. Les maisons se remplissent de jour en jour.</p>
   </section>
 
@@ -496,8 +508,8 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
     <p class="note">
       <b>Le tour.</b> La boîte s'ouvre, la collection apparaît → chacun compte dans sa tête et écrit le nombre sur son ardoise → on lève les ardoises → tu cliques sur l'élève qui a écrit juste le premier → il vient écrire le chiffre au tableau → tu cliques sur le chiffre qu'il a écrit. Juste : médaille. Faux : on recompte tous ensemble, personne ne perd rien, un autre peut essayer.<br><br>
       <b>Le secret du chiffre.</b> Le chiffre se retrace, puis il se couvre d'autant de points rouges que le nombre : 4 points pour le 4. On les compte à voix haute. Les points sont posés sur le tracé : ils servent aussi de repères pour écrire le chiffre.<br><br>
-      <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau, écrit le chiffre au stylet et le valide. On déroule le secret du chiffre (les points filent dans les coins, le chiffre se fonce, son tracé s'anime). Puis <b>chacun s'entraîne en trois temps, dans un ordre tiré au sort</b> affiché à l'écran : ① relier les points numérotés dans l'ordre au stylet — à chaque point touché on compte (1, 2, 3…) et le chiffre apparaît morceau par morceau ; ② repasser sur le chiffre dans le sens du tracé, en partant du rond qui clignote — l'écran n'avance que si le stylet suit vraiment le chemin ; ③ l'écrire tout seul, sans modèle — c'est toi qui donnes l'étoile. Ensuite vient la décomposition du même nombre, et c'est <b>celui qui avait trouvé le premier qui recommence</b>.<br><br>
-      <b>La décomposition.</b> Chacun son tour : prendre un paquet de billes dans la boîte rouge et un paquet dans la boîte bleue, les poser sur la droite. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand elle est juste, on vérifie en comptant les doigts un par un, les deux cases s'affichent — <b>3</b> + <b>4</b> — puis la flèche vers le nombre de départ : → 7. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
+      <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau, écrit le chiffre au stylet et le valide. On déroule le secret du chiffre (les objets deviennent des points, les points filent dans les coins), puis <b>chacun s'entraîne en trois temps, dans un ordre tiré au sort</b> affiché à l'écran — une grande annonce colorée dit à chaque fois qui passe : ① relier les points numérotés dans l'ordre au stylet — à chaque point touché on compte (1, 2, 3…) et le chiffre apparaît morceau par morceau ; ② repasser sur le chiffre dans le sens du tracé, en partant du rond qui clignote — l'écran n'avance que si le stylet suit vraiment le chemin ; ③ l'écrire tout seul, sans modèle — c'est toi qui donnes l'étoile. Ensuite vient la décomposition du même nombre, et c'est <b>celui qui avait trouvé le premier qui recommence</b>.<br><br>
+      <b>La décomposition.</b> Chacun son tour : prendre des billes dans les boîtes et les poser sur la droite. Le paquet vide est permis (7 = 7 + 0) mais une seule fois par nombre — réglable ci-dessus. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand elle est juste, on vérifie en comptant les doigts un par un, les deux cases s'affichent — <b>3</b> + <b>4</b> — puis la flèche vers le nombre de départ : → 7. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
       <b>Au clavier.</b> <kbd>Espace</kbd> bouton principal · <kbd>1</kbd>…<kbd>9</kbd> le chiffre écrit au tableau · <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> l'élève qui va au tableau · <kbd>R</kbd> recompter · <kbd>Échap</kbd> fermer.<br><br>
       <b>Programmes.</b> Cycle 1 : dénombrer une collection jusqu'à 10, dire combien il y en a, utiliser le nombre pour exprimer une quantité, reconnaître de petites quantités organisées, écrire les chiffres. Cycle 2, CP : dénombrer, lire et écrire les nombres, associer les représentations (collection, constellation, doigts, chiffre), décomposer avec les deux paquets.
     </p>
@@ -554,7 +566,7 @@ const FRESH = {
             {id:"s2",name:"Charlie",color:"rouge",stars:0},
             {id:"s3",name:"Tedo",color:"vert",stars:0}],
   digits:[1,2,3], level:0, autoLevel:true, streak:0,
-  mode:"plein", decoBoth:true, houses:{}, turn:0,
+  mode:"plein", decoBoth:false, zeroMig:true, houses:{}, turn:0,
   voice:true, sound:true, secret:true, flashMs:2000,
   updatedAt:0
 };
@@ -585,6 +597,7 @@ function adopt(d){
   if(!merged.houses || typeof merged.houses !== "object") merged.houses = {};
   if(typeof merged.turn !== "number") merged.turn = 0;
   if(merged.mode === "alterne" || !merged.mode) merged.mode = "plein";
+  if(!merged.zeroMig){ merged.decoBoth = false; merged.zeroMig = true; }
   S = merged;
 }
 
@@ -876,6 +889,7 @@ const VIEWS = {box:"#view-box", picks:"#view-picks", board:"#view-board", medal:
 function show(list){
   Object.keys(VIEWS).forEach(k => { $(VIEWS[k]).hidden = list.indexOf(k) < 0; });
   $("#verdict").hidden = list.indexOf("reveal") < 0;
+  $("#frise").hidden = list.indexOf("deco") >= 0;
 }
 function say(main, sub){
   $("#prompt").innerHTML = main;
@@ -1130,26 +1144,31 @@ function confetti(c){
 const MA = "#D92B2B", MB = "#2A68CC";
 let D = null;
 
-function bothRequired(n){ return !!S.decoBoth && (n - 1) >= S.students.length; }
-function houseSlots(n){ return bothRequired(n) ? n - 1 : n + 1; }
+function zeroAllowed(n){ return !S.decoBoth || (n - 1) < S.students.length; }
+function bothRequired(n){ return !zeroAllowed(n); }
+function houseSlots(n){ return zeroAllowed(n) ? n + 1 : n - 1; }
+function roundSlots(n){ return zeroAllowed(n) ? n : n - 1; }
 function houseGot(n){ const g = S.houses[n]; return Array.isArray(g) ? g : []; }
-function decoPool(){ const p = S.digits.filter(d => d >= (S.decoBoth ? 2 : 1)); return p.length ? p : [3]; }
+function decoPool(){ const p = S.digits.filter(d => d >= 2); return p.length ? p : [3]; }
 function decoStudent(){ return (R && R.order && R.order[R.decoIdx]) || S.students[0]; }
 
 function handSVGC(cols, mirror, tagStart){
-  const F = [{x:28,h:64},{x:46,h:74},{x:64,h:66},{x:82,h:52}], SKIN = "#FFD9B8";
+  const SKIN = "#FFD9B8", EDGE = "#DFA87A";
+  const F = [{x:26,h:68,a:-6},{x:46,h:78,a:-2},{x:66,h:70,a:2.5},{x:85,h:54,a:7}];
   let tag = (typeof tagStart === "number") ? tagStart : null;
   const attr = () => (tag === null ? "" : ' class="fg" data-f="' + (tag++) + '"');
-  let s = '<svg viewBox="-28 -4 138 156" aria-hidden="true"' + (mirror ? ' style="transform:scaleX(-1)"' : '') + '>';
-  s += '<g stroke="#DFA87A" stroke-width="3.5" stroke-linejoin="round">';
-  s += cols[0]
-    ? '<rect' + attr() + ' x="-24" y="70" width="24" height="60" rx="12" transform="rotate(32 -12 128)" fill="'+cols[0]+'"/>'
-    : '<rect x="6" y="96" width="50" height="22" rx="11" fill="'+SKIN+'"/>';
+  let s = '<svg viewBox="-34 -8 150 168" aria-hidden="true"' + (mirror ? ' style="transform:scaleX(-1)"' : '') + '>';
+  s += '<g stroke="' + EDGE + '" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">';
+  if(cols[0]) s += '<rect' + attr() + ' x="-28" y="58" width="25" height="70" rx="12.5" transform="rotate(34 -15 128)" fill="' + cols[0] + '"/>';
   for(let i=0;i<4;i++){
-    const f = F[i], c = cols[i+1], h = c ? f.h : 26;
-    s += '<rect' + (c ? attr() : "") + ' x="'+f.x+'" y="'+(96-h)+'" width="16" height="'+(h+16)+'" rx="8" fill="'+(c||SKIN)+'"/>';
+    const f = F[i], c = cols[i+1];
+    if(c) s += '<rect' + attr() + ' x="' + f.x + '" y="' + (98 - f.h) + '" width="17" height="' + (f.h + 18) + '" rx="8.5" transform="rotate(' + f.a + ' ' + (f.x + 8.5) + ' 98)" fill="' + c + '"/>';
+    else s += '<rect x="' + f.x + '" y="80" width="17" height="30" rx="8.5" fill="' + SKIN + '"/>';
   }
-  s += '<rect x="20" y="84" width="78" height="64" rx="24" fill="'+SKIN+'"/></g></svg>';
+  s += '<rect x="18" y="86" width="82" height="62" rx="25" fill="' + SKIN + '"/>';
+  s += '<rect x="36" y="140" width="46" height="19" rx="9.5" fill="' + SKIN + '"/>';
+  if(!cols[0]) s += '<rect x="14" y="98" width="17" height="40" rx="8.5" transform="rotate(16 22 98)" fill="' + SKIN + '"/>';
+  s += '</g></svg>';
   return s;
 }
 function handsSVG(count, col, tagStart){
@@ -1175,14 +1194,15 @@ function startDeco(){
   if(!R) return;
   if(!R.order.length) R.order = newOrderFrom(S.students[0]);
   D = {n:R.n, a:0, b:0};
+  announce(decoStudent());
   $("#view-deco").classList.remove("counting");
   $("#deco-eq2").hidden = true;
   show(["deco"]);
   const st = decoStudent(), c = COLORS[st.color] || COLORS.bleu;
   const both = bothRequired(D.n);
   say('<span style="color:' + c + '">' + st.name + '</span> fabrique <em>' + D.n + '</em>', "");
-  speak(st.name + ", fabrique " + WORDS[D.n] + (both ? " avec les deux boîtes." : ".")
-        + " Une décomposition que personne n'a encore trouvée.");
+  speak(R.decoIdx === 0 ? (st.name + ", fabrique " + WORDS[D.n] + " avec les billes. Une décomposition que personne n'a encore trouvée.")
+                        : ("À toi, " + st.name + " ! Fabrique " + WORDS[D.n] + " autrement."));
   renderDeco();
 }
 
@@ -1234,16 +1254,17 @@ function renderDeco(){
 function renderTurn(){
   const t = $("#deco-turn"); t.innerHTML = "";
   const list = R.order.length ? R.order : S.students;
-  list.forEach((st, i) => {
-    if(R.decoGoal && i >= R.decoGoal) return;
+  const shown = R.decoGoal ? list.slice(0, R.decoGoal) : list;
+  shown.forEach((st, i) => {
     const done = i < R.decoIdx && R.decos[i];
     const b = document.createElement("button");
     b.className = "tpill" + (i === R.decoIdx ? " now" : "") + (done ? " done" : "");
     b.style.setProperty("--c", COLORS[st.color] || COLORS.bleu);
-    b.innerHTML = '<span class="av">' + st.name.slice(0,1).toUpperCase() + '</span>' + st.name
+    b.innerHTML = '<span class="ord">' + (i + 1) + '</span><span class="av">' + st.name.slice(0,1).toUpperCase() + '</span>' + st.name
       + (done ? ' <span class="okdeco"><b style="color:' + MA + '">' + R.decos[i][0] + '</b>+<b style="color:' + MB + '">' + R.decos[i][1] + '</b></span>' : '');
     b.onclick = () => { R.decos = R.decos.slice(0, i); R.decoIdx = i; startDeco(); };
     t.appendChild(b);
+    if(i < shown.length - 1){ const ar = document.createElement("span"); ar.className = "tarrow"; ar.textContent = "→"; t.appendChild(ar); }
   });
 }
 
@@ -1251,7 +1272,7 @@ function renderHouse(){
   const n = D.n, got = houseGot(n), h = $("#house");
   const roof = '<div class="roof"><svg viewBox="0 0 40 24" aria-hidden="true"><path d="M20 2 L37 20 H3 Z" fill="#E6EDF9" stroke="#C8D9F1" stroke-width="3" stroke-linejoin="round"/></svg><b>' + n + ' =</b></div>';
   let w = "";
-  const from = bothRequired(n) ? 1 : 0, to = bothRequired(n) ? n - 1 : n;
+  const from = zeroAllowed(n) ? 0 : 1, to = zeroAllowed(n) ? n : n - 1;
   for(let a = from; a <= to; a++){
     const has = got.indexOf(a) >= 0;
     w += '<span class="win' + (has ? " got" : "") + '" data-a="' + a + '">'
@@ -1279,7 +1300,10 @@ function nope(msg, a){
 function validateDeco(){
   if(!D || D.a + D.b !== D.n) return;
   const n = D.n, a = D.a, b = D.b;
-  if(bothRequired(n) && (a === 0 || b === 0)){ nope("Les deux boîtes !"); return; }
+  if(a === 0 || b === 0){
+    if(!zeroAllowed(n)){ nope("Les deux boîtes !"); return; }
+    if(R.decos.some(d => d[0] === 0 || d[1] === 0)){ nope("Le paquet vide est déjà pris !", a); return; }
+  }
   if(R.decos.some(d => d[0] === a)){ nope("Déjà fait ! Cherche autrement.", a); return; }
   R.decos.push([a, b]);
   const got = houseGot(n);
@@ -1411,41 +1435,20 @@ function stepReveal(){
       $("#rcap").innerHTML = "Le " + n + " cache <b>" + n + " coins</b>&nbsp;: un pour chaque objet.";
       speak("Le " + WORDS[n] + " cache " + WORDS[n] + " coins.");
     }, 560 + n*520);
-    buttons("Le tracé du chiffre →", nextStep, "", null);
-    return;
-  }
-  if(rvStep === 2){
-    chain(4);
-    $("#rcap").innerHTML = "Le " + n + " se fonce… regarde bien son <b>tracé</b>.";
-    $("#rsvg").querySelectorAll(".ang").forEach(pa => pa.classList.add("dark"));
-    tone(220, 0.5, "triangle", 0.1);
-    later(() => {
-      $("#rsvg").querySelectorAll(".ang").forEach(pa => { pa.classList.remove("dark"); pa.classList.add("fade"); });
-      $("#r-school").innerHTML = (DIGITS[n] ? DIGITS[n].p : []).map(d => '<path class="trace" d="' + d + '"/>').join("");
-      const paths = Array.from($("#r-school").children);
-      traceIn($("#r-school"), 1100);
-      $("#r-start").innerHTML = "";
-      const marks = [];
-      paths.forEach((pa, i) => later(() => {
-        const p0 = pa.getPointAtLength(0);
-        let x = p0.x, y = p0.y;
-        marks.forEach(m => { if(Math.hypot(m.x - x, m.y - y) < 16){ x += 20; y -= 15; } });
-        marks.push({x:x, y:y});
-        const g = svgEl("g", {});
-        g.appendChild(svgEl("circle", {class:"startn", cx:x, cy:y, r:10}));
-        const t = svgEl("text", {class:"startt", x:x, y:y}); t.textContent = i + 1; g.appendChild(t);
-        $("#r-start").appendChild(g);
-        tone(700 + i*120, 0.2, "triangle", 0.12);
-      }, i * 640));
-      speak("On trace le " + WORDS[n] + " comme ça.");
-    }, 950);
-    buttons("À toi d'écrire →", nextStep, "", null);
+    buttons("À vous d'écrire →", nextStep, "", null);
     return;
   }
   startPractice();
 }
 
 /* ---------------- l'entrainement d'ecriture : trois temps, ordre aleatoire ---------------- */
+function announce(st){
+  const d = document.createElement("div");
+  d.className = "annonce";
+  d.innerHTML = '<div class="card" style="--c:' + (COLORS[st.color] || COLORS.bleu) + '">À toi, ' + st.name + '&nbsp;!</div>';
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 1700);
+}
 function shuffle(arr){
   const a = arr.slice();
   for(let i = a.length - 1; i > 0; i--){
@@ -1478,6 +1481,7 @@ function practiceTurn(){
   if(!who){ afterWriting(); return; }
   phase = "trace";
   T = {stage:1, who:who};
+  announce(who);
   show(["trace"]);
   tracePad.setColor(COLORS[who.color] || "#16284F");
   renderTraceTurn();
@@ -1489,9 +1493,10 @@ function renderTraceTurn(){
     const b = document.createElement("button");
     b.className = "tpill" + (i === R.writeIdx ? " now" : "") + (i < R.writeIdx ? " done" : "");
     b.style.setProperty("--c", COLORS[st.color] || COLORS.bleu);
-    b.innerHTML = '<span class="av">' + st.name.slice(0,1).toUpperCase() + '</span>' + st.name + (i < R.writeIdx ? " ✓" : "");
+    b.innerHTML = '<span class="ord">' + (i + 1) + '</span><span class="av">' + st.name.slice(0,1).toUpperCase() + '</span>' + st.name + (i < R.writeIdx ? " ✓" : "");
     b.onclick = () => { R.writeIdx = i; practiceTurn(); };
     t.appendChild(b);
+    if(i < R.writeOrder.length - 1){ const ar = document.createElement("span"); ar.className = "tarrow"; ar.textContent = "→"; t.appendChild(ar); }
   });
 }
 function renderTSteps(){
@@ -1523,6 +1528,7 @@ function setStage(stage){
   $("#tracebox").classList.remove("win");
   $("#tsvg").style.setProperty("--tc", c);
   $("#t-dots").innerHTML = ""; $("#t-ghost").innerHTML = ""; $("#t-ink").innerHTML = ""; $("#t-start").innerHTML = "";
+  $("#t-ink").style.opacity = "";
   renderTSteps();
   if(stage === 1){
     /* relier les points dans l'ordre : le chiffre apparaît grâce au tracé */
@@ -1560,7 +1566,8 @@ function setStage(stage){
       $("#t-dots").appendChild(gr);
     });
     say('<span style="color:' + c + '">' + who.name + '</span> relie les points dans l&rsquo;ordre', "Le chiffre va apparaître !");
-    speak(who.name + " ! Relie les points dans l'ordre, en comptant : le chiffre va apparaître.");
+    speak(R.writeIdx === 0 ? (who.name + " ! Relie les points dans l'ordre, en comptant : le chiffre va apparaître.")
+                           : ("À toi, " + who.name + " ! Relie les points dans l'ordre."));
     buttons("", null, "Étape suivante →", () => setStage(2));
   } else if(stage === 2){
     /* repasser sur le chiffre dans le sens du tracé, depuis le départ */
@@ -1597,11 +1604,12 @@ function setStage(stage){
     });
     $("#t-dots").appendChild(svgEl("circle", {id:"tfront", class:"tfront", r:7, cx:T.checks[0].x, cy:T.checks[0].y}));
     say('<span style="color:' + c + '">' + who.name + '</span> repasse sur le chiffre', "Pars du rond qui clignote et suis le chemin.");
-    speak("Maintenant, repasse sur le " + WORDS[n] + " : pars du rond qui clignote et suis le chemin, sans sauter.");
+    speak(R.writeIdx === 0 ? ("Maintenant, repasse sur le " + WORDS[n] + " : pars du rond qui clignote et suis le chemin, sans sauter.")
+                           : ("Repasse sur le " + WORDS[n] + ", pars du rond qui clignote."));
     buttons("", null, "Étape suivante →", () => setStage(3));
   } else {
     say('<span style="color:' + c + '">' + who.name + '</span>, tout seul&nbsp;!', "Écris le " + n + " sans modèle.");
-    speak("À toi tout seul : écris " + WORDS[n] + ".");
+    speak(R.writeIdx === 0 ? ("À toi tout seul : écris " + WORDS[n] + ".") : ("Tout seul maintenant : écris " + WORDS[n] + "."));
     const last = R.writeIdx >= R.writeOrder.length - 1;
     buttons("⭐ C'est réussi" + (last ? (S.mode === "plein" ? " — on décompose →" : " — on avance →") : " — au suivant →"), () => {
       T.who.stars++; save(); renderChips(T.who.id); sfxWin(); speak("Bravo " + T.who.name + " !");
@@ -1628,7 +1636,13 @@ function traceHit(nx, ny){
         $("#tracebox").classList.add("win");
         sfxWin();
         later(() => speak("Et voilà le " + WORDS[R.n] + " ! Bravo !"), 500);
-        later(() => setStage(2), 2000);
+        later(() => {
+          $("#t-ghost").innerHTML = (DIGITS[R.n] ? DIGITS[R.n].p : []).map(d => '<path class="trace" style="opacity:0;transition:opacity .6s" d="' + d + '"/>').join("");
+          requestAnimationFrame(() => Array.from($("#t-ghost").children).forEach(pa => pa.style.opacity = "1"));
+          $("#t-ink").style.transition = "opacity .6s";
+          $("#t-ink").style.opacity = ".22";
+        }, 900);
+        later(() => setStage(2), 2600);
       }
     } else if(Date.now() - T.lastWrong > 900){
       const wrong = T.dots.some((d, k) => k > T.next && Math.hypot(d.x - vx, d.y - vy) < 13);
@@ -1660,7 +1674,7 @@ function afterWriting(){
 }
 function goDeco(){
   R.decoIdx = 0; R.decos = [];
-  R.decoGoal = Math.min(R.order.length, houseSlots(R.n));
+  R.decoGoal = Math.min(R.order.length, roundSlots(R.n));
   if(R.decoGoal < 1){ startRound(); return; }
   startDeco();
 }
@@ -1760,7 +1774,7 @@ function openPanel(o){
 }
 $("#pad-clear").onclick = () => padBoard.clear();
 $("#tpad-clear").onclick = () => { if(phase === "trace" && T) setStage(T.stage); else tracePad.clear(); };
-$("#rsvg").onclick = () => { if(phase === "reveal" && rvStep < 3) nextStep(); };
+$("#rsvg").onclick = () => { if(phase === "reveal" && rvStep < 2) nextStep(); };
 $("#bin-a").onclick = () => takeBille("a");
 $("#bin-b").onclick = () => takeBille("b");
 $("#mode-sel").onchange = e => { S.mode = e.target.value; save(); renderChips(); toast(e.target.value === "deco" ? "Décomposer seulement" : (e.target.value === "compter" ? "Compter et écrire" : "Tour complet")); };
