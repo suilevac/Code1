@@ -319,6 +319,16 @@ S = {
   repos ; 1 main ≈ 18,5 cm, épaules 2,3 mains, buste 3,7 mains), donc la silhouette reste juste à n'importe quel
   zoom. Ancré au creux du cou, réglable en taille / hauteur / latéral. Option « repères d'emplacement »
   (front, menton, épaules, poitrine, taille) : ce sont les lieux d'articulation du signe.
+  **Un personnage, pas un mannequin** (demande de l'utilisateur : « simple, clair, comme un personnage, pas un
+  truc de forme géométrique »). La première version était une pile de formes : calotte de cheveux en demi-dôme
+  (un casque), cou en tube, tronc en trapèze coupé droit, aucun bras (une cape). Ce qui fait lire un personnage,
+  dans l'ordre du papier découpé (`drawRef`) : des BRAS le long du corps, du moignon d'épaule au coude, bout
+  arrondi (les avant-bras viennent vers nous — c'est pourquoi les mains flottent devant la poitrine), un cou qui
+  part des trapèzes, des OREILLES à moitié cachées par la tête, un tee-shirt (encolure ronde, flancs qui rentrent
+  sous l'aisselle, ourlet arrondi), et surtout des CHEVEUX qui ont une forme : une masse qui déborde un peu du
+  crâne, des pattes devant les oreilles et une FRANGE à trois festons. Piège : un bras dont le contour dépasse la
+  ligne d'épaule (`E`) fait des épaulettes de footballeur — l'épaule du bras reste à `E`. En style « trait », les
+  cheveux sont remplis de la couleur du papier pour couvrir le trait du crâne dessous.
 - **Flèches** : `arrowPts(A,B,style,sens)` en coordonnées écran — droite, arc, demi-cercle (vrai demi-cercle de
   rayon L/2), vague, zigzag, boucle ; pointe simple ou aller-retour ; quatre couleurs. Les icônes du panneau
   sont générées par la même fonction, donc elles ne peuvent pas mentir. Au-delà de deux étapes, chaque étape

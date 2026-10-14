@@ -966,7 +966,7 @@ function rrect(x,p,y,w,h,r){x.beginPath();x.moveTo(p+r,y);x.arcTo(p+w,y,p+w,y+h,
    Les proportions sont données en longueurs de main (1 main ≈ 18,5 cm) : c'est la mesure que l'on a sous les yeux,
    donc la silhouette reste juste quel que soit le zoom. Le point d'ancrage est le creux du cou. */
 const refAnchor=()=>new THREE.Vector3(S.ref.x/100*2*HL,.35*HL+S.ref.h/100*2*HL,-.5*HL);
-const BODY={ep:1.15,yEp:.10,yTa:1.92,taille:.74,cou:.215,yCou:-.16,menton:-.58,tete:.60,tw:.40};
+const BODY={ep:1.15,yEp:.10,yTa:1.92,taille:.74,cou:.215,yCou:-.16,menton:-.58,tete:.60,tw:.40,yCoude:1.48};
 function drawRef(x,W,H){
   const R=S.ref;if(R.style==='aucun')return;
   const A=refAnchor();if(!devant(A))return;
@@ -977,50 +977,68 @@ function drawRef(x,W,H){
   x.save();x.lineJoin='round';x.lineCap='round';x.lineWidth=Math.max(1.2,.021*u);x.strokeStyle=INK;
   const FILL=plein?'#dbe8e6':'rgba(255,255,255,.62)';
   // remplir la forme FERMÉE, puis ne retracer que le CONTOUR ouvert : sinon le trait de fermeture barre le cou
-  const piece=f=>{x.beginPath();f();x.closePath();x.fillStyle=FILL;x.fill();x.beginPath();f();x.stroke()};
+  const piece=(f,fill=FILL)=>{x.beginPath();f();x.closePath();x.fillStyle=fill;x.fill();x.beginPath();f();x.closePath();x.stroke()};
 
-  // --- pile de papier découpé : oreilles, cou, tronc, tête ---
-  [-1,1].forEach(sg=>{x.beginPath();x.ellipse(...P(sg*w*.99,hy+.04),.058*u,.105*u,0,0,6.2832);x.fillStyle=FILL;x.fill();x.stroke()});
-  x.beginPath();x.moveTo(...P(-B.cou,B.yCou+.12));x.lineTo(...P(-B.cou*.90,B.menton+.04));
-    x.lineTo(...P(B.cou*.90,B.menton+.04));x.lineTo(...P(B.cou,B.yCou+.12));x.closePath();x.fillStyle=FILL;x.fill();
-  x.beginPath();x.moveTo(...P(-B.cou,B.yCou+.12));x.lineTo(...P(-B.cou*.90,B.menton+.04));x.stroke();
-  x.beginPath();x.moveTo(...P(B.cou,B.yCou+.12));x.lineTo(...P(B.cou*.90,B.menton+.04));x.stroke();
-  piece(()=>{x.moveTo(...P(-B.cou,B.yCou));
-    x.bezierCurveTo(...P(-B.ep*.45,B.yEp-.17),...P(-B.ep*.90,B.yEp-.09),...P(-B.ep,B.yEp+.20));
-    x.bezierCurveTo(...P(-B.ep*.97,B.yEp+.82),...P(-B.taille*1.12,B.yTa-.55),...P(-B.taille,B.yTa));
-    x.quadraticCurveTo(...P(0,B.yTa+.09),...P(B.taille,B.yTa));
-    x.bezierCurveTo(...P(B.taille*1.12,B.yTa-.55),...P(B.ep*.97,B.yEp+.82),...P(B.ep,B.yEp+.20));
-    x.bezierCurveTo(...P(B.ep*.90,B.yEp-.09),...P(B.ep*.45,B.yEp-.17),...P(B.cou,B.yCou))});
-  // creux de l'aisselle : sépare le bras du buste, sinon la silhouette se lit comme une cape
-  x.save();x.lineWidth=Math.max(1,.014*u);x.globalAlpha=.7;
-  [-1,1].forEach(sg=>{x.beginPath();x.moveTo(...P(sg*B.ep*.88,B.yEp+.26));
-    x.bezierCurveTo(...P(sg*B.ep*.74,B.yEp+.80),...P(sg*B.taille*1.02,B.yTa-.55),...P(sg*B.taille*.97,B.yTa))  ;x.stroke()});
-  x.restore();
+  /* --- un PERSONNAGE, pas un mannequin de vitrine ---------------------------------------------------------
+     Le premier référent était une pile de formes géométriques : calotte de cheveux en demi-dôme (un casque), cou en
+     tube, tronc en trapèze coupé droit à la taille, aucun bras (une cape). Un personnage de planche LSF se lit
+     par cinq choses : des CHEVEUX qui ont une forme (frange, volume, pattes), des OREILLES à moitié cachées par
+     la tête, un cou qui part des trapèzes, des ÉPAULES qui se prolongent en BRAS le long du corps (les avant-bras
+     viennent vers nous, c'est pourquoi les mains flottent devant la poitrine), un tee-shirt (encolure, manches)
+     et un bas arrondi. Ordre du papier découpé : bras, cou, oreilles, tronc, tête, cheveux, visage. */
+  const E=B.ep,YA=B.yEp,YT=B.yTa,TA=B.taille,C=B.cou,YC=B.yCou,M=B.menton;
+  // bras : du moignon d'épaule au coude, légèrement écartés du corps, bout arrondi (le coude), derrière le tronc
+  // (épaule à E, pas au-delà : un bras qui déborde de la ligne d'épaule fait des épaulettes de footballeur)
+  [-1,1].forEach(sg=>piece(()=>{x.moveTo(...P(sg*E*.72,YA+.24));
+    x.bezierCurveTo(...P(sg*E*.96,YA+.14),...P(sg*E*1.06,YA+.40),...P(sg*E*1.05,YA+.80));
+    x.lineTo(...P(sg*E*1.01,B.yCoude-.14));
+    x.bezierCurveTo(...P(sg*E*1.00,B.yCoude+.16),...P(sg*E*.78,B.yCoude+.18),...P(sg*E*.76,B.yCoude-.10));
+    x.lineTo(...P(sg*E*.76,YA+.70))}));
+  // cou : part des trapèzes, un peu plus étroit sous le menton
+  x.beginPath();x.moveTo(...P(-C*1.05,YC+.14));x.lineTo(...P(-C*.88,M+.02));x.lineTo(...P(C*.88,M+.02));x.lineTo(...P(C*1.05,YC+.14));
+    x.closePath();x.fillStyle=FILL;x.fill();
+  [-1,1].forEach(sg=>{x.beginPath();x.moveTo(...P(sg*C*1.05,YC+.14));x.lineTo(...P(sg*C*.88,M+.02));x.stroke()});
+  // oreilles : des demi-ovales, la tête en cache la moitié
+  [-1,1].forEach(sg=>{x.beginPath();x.ellipse(...P(sg*w*1.0,hy+.11),.058*u,.11*u,0,0,6.2832);x.fillStyle=FILL;x.fill();x.stroke()});
+  // tronc : encolure ronde, trapèzes, épaules rondes, flancs qui rentrent sous l'aisselle, bas arrondi (ourlet)
+  piece(()=>{x.moveTo(...P(-C*1.05,YC+.02));
+    x.bezierCurveTo(...P(-E*.45,YC-.02),...P(-E*.92,YA-.06),...P(-E*.98,YA+.22));
+    x.bezierCurveTo(...P(-E*.99,YA+.46),...P(-E*.90,YA+.66),...P(-E*.80,YA+.78));
+    x.bezierCurveTo(...P(-E*.76,YA+1.10),...P(-TA*1.06,YT-.60),...P(-TA*.98,YT-.08));
+    x.quadraticCurveTo(...P(0,YT+.14),...P(TA*.98,YT-.08));
+    x.bezierCurveTo(...P(TA*1.06,YT-.60),...P(E*.76,YA+1.10),...P(E*.80,YA+.78));
+    x.bezierCurveTo(...P(E*.90,YA+.66),...P(E*.99,YA+.46),...P(E*.98,YA+.22));
+    x.bezierCurveTo(...P(E*.92,YA-.06),...P(E*.45,YC-.02),...P(C*1.05,YC+.02));
+    x.quadraticCurveTo(...P(0,YC+.20),...P(-C*1.05,YC+.02))});
   // tête : ovale à mâchoire fuyante (une ellipse donne un masque, pas un visage)
-  const tete=()=>{x.moveTo(...P(0,B.menton-2*T));
-    x.bezierCurveTo(...P(w*1.04,B.menton-2*T),...P(w*1.10,B.menton-.95*T),...P(w*.97,B.menton-.42*T));
-    x.bezierCurveTo(...P(w*.90,B.menton-.11*T),...P(w*.50,B.menton),...P(0,B.menton));
-    x.bezierCurveTo(...P(-w*.50,B.menton),...P(-w*.90,B.menton-.11*T),...P(-w*.97,B.menton-.42*T));
-    x.bezierCurveTo(...P(-w*1.10,B.menton-.95*T),...P(-w*1.04,B.menton-2*T),...P(0,B.menton-2*T))};
+  const tete=()=>{x.moveTo(...P(0,M-2*T));
+    x.bezierCurveTo(...P(w*1.04,M-2*T),...P(w*1.10,M-.95*T),...P(w*.97,M-.42*T));
+    x.bezierCurveTo(...P(w*.90,M-.11*T),...P(w*.50,M),...P(0,M));
+    x.bezierCurveTo(...P(-w*.50,M),...P(-w*.90,M-.11*T),...P(-w*.97,M-.42*T));
+    x.bezierCurveTo(...P(-w*1.10,M-.95*T),...P(-w*1.04,M-2*T),...P(0,M-2*T))};
   x.beginPath();tete();x.closePath();x.fillStyle=FILL;x.fill();x.stroke();
-  // chevelure : la calotte du crâne elle-même, découpée au-dessus de la ligne de cheveux — pas un bandeau
-  const YHL=B.menton-1.24*T,hl=()=>{x.moveTo(...P(-w*1.25,YHL));x.quadraticCurveTo(...P(0,YHL-.26*T),...P(w*1.25,YHL))};
-  x.save();x.beginPath();tete();x.closePath();x.clip();        // tout le cheveu reste DANS le crâne
-  if(plein){x.beginPath();hl();x.lineTo(...P(w*1.25,B.menton-2.4*T));x.lineTo(...P(-w*1.25,B.menton-2.4*T));x.closePath();
-    x.fillStyle=INK;x.globalAlpha=.86;x.fill();x.globalAlpha=1}
-  x.beginPath();hl();x.stroke();x.restore();
-
+  // chevelure : une masse qui déborde un peu du crâne (volume), des pattes devant les oreilles, et une FRANGE
+  // à mèches (trois festons) — c'est elle qui fait lire « des cheveux » et non « un casque »
+  const YHL=M-1.30*T,YTOP=M-2*T;
+  const cheveux=()=>{x.moveTo(...P(-w*1.12,hy+.02));
+    x.bezierCurveTo(...P(-w*1.26,M-1.45*T),...P(-w*.95,YTOP-.14),...P(0,YTOP-.11));
+    x.bezierCurveTo(...P(w*.95,YTOP-.14),...P(w*1.26,M-1.45*T),...P(w*1.12,hy+.02));
+    x.lineTo(...P(w*.97,hy-.02));x.lineTo(...P(w*.99,YHL+.02));
+    const fr=[[w*.99,YHL+.02],[w*.52,YHL-.02],[w*.06,YHL+.04],[-w*.42,YHL-.03],[-w*.99,YHL+.02]];
+    for(let i=0;i+1<fr.length;i++){const [x0,y0]=fr[i],[x1,y1]=fr[i+1];x.quadraticCurveTo(...P((x0+x1)/2,Math.max(y0,y1)+.10),...P(x1,y1))}
+    x.lineTo(...P(-w*.97,hy-.02))};
+  piece(cheveux,plein?INK:FILL);
   if(R.visage){
     x.lineWidth=Math.max(1,.015*u);
     [-1,1].forEach(sg=>{
       const ex=sg*.175,ey=hy+.03;
-      x.beginPath();x.moveTo(...P(ex-.082,ey));x.quadraticCurveTo(...P(ex,ey-.080),...P(ex+.082,ey));
-      x.quadraticCurveTo(...P(ex,ey+.068),...P(ex-.082,ey));x.fillStyle='#fff';x.fill();x.stroke();
-      x.beginPath();x.arc(...P(ex,ey-.004),.030*u,0,6.2832);x.fillStyle=INK;x.fill();
+      x.beginPath();x.moveTo(...P(ex-.092,ey));x.quadraticCurveTo(...P(ex,ey-.090),...P(ex+.092,ey));
+      x.quadraticCurveTo(...P(ex,ey+.076),...P(ex-.092,ey));x.fillStyle='#fff';x.fill();x.stroke();
+      x.beginPath();x.arc(...P(ex,ey-.002),.034*u,0,6.2832);x.fillStyle=INK;x.fill();
       x.beginPath();x.moveTo(...P(ex-.095,ey-.155));x.quadraticCurveTo(...P(ex,ey-.198),...P(ex+.095,ey-.158));x.stroke();
     });
     x.beginPath();x.moveTo(...P(-.045,hy+.25));x.quadraticCurveTo(...P(.005,hy+.30),...P(.055,hy+.23));x.stroke();   // nez
-    x.beginPath();x.moveTo(...P(-.105,hy+.40));x.quadraticCurveTo(...P(0,hy+.455),...P(.105,hy+.40));x.stroke();     // bouche
+    x.beginPath();x.moveTo(...P(-.125,hy+.39));x.quadraticCurveTo(...P(0,hy+.475),...P(.125,hy+.39));x.stroke();     // bouche
   }
   if(R.reperes){
     x.save();x.setLineDash([.15*u,.12*u]);x.lineWidth=Math.max(1,.011*u);x.strokeStyle='rgba(20,32,31,.45)';
