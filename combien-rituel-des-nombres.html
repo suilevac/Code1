@@ -5,7 +5,7 @@
 /* Layout : trois bandes fixes — barre des medailles en haut, scene centrale plein cadre, frise des chiffres en pied. Un seul theme assume : papier d'ecole regle Seyes, encre bleue, et le rouge reserve aux points du chiffre. */
 :root{
   --paper:#EDF2FB; --card:#FFFFFF; --ink:#16284F; --ink-soft:#5B6E92; --ink-faint:#9AABC8;
-  --rule:#C8D9F1; --rule-soft:#E3EBF8;
+  --rule:#C8D9F1; --rule-soft:#E3EBF8; --rule-strong:#9FB9E0;
   --red:#E0342A; --gold:#E9A51C;
   --rose:#DE4199; --rouge:#D22D2D; --vert:#17964C; --bleu:#2A68CC; --orange:#E2701A; --violet:#7B4CC4;
   --mA:#D92B2B; --mB:#2A68CC;
@@ -173,7 +173,7 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
 .tstep.done{border-color:var(--vert); color:var(--vert)}
 
 /* ---------- le comptage final des doigts ---------- */
-#view-deco.counting .deco-main, #view-deco.counting .house, #view-deco.counting .deco-turn{display:none}
+#view-deco.counting .deco-main, #view-deco.counting .deco-turn{display:none}
 #view-deco.counting{justify-content:center; gap:clamp(10px,2.4vh,28px)}
 #view-deco.counting .hs{height:clamp(120px,30vh,330px)}
 #view-deco.counting .handcard b{display:none}
@@ -266,7 +266,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 .starrow b{font-weight:700; color:var(--gold); font-size:clamp(13px,1.5vw,19px); align-self:center}
 
 /* ---------- la maison du nombre ---------- */
-#view-deco{display:flex; flex-direction:column; gap:clamp(4px,1.1vh,14px); width:100%; flex:1; min-height:0; justify-content:center}
+#view-deco{position:relative; display:flex; flex-direction:column; gap:clamp(4px,1.1vh,14px); width:100%; flex:1; min-height:0; justify-content:center}
 .deco-turn{display:flex; gap:clamp(6px,1vw,12px); justify-content:center; flex-wrap:wrap}
 .tpill{display:flex; align-items:center; gap:8px; border-radius:999px; border:3px solid var(--c); background:#fff;
   padding:3px 14px 3px 4px; opacity:.38; font-family:var(--font-display); font-weight:600; color:var(--c);
@@ -303,11 +303,18 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 .binpile i{width:clamp(15px,2vw,32px); aspect-ratio:1; border-radius:50%;
   background:radial-gradient(circle at 36% 30%, rgba(255,255,255,.55), transparent 58%), var(--m);
   box-shadow:0 4px 8px -5px rgba(22,40,79,.7)}
-.lane{display:flex; gap:clamp(4px,.8vw,13px); align-items:center; justify-content:center; flex-wrap:wrap;
+.lane{position:relative; display:flex; gap:clamp(4px,.8vw,13px); align-items:center; justify-content:center; flex-wrap:wrap;
   width:auto; max-width:100%; justify-self:center;
-  background:#fff; border-radius:999px; box-shadow:var(--lift); padding:clamp(8px,1.4vh,16px) clamp(12px,1.8vw,26px)}
-.gapsep{width:clamp(14px,2.4vw,40px); align-self:stretch; border-right:3px dotted var(--rule-soft)}
-.slot{width:clamp(26px,3.8vw,62px); aspect-ratio:1; border-radius:50%; border:3px dashed var(--rule); padding:0; background:none}
+  background:#fff; border-radius:22px; box-shadow:var(--lift); padding:clamp(10px,1.8vh,20px) clamp(12px,1.8vw,26px)}
+.lane::before{content:""; position:absolute; left:14px; right:14px; top:50%; height:9px; margin-top:-4.5px;
+  background:linear-gradient(180deg,#A7B6D2,#5E7194); border-radius:99px}
+.cap{width:10px; align-self:stretch; margin:-5px 0; background:linear-gradient(180deg,#8699BD,#4D6089); border-radius:6px; position:relative; z-index:1}
+.slot{position:relative; z-index:1}
+.gapsep{width:clamp(14px,2.4vw,40px); align-self:center; height:4px}
+.dragball{position:fixed; width:clamp(32px,4.2vw,66px); aspect-ratio:1; border-radius:50%;
+  transform:translate(-50%,-50%); z-index:60; pointer-events:none;
+  box-shadow:0 14px 26px -10px rgba(22,40,79,.75)}
+.slot{width:clamp(26px,3.8vw,62px); aspect-ratio:1; border-radius:50%; border:3px dashed var(--rule-strong); padding:0; background:var(--paper)}
 .slot.full{border-color:transparent; border-style:solid}
 .slot .bille{display:block; width:100%; height:100%; border-radius:50%;
   background:radial-gradient(circle at 36% 30%, rgba(255,255,255,.5), transparent 58%), var(--m);
@@ -319,15 +326,18 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 .eq .tot.ok{color:var(--ink)}
 .handz{display:flex; gap:clamp(2px,.4vw,8px); align-items:flex-end; height:clamp(92px,23vh,268px)}
 .handz svg{height:100%; width:auto}
-.house{align-self:center; max-width:100%; background:var(--card); border-radius:999px; box-shadow:var(--lift);
-  padding:clamp(4px,.7vh,9px) clamp(10px,1.4vw,20px); display:flex; flex-wrap:wrap; align-items:center;
-  justify-content:center; gap:clamp(5px,.9vw,13px)}
-.roof{display:flex; align-items:center; gap:7px; font-family:var(--font-display); font-weight:700;
-  font-size:clamp(15px,2vw,30px); color:var(--ink-soft)}
-.roof svg{width:clamp(20px,2vw,30px); height:auto}
+.house{position:absolute; top:-12px; right:0; max-width:min(280px,28%); background:var(--card); border-radius:16px;
+  box-shadow:var(--lift); padding:clamp(4px,.6vh,8px) clamp(7px,.9vw,12px); display:flex; flex-wrap:wrap;
+  align-items:center; justify-content:center; gap:clamp(3px,.5vw,7px); z-index:5}
+.win.newwin{border-color:var(--gold); background:#FFF6DC; color:var(--ink); animation:winflash 1.2s}
+.win.newwin .a{color:var(--mA)} .win.newwin .b{color:var(--mB)}
+.roof{display:flex; align-items:center; gap:5px; font-family:var(--font-display); font-weight:700;
+  font-size:clamp(13px,1.5vw,21px); color:var(--ink-soft)}
+.roof svg{width:clamp(16px,1.6vw,24px)}
+.roof svg{height:auto}
 .windows{display:flex; gap:clamp(4px,.7vw,10px); flex-wrap:wrap; justify-content:center}
-.win{border:3px solid var(--rule-soft); border-radius:12px; padding:1px clamp(5px,.7vw,11px); background:#F6F9FE;
-  font-family:var(--font-display); font-weight:700; font-size:clamp(13px,1.6vw,24px); color:var(--ink-faint); min-width:3.1em; text-align:center}
+.win{border:2.5px solid var(--rule-soft); border-radius:9px; padding:0 clamp(4px,.55vw,9px); background:#F6F9FE;
+  font-family:var(--font-display); font-weight:700; font-size:clamp(11px,1.35vw,19px); color:var(--ink-faint); min-width:2.8em; text-align:center}
 .win.got{border-color:var(--rule); background:#fff}
 .win.got .a{color:var(--mA)} .win.got .b{color:var(--mB)} .win.got .p{color:var(--ink-faint)}
 .win.flash{animation:winflash 1s}
@@ -339,6 +349,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
   .rstage.two{grid-template-columns:1fr}
   .deco-main{grid-template-columns:1fr 1fr; justify-items:center}
   .deco-main .lane{grid-column:1 / -1; order:-1}
+  .house{position:static; max-width:100%; align-self:center}
   .handz{height:clamp(70px,14vh,150px)}
 }
 @media (max-width:760px){
@@ -509,7 +520,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
       <b>Le tour.</b> La boîte s'ouvre, la collection apparaît → chacun compte dans sa tête et écrit le nombre sur son ardoise → on lève les ardoises → tu cliques sur l'élève qui a écrit juste le premier → il vient écrire le chiffre au tableau → tu cliques sur le chiffre qu'il a écrit. Juste : médaille. Faux : on recompte tous ensemble, personne ne perd rien, un autre peut essayer.<br><br>
       <b>Le secret du chiffre.</b> Le chiffre se retrace, puis il se couvre d'autant de points rouges que le nombre : 4 points pour le 4. On les compte à voix haute. Les points sont posés sur le tracé : ils servent aussi de repères pour écrire le chiffre.<br><br>
       <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau, écrit le chiffre au stylet et le valide. On déroule le secret du chiffre (les objets deviennent des points, les points filent dans les coins), puis <b>chacun s'entraîne en trois temps, dans un ordre tiré au sort</b> affiché à l'écran — une grande annonce colorée dit à chaque fois qui passe : ① relier les points numérotés dans l'ordre au stylet — à chaque point touché on compte (1, 2, 3…) et le chiffre apparaît morceau par morceau ; ② repasser sur le chiffre dans le sens du tracé, en partant du rond qui clignote — l'écran n'avance que si le stylet suit vraiment le chemin ; ③ l'écrire tout seul, sans modèle — c'est toi qui donnes l'étoile. Ensuite vient la décomposition du même nombre, et c'est <b>celui qui avait trouvé le premier qui recommence</b>.<br><br>
-      <b>La décomposition.</b> Chacun son tour : prendre des billes dans les boîtes et les poser sur la droite. Le paquet vide est permis (7 = 7 + 0) mais une seule fois par nombre — réglable ci-dessus. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand elle est juste, on vérifie en comptant les doigts un par un, les deux cases s'affichent — <b>3</b> + <b>4</b> — puis la flèche vers le nombre de départ : → 7. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
+      <b>La décomposition.</b> Chacun son tour : <b>faire glisser</b> une bille depuis une boîte jusqu'au boulier (un simple clic ne suffit pas). La maison du nombre reste affichée en haut à droite et s'allume à chaque nouvelle fenêtre trouvée. Le paquet vide est permis (7 = 7 + 0) mais une seule fois par nombre — réglable ci-dessus. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand elle est juste, on vérifie en comptant les doigts un par un, les deux cases s'affichent — <b>3</b> + <b>4</b> — puis la flèche vers le nombre de départ : → 7. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
       <b>Au clavier.</b> <kbd>Espace</kbd> bouton principal · <kbd>1</kbd>…<kbd>9</kbd> le chiffre écrit au tableau · <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> l'élève qui va au tableau · <kbd>R</kbd> recompter · <kbd>Échap</kbd> fermer.<br><br>
       <b>Programmes.</b> Cycle 1 : dénombrer une collection jusqu'à 10, dire combien il y en a, utiliser le nombre pour exprimer une quantité, reconnaître de petites quantités organisées, écrire les chiffres. Cycle 2, CP : dénombrer, lire et écrire les nombres, associer les représentations (collection, constellation, doigts, chiffre), décomposer avec les deux paquets.
     </p>
@@ -539,10 +550,10 @@ const ANG = {
   3:{s:["M20,12 L78,12 L38,50 L80,76 L24,98"], d:[[78,12],[38,50],[80,76]]},
   4:{s:["M62,6 L10,66 L88,66","M62,6 L62,100"], d:[[62,6],[10,66],[88,66],[62,100]]},
   5:{s:["M84,14 L28,14 L24,46 L66,44 L78,72 L54,96 L22,80"], d:[[28,14],[24,46],[66,44],[78,72],[54,96]]},
-  6:{s:["M72,10 L26,62","M26,62 L70,48 L86,74 L52,98 L20,74 Z"], d:[[72,10],[26,62],[70,48],[86,74],[52,98],[20,74]]},
-  7:{s:["M14,32 L14,14 L86,14 L38,96 L58,96","M28,56 L70,56"], d:[[14,32],[14,14],[86,14],[38,96],[58,96],[28,56],[70,56]]},
-  8:{s:["M50,8 L78,30 L52,54 L22,30 Z","M48,56 L82,78 L50,100 L18,78 Z"], d:[[50,8],[78,30],[52,54],[22,30],[48,56],[82,78],[50,100],[18,78]]},
-  9:{s:["M50,6 L82,28 L70,58 L30,58 L18,28 Z","M70,58 L80,76 L74,92 L52,100 L28,90"], d:[[50,6],[82,28],[70,58],[30,58],[18,28],[80,76],[74,92],[52,100],[28,90]]}
+  6:{s:["M72,10 L22,58 L20,82 L52,98 L84,72 L54,56 L22,66"], d:[[72,10],[22,58],[20,82],[52,98],[84,72],[54,56]]},
+  7:{s:["M16,14 L86,14 L58,52 L40,96 L60,96","M28,56 L72,56"], d:[[16,14],[86,14],[58,52],[40,96],[60,96],[28,56],[72,56]]},
+  8:{s:["M52,54 L24,30 L50,8 L78,30 L52,54 L18,72 L34,100 L66,100 L82,72 Z"], d:[[52,54],[24,30],[50,8],[78,30],[18,72],[34,100],[66,100],[82,72]]},
+  9:{s:["M78,42 L50,58 L20,44 L20,18 L50,4 L78,18 Z","M78,28 L70,72 L54,98 L28,90"], d:[[78,42],[50,58],[20,44],[20,18],[50,4],[78,18],[70,72],[54,98],[28,90]]}
 };
 const WORDS = {0:"zéro",1:"un",2:"deux",3:"trois",4:"quatre",5:"cinq",6:"six",7:"sept",8:"huit",9:"neuf"};
 const COLORS = {rose:"#DE4199", rouge:"#D22D2D", vert:"#17964C", bleu:"#2A68CC", orange:"#E2701A", violet:"#7B4CC4"};
@@ -1239,11 +1250,13 @@ function renderDeco(){
     } else sl.onclick = shake;
     L.appendChild(sl);
   };
+  const capL = document.createElement("i"); capL.className = "cap"; L.appendChild(capL);
   for(let i=0;i<a;i++) slot("a");
   for(let i=0;i<eA;i++) slot(null);
   const sep = document.createElement("i"); sep.className = "gapsep"; L.appendChild(sep);
   for(let i=0;i<eB;i++) slot(null);
   for(let i=0;i<b;i++) slot("b");
+  const capR = document.createElement("i"); capR.className = "cap"; L.appendChild(capR);
   $("#deco-hands").innerHTML = handCard(a, MA) + '<span class="opsign">+</span>' + handCard(b, MB)
     + '<span class="opsign">=</span><span class="tot' + (tot === n ? "" : " wait") + '">' + tot + '</span>';
   renderHouse();
@@ -1346,8 +1359,11 @@ function decoCount(st, a, b, n){
   later(() => {
     $("#eq-f").classList.add("on"); $("#eq-n").classList.add("on");
     tone(880, 0.4, "triangle", 0.17);
-    speak(WORDS[a] + " plus " + WORDS[b] + ", ça fait bien " + WORDS[n] + " !");
+    speak(WORDS[a] + " plus " + WORDS[b] + ", ça fait bien " + WORDS[n] + " ! Une nouvelle fenêtre dans la maison du " + WORDS[n] + ".");
     say('<span style="color:' + MA + '">' + a + '</span> + <span style="color:' + MB + '">' + b + '</span> = <em>' + n + '</em>', "");
+    renderHouse();
+    const w = document.querySelector('.win[data-a="' + a + '"]');
+    if(w) w.classList.add("newwin");
   }, 700 + n * 660 + 450);
   later(() => finishDeco(st, a, b, n), 700 + n * 660 + 2600);
 }
@@ -1775,8 +1791,54 @@ function openPanel(o){
 $("#pad-clear").onclick = () => padBoard.clear();
 $("#tpad-clear").onclick = () => { if(phase === "trace" && T) setStage(T.stage); else tracePad.clear(); };
 $("#rsvg").onclick = () => { if(phase === "reveal" && rvStep < 2) nextStep(); };
-$("#bin-a").onclick = () => takeBille("a");
-$("#bin-b").onclick = () => takeBille("b");
+function makeBinDrag(binId, col){
+  const bin = $("#" + binId);
+  let ball = null, pid = null, moved = false, sx = 0, sy = 0;
+  bin.style.touchAction = "none";
+  const kill = () => { if(ball){ ball.remove(); ball = null; } };
+  bin.addEventListener("pointerdown", e => {
+    if(phase !== "deco" || !D) return;
+    const left = col === "a" ? D.n - D.a : D.n - D.b;
+    if(D.a + D.b >= D.n || left <= 0){ shake(); return; }
+    e.preventDefault();
+    try{ bin.setPointerCapture(e.pointerId); }catch(err){}
+    pid = e.pointerId; moved = false; sx = e.clientX; sy = e.clientY;
+    kill();
+    ball = document.createElement("div");
+    ball.className = "dragball";
+    const cc = col === "a" ? MA : MB;
+    ball.style.background = "radial-gradient(circle at 36% 30%, rgba(255,255,255,.55), transparent 58%), " + cc;
+    ball.style.left = e.clientX + "px"; ball.style.top = e.clientY + "px";
+    document.body.appendChild(ball);
+  });
+  bin.addEventListener("pointermove", e => {
+    if(!ball || e.pointerId !== pid) return;
+    e.preventDefault();
+    if(Math.hypot(e.clientX - sx, e.clientY - sy) > 8) moved = true;
+    ball.style.left = e.clientX + "px"; ball.style.top = e.clientY + "px";
+  });
+  bin.addEventListener("pointerup", e => {
+    if(!ball || e.pointerId !== pid) return;
+    const r = $("#lane").getBoundingClientRect(), pad = 36;
+    const over = e.clientX > r.left - pad && e.clientX < r.right + pad && e.clientY > r.top - pad && e.clientY < r.bottom + pad;
+    if(moved && over){
+      kill();
+      takeBille(col);
+    } else {
+      const br = bin.getBoundingClientRect();
+      ball.style.transition = "left .3s ease, top .3s ease, opacity .35s";
+      ball.style.left = (br.left + br.width/2) + "px";
+      ball.style.top = (br.top + br.height/2) + "px";
+      ball.style.opacity = "0";
+      const bb = ball; ball = null;
+      setTimeout(() => bb.remove(), 380);
+      if(!moved) shake();
+    }
+  });
+  bin.addEventListener("pointercancel", kill);
+}
+makeBinDrag("bin-a", "a");
+makeBinDrag("bin-b", "b");
 $("#mode-sel").onchange = e => { S.mode = e.target.value; save(); renderChips(); toast(e.target.value === "deco" ? "Décomposer seulement" : (e.target.value === "compter" ? "Compter et écrire" : "Tour complet")); };
 $("#opt-both").onchange = e => { S.decoBoth = e.target.checked; save(); if(phase === "deco") renderDeco(); };
 let armedH = false, armHT = null;
