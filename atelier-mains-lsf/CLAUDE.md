@@ -79,6 +79,30 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   passe de `pou:44/14/55/-20` (bout en hyperextension, pouce plaqué à plat) à `pou:45/35/40/25`, la valeur même du
   preset, et les quatre doigts de `Index (1)` se replient enfin à égalité (l'annulaire restait à 75°).
   **Repos face et dos inchangés au pixel près.**
+- **LE DOS DE LA MAIN (piste W)** — c'était une plaque lisse, mesuré sur les rendus de contrôle : aucun relief,
+  donc ni ombre ni trait. Le détecteur de plis lui-même n'y trouvait rien, parce qu'il n'y avait réellement rien
+  à trouver. Sur une vraie main (photos 2357, 2364, 2366, 2370) le dos montre trois choses, qui vont par paires :
+  les **tendons extenseurs** (quatre cordes du poignet aux jointures), les **vallées** entre ces cordes, et les
+  **sillons** entre deux doigts repliés. Tendons et vallées suivent l'EXTENSION ; sillons et jointures suivent la
+  FLEXION. Le dos n'est donc jamais plat, mais il ne montre jamais les deux reliefs à la fois — c'est ce qui
+  sépare une main d'un gant. Tout passe par `knAdd` (le mécanisme du relief des jointures) et par `rootBlend`,
+  donc à la pose du dessin l'amplitude est nulle et le repos reste exact au pixel près.
+  Deux choses apprises en le réglant :
+  1. **Une côte haute et étroite ne passe pas.** Le maillage (pas de 5 px) ne sait pas la lisser, et chaque facette
+     se lit comme un trait : le dos se couvrait de griffures. Pente ≈ 2 × hauteur / largeur, à garder basse — un
+     tendon est un renflement DOUX, qu'on voit par l'ombre et pas par un trait. `TEND`=0,11 `VALL`=0,075
+     `SILL`=0,15, largeurs 0,40 à 0,46 × l'écartement des métacarpiens.
+  2. **Deux reliefs par sommet ne suffisaient plus.** `KNI`/`KNW` ne gardaient que les DEUX plus forts : avec
+     quatorze bosses bien séparées ça allait, mais les champs du dos se recouvrent, et la frontière où le
+     classement bascule rend le déplacement DISCONTINU — encore des facettes. `KNB` = 4 repousse la discontinuité
+     sur le quatrième relief, bien plus faible, et elle cesse de se voir. L'amplitude est aussi SIGNÉE désormais
+     (le signe voyage avec le pilote, le précalcul ne voit que la valeur absolue) : on peut creuser, pas seulement
+     bomber.
+- **Détecteur de plis : ÉTEINT** (`CRV` = 1e4, `window.__atelier.setCrv` pour le rallumer). Mesuré sur cinq vues,
+  détecteur contre détecteur éteint : sur `Poing serré` et `Pince` il ne change RIEN de visible (198 et 175 pixels
+  sur 350 000, invisibles à l'œil, vérifié en gros plan côte à côte) ; sur le dos de la main il ne produit que des
+  griffures, en lisant chaque facette du relief comme un trait. Il avait été écrit pour faire lire les creux ; le
+  relief du dos le fait mieux, par l'ombre. Le code reste en place, la passe le saute quand le seuil dépasse 100.
 - **Éminence thénar (tissus)** : c'est le volume qui change le PLUS sur la paume quand on signe, et il était
   absolument fixe — la peau suivait la base du pouce, mais le muscle dessous ne gonflait jamais. Les trois muscles
   de la base du pouce (court abducteur, court fléchisseur, opposant) sont d'autant plus contractés que le pouce
