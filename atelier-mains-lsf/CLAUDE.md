@@ -111,9 +111,10 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   longueur du métacarpien : `THEN` = 0,17 × cette longueur. À (0,0) la mesure vaut 0, donc le dessin au repos ne
   bouge pas d'un pixel (vérifié). Le pas de quantification de `KNW` suit désormais la plus forte amplitude : le
   thénar dépasse une jointure et aurait été écrêté à 0,25.
-  **Reste à faire côté tissus** : la commissure pouce–index (première palmure). Une étude cadavérique de 2023
-  montre qu'elle s'ouvre en quadrilatère irrégulier incliné vers l'index, plus large en abduction PALMAIRE qu'en
-  abduction radiale ; elle est ici une simple échancrure qui ne s'ouvre pas.
+  **Commissure pouce–index : vérifiée, rien à faire.** Je l'avais annoncée comme « une simple échancrure qui ne
+  s'ouvre pas » ; c'était faux. Rendue à trois abductions (0°, 22°, 45°) en paume, dos et biais, la palmure
+  s'ouvre bien en nappe continue et sa courbe reste lisse — la peau étant UNE surface fermée, le tissu s'étire
+  tout seul. Ne pas y ajouter de déformeur : il n'y a pas de problème à résoudre.
 - **Fléchisseur profond commun** : `dip ≥ 0,45 (pip − 55)`. On ne tient pas l'articulation du milieu pliée à fond
   avec le bout parfaitement tendu ; ce doigt-là se lisait comme une pièce mécanique. (La borne haute
   `dip ≤ 25 + 0,65 pip` existait déjà : le couplage est maintenant dans les deux sens.)
