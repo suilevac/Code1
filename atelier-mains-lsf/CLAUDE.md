@@ -371,6 +371,12 @@ diagnostic — à garder en tête avant de refaire la même erreur :
    - Balayage de 1 232 poses de pouce contre cette cible : le preset passe de `TH(45,35,40,25)` à
      `TH(20,0,50,65)`, l'écart à la cible de **5,52 à 1,0 unité**, sans une seule unité de pénétration en plus
      (0,77, qui est celle des quatre doigts eux-mêmes).
+   - **v18 : `TH(24,10,35,60)`, le pouce EN TRAVERS des P2.** La critique finale (lot 3) a relu la photo 2357 :
+     le pouce ne longe pas le flanc de l'index, il se couche SUR les P2 de l'index et du majeur, ongle vers le
+     haut, bout vers le majeur. Nouveau balayage (`exp/sweep2.py`, cible devant les P2, av ≤ 58, av + rap ≤ 92) :
+     meilleur `[24, 10, 35, 60]`, écart 0,92, pénétration 0,18 brute, 0,29 après `solve` (plafond 0,5), le solveur
+     le garde tel quel. Vue de face : le pouce barre l'index et le majeur comme sur la photo ; de profil il
+     ressort au même endroit qu'avant. L'ancien `[20, 0, 46, 65]` laissait le pouce À CÔTÉ du poing.
 
 **Contour dans un creux de contact.** `HULL_FS` gardait la coque dès que deux parties étaient deux doigts
 différents (`real`), quel que soit l'écart de profondeur. Deux doigts repliés qui SE TOUCHENT ont un écart nul :
@@ -555,10 +561,12 @@ S = {
 
 ### Pièges rencontrés sur cette version (relus par une revue multi-axes, puis corrigés)
 
-- **Main en miroir ⇒ normales à l'envers.** `scale.x = -1` : Three.js retourne bien le sens des faces, mais
-  `normalMatrix` est l'inverse TRANSPOSÉE, donc elle retourne aussi la normale. Sans correction la main gauche
-  recevait la lumière à l'envers (aplat uniforme, sans modelé) et la repeinte de peau sous l'ongle se déclenchait
-  sur la face cachée. Uniforme `nflip` dans le nuanceur de peau, mis à −1 par `mkHand` pour une main gauche.
+- **Main en miroir : la normale est DÉJÀ bonne.** `scale.x = -1` : `normalMatrix` est l'inverse transposée de
+  modelView ; pour une réflexion (matrice orthogonale de déterminant −1) c'est la matrice elle-même, donc la
+  normale est réfléchie comme la position et reste sortante. Une version antérieure croyait l'inverse et mettait
+  l'uniforme `nflip` à −1 pour la main gauche : mesuré sur la planche à deux mains, 98 % des pixels de la gauche
+  tombaient dans le ton d'ombre (luminance moyenne 81 contre 95 pour la droite). À +1 les deux mains ont la même
+  part d'ombre (0,16 / 0,18, luminance 101 / 101). `nflip` reste dans le nuanceur, à +1 ; `mkHand` n'y touche plus.
 - **Un seul `gR` pour tout l'écran.** La passe des traits intérieurs est UNIQUE : prendre le maximum des deux mains
   ouvrait le détecteur de plis et épaississait les traits de la main restée au repos, donc « Dessin = dessin exact
   au pixel près » tombait dès qu'on affichait les deux. La passe identité écrit désormais `gR` dans son canal BLEU
@@ -607,6 +615,40 @@ S = {
   moins ~1,25 px d'écran (`max(nailLW, 1.25*fwidth(sd))`), multiplié par le profil en « U » pour que le bord libre
   reste ouvert. Au zoom des rendus de contrôle, `fwidth` < 1,9 : la pose du dessin est inchangée.
   (Depuis la piste N, la largeur est constante à l'écran à tout angle : `nailPx` × `vAw`, voir « Ongles ».)
+
+## Lot 3 — critique finale et corrections (v18)
+
+Trois critiques indépendants (anatomie contre ses photos, artefacts de rendu, régressions et usage) ont relu la
+version intégrée. Ce qu'ils ont trouvé de bloquant, et ce qui a été fait :
+
+- **Main gauche à 98 % dans l'ombre** : `nflip = −1` était une erreur de raisonnement (voir le piège corrigé plus
+  haut) ; supprimé. Mesuré après : luminance 101 / 101, part d'ombre 0,16 / 0,18 pour les deux mains.
+- **Flèches absentes avec trois étapes et le référent** : `drawArrows` sautait tout segment plus court que 7 fois
+  la largeur du trait ; à l'échelle du référent, les étapes insérées par défaut sont à un quart d'intervalle et
+  tombaient sous ce seuil. Seuil ramené à 3 fois le trait.
+- **Deux mains qui se chevauchent avec des étapes** : `ensureSide` écartait la main en miroir d'une distance fixe
+  (18) ; avec des étapes, la main droite balaie une plage en x (`span`) et la gauche tombait dedans. L'écart
+  tient compte de la plage : `18 + span`.
+- **« Cadre » rectangulaire sur le flanc du majeur en vue Profil** (« Index (1) », « L », « Y ») : diagnostiqué à
+  tort comme la crête du bombé d'ongle (`NDOME` .17 → .11, `NFOLD` 1.6 → 1.2, `NARC` 1.8 → 2.6 : réglages
+  gardés, ils adoucissent le bombé, mais le cadre restait). Isolé en cachant tour à tour la coque, la passe
+  identité et le trait d'ongle, puis en coupant le maillage posé (`exp/cadre/`) : c'est **le creux du poing**,
+  l'espace fermé par P1, P2, P3 du majeur replié et la paume (1,6 × 1 unité, 1,5 de profondeur), dans lequel on
+  regarde de profil ; son rebord est un vrai contour (la coque le trace) et la passe identité ajoutait l'arête
+  paroi / fond : un rectangle à double trait. Règle « en retrait » (`rec`) dans `edgeMat` : un pixel qui a une
+  surface nettement plus proche (> 1,1 unité) à moins de 0,4 unité est une paroi ou un fond, aucun trait
+  intérieur n'en part. Le double trait disparaît ; le rebord reste (défaut connu 0). Une ombre de creux (`pit`,
+  `cavA`) a été essayée et laissée éteinte : voir le commentaire du nuanceur.
+- **Pouce du poing à côté du poing** : preset `[24, 10, 35, 60]` (piste X, point 4, v18).
+
+Non traité, documenté : les doigts repliés lus comme des tubes séparés côté paume, « Pince » qui ne ferme pas
+tout à fait, « O » trop fermé, « Poing (A) » au pouce peu levé, P2 du pouce qui se soulève en « B » et « 4 »,
+anneaux de trait en vue Dessus, trait lourd à l'export à l'échelle de la planche.
+
+**Contrôles après le lot** : `cas_0` identique au pixel près, `cas_1` inchangé hors zone des ongles (917 px) ;
+aucune erreur JS sur référent, deux mains, étapes, flèches, fond, export ; 15 presets × 4 vues comparés avant /
+après : seules les vues du poing changent au-delà de quelques centaines de pixels (le pouce), le reste est des
+traits intérieurs retirés dans des creux.
 
 ## Architecture précédente (v7)
 
@@ -683,6 +725,10 @@ python3 tests/balayage.py          # balayage anti-déformation (≈170 poses) �
    laisse qu'une dizaine. Cause : les phalanges moyenne et distale sont trop longues (voir la mesure des doigts) et
    le doigt est trop mince en profil. Le relief des jointures et la correction de tranche l'ont réduit, pas supprimé ;
    il faudra rapprocher les longueurs de 1 : 0,56 : 0,50 pour le fermer.
+   *v18 (lot 3)* : remesuré en coupe sur « Index (1) » : 1,6 × 1 unité, 1,5 de profondeur, bords droits (P1, P2,
+   P3 sont des tubes droits). Le double trait est parti (règle `rec`), le rebord noir reste : c'est un contour
+   légitime autour d'un vrai trou. Pistes : P1 plus charnue (une vraie P1 masque le creux vu de côté), ou une
+   ombre de creux lissée (`cavA`, essayée brute : taches déchirées ailleurs).
 1. Stries légères sur l'ongle du pouce en pince : le dessin dos colle l'ongle du pouce au contour.
 2. La tranche de la main (profil) est déduite, pas dessinée (corrigée en partie, piste D).
 3. Quelques traits parasites possibles à la jointure pouce/paume selon l'angle.

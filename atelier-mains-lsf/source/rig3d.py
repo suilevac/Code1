@@ -308,13 +308,17 @@ back8 = wfin * fB + (1 - wfin) * hbP
 # base) : on garde sa FORME dessinée, recoupée à NAILM px de la tranche, coins arrondis, rangée en distance signée
 # (texture texNail, < 0 dans l'ongle) ; le shader le trace net à tout grossissement : aplat + trait fin comme le dessin.
 # Le volume suit : ongle bombé en travers, peau un peu relevée autour (replis latéraux et proximal, pas au bord libre).
-NAILM, NAILLW, NDOME, NFOLD = 10.0, 2.4, .17, 1.6   # marge de peau (px), trait (px), bombé (× demi-largeur), repli (px)
+NAILM, NAILLW, NDOME, NFOLD = 10.0, 2.4, .11, 1.2   # marge de peau (px), trait (px), bombé (× demi-largeur), repli (px)
 # NDOME : la tablette est un ARC en travers (rayon NARC × sa demi-largeur, pente maximale AU BORD), pas une bosse en S.
 # Mesuré sur l'index avec l'ancien profil (.08, smoothstep nul au bord) : la normale ne s'inclinait que de 6° de plus
 # qu'au repos (20° → 26° au bord, qui vient de l'arrondi du doigt), et l'ombre ne variait que de 3,3 à 4,9 % sur
 # l'ongle : invisible, l'ongle se lisait comme un autocollant. Arc de rayon 1,8 × demi-largeur : flèche 0,30 × la
 # demi-largeur (≈ 1,4 mm pour un ongle de 9 mm ; anatomie 1,3-1,8 mm), pente au bord 34° — ce que l'ombre lit.
-NARC = 1.8
+# Critique finale : à .17 / arc 1,8 (pente 34° au bord), la tablette en relief faisait, vue de chant sur un doigt
+# replié (vue « Profil » : Index (1), L, Y, poings), un CADRE noir rectangulaire sur le flanc du doigt — la coque
+# et la passe identité lisaient l'arête de la tablette comme un contour. Dôme plus bas et plus plat : le modelé
+# de l'ongle vient désormais du croissant peint, pas de la normale.
+NARC = 2.6
 from skimage.morphology import convex_hull_image
 _ss = lambda x: np.clip(x, 0, 1) ** 2 * (3 - 2 * np.clip(x, 0, 1))
 lumA = DA[..., :3].mean(-1)

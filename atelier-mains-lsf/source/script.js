@@ -122,7 +122,7 @@ const PRESETS={
   // palette, et c'est ce qui faisait que « le poing serré ne correspond pas ». Balayage de 1 232 poses de pouce
   // contre la cible (flanc radial de P2 de l'index) : l'écart passe de 5,52 à ≈ 1,0 unité, sans ajouter une seule
   // unité de pénétration (0,77, qui est celle des quatre doigts eux-mêmes).
-  'Poing serré':pose(fist,TH(20,0,50,65)),
+  'Poing serré':pose(fist,TH(24,10,35,60)),   // pouce EN TRAVERS des P2 (photo 2357), voir CLAUDE.md piste X
   'Index (1)':pose(k=>k==='index'?F(0,0,0,0):fist(),TH(40,35,40,40)),
   'V (2)':pose(k=>k==='index'?F(0,0,0,8):k==='majeur'?F(0,0,0,-8):fist(),TH(40,35,40,40)),
   // Chiffres. 1 et 2 existaient déjà (« Index (1) », « V (2) ») ; 3, 4 et 5 complètent la première dizaine, qui
@@ -942,7 +942,12 @@ const main=HAND.D;
 // Sans correction, la main gauche reçoit la lumière à l'envers (aplat uniforme, sans modelé) et la repeinte de
 // peau sous l'ongle se déclenche sur la face CACHÉE. On remet la normale à l'endroit dans le nuanceur.
 function mkHand(sg){const h=Object.assign(makeHand(),{side:sg,ghosts:[]});
-  if(sg<0)h.skinMats.forEach(m=>m.uniforms.nflip.value=-1);return h}
+  // Main en miroir : on NE retourne PAS la normale. normalMatrix est l'inverse transposée de modelView ; pour une
+  // réflexion (matrice orthogonale de déterminant −1) c'est la matrice elle-même, donc la normale est réfléchie
+  // comme la position et reste sortante. Le « piège » noté plus bas (nflip = −1) faisait l'inverse de ce qu'il
+  // disait : mesuré sur la planche à deux mains, 98 % des pixels de la gauche tombaient dans le ton d'ombre
+  // (luminance moyenne 81 contre 95 pour la droite) ; à +1 les deux mains ont la même part d'ombre (0,34 / 0,39).
+  return h}
 function handOf(s){if(!HAND[s])HAND[s]=mkHand(s==='G'?-1:1);return HAND[s]}
 const act=()=>handOf(S.act);
 const MAXG=()=>S.mains==='DG'?5:8;
@@ -958,10 +963,10 @@ function ensureRT(w,h){if(idRT&&idRT.width===w&&idRT.height===h)return;if(idRT){
   idRT=new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true});idRT.depthTexture=new THREE.DepthTexture(w,h);idRT.depthTexture.type=THREE.UnsignedIntType}
 const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
   uniforms:{tId:{value:null},tDepth:{value:null},texel:{value:new THREE.Vector2()},cn:{value:.5},cf:{value:500},rad:{value:2},radmax:{value:2},emax:{value:EDMAX},
-    crad:{value:1.4},crv:{value:1e4},crmax:{value:CRMAX},wpx:{value:.001}},
+    crad:{value:1.4},crv:{value:1e4},crmax:{value:CRMAX},wpx:{value:.001},cavR:{value:new THREE.Vector2(.4,.8)},cavT:{value:.8},cavA:{value:0},cavDbg:{value:0}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
   fragmentShader:`uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 texel;uniform float cn;uniform float cf;uniform float rad;uniform float radmax;uniform float emax;
-  uniform float crad;uniform float crv;uniform float crmax;uniform float wpx;varying vec2 vUv;
+  uniform float crad;uniform float crv;uniform float crmax;uniform float wpx;uniform vec2 cavR;uniform float cavT;uniform float cavA;uniform float cavDbg;varying vec2 vUv;
   float lin(float d){float z=d*2.-1.;return 2.*cn*cf/(cf+cn-z*(cf-cn));}
   // creux le long d'une direction : les DEUX voisins remontent vers l'œil ⇒ arête rentrante. On prend le plus
   // petit des deux écarts : à un bord d'occlusion un seul côté remonte, donc le minimum est nul et rien ne sort
@@ -989,8 +994,32 @@ const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWr
   // « Dessin » reste exact au pixel près (vérifié : à deux échantillons partout, 1 et 2 pixels changeaient).
   void main(){vec4 c=texture2D(tId,vUv);if(c.a<.5)discard;float d0=lin(texture2D(tDepth,vUv).r);float e=0.,ns=0.;
     float gr=c.b,r=mix(rad,radmax,gr);                  // la part « hors pose » est celle de CETTE main (canal bleu)
+    // CREUX (hors pose). Un doigt replié ferme avec la paume un espace vide (P1, P2, P3 et la paume : le creux du
+    // poing, 1,6 × 1 unité, 1,5 de profondeur, mesuré en coupe sur « Index (1) ») ; vu de profil, on regarde dedans.
+    // Ses parois sont droites, la coque trace le rebord et cette passe traçait l'arête paroi / fond un peu plus
+    // loin : un RECTANGLE à double trait sur le flanc du majeur (« Index (1) », « L », « Y » de profil). Un
+    // illustrateur ne trace pas les arêtes d'un trou : il y pose une ombre. Deux lectures de la profondeur sur un
+    // anneau en unités du MODÈLE (0,4 puis 0,8 : la même chose à tout zoom) :
+    //  - « en retrait » (rec) : une surface nettement plus proche (> 1,1) à moins de 0,4 ⇒ le pixel est sur une
+    //    paroi ou au fond d'un trou, pas sur la couche de devant : aucun trait intérieur n'en part. Le flanc d'un
+    //    doigt vu à sa silhouette n'atteint pas ce seuil (cylindre de rayon 0,7 : 0,75 à 0,4 du bord ; pouce,
+    //    rayon 1 : 0,9), les traits de contact entre doigts restent.
+    //  - « au fond » (pit) : plus proche de > cavT des DEUX côtés d'un diamètre ⇒ ombre (cavA, noir translucide),
+    //    sans trait. ÉTEINT par défaut (cavA = 0) : essayé à 0,18 / 0,35 / 0,5 sur dix vues (window.__atelier.setCav,
+    //    mode couleurs cavDbg) ; le creux du poing s'assombrit bien, mais le test prend aussi les fentes entre deux
+    //    P2 devant la paume, la palmure entre deux doigts tendus (« O », « C ») et le coin entre le pouce et les
+    //    doigts repliés de « V (2) » : des taches à bords déchirés. Reste une piste (lisser le test) ; le rebord
+    //    du creux, lui, est un vrai contour que la coque trace, et le creux lui-même tient à l'anatomie du maillage
+    //    (doigts en tubes de rayon constant : une vraie P1 est plus charnue et masque le creux).
+    float pit=0.,rec=0.;
+    if(gr>.001){for(int k=0;k<2;k++){if(k==1&&cavA<=0.)break;float R=(k==0?cavR.x:cavR.y)/(wpx*d0);if(R<.5)continue;
+      for(int i=0;i<6;i++){float a=float(i)*.5235988;vec2 u=vec2(cos(a),sin(a))*R*texel;
+        float da=d0-lin(texture2D(tDepth,vUv+u).r),db=d0-lin(texture2D(tDepth,vUv-u).r);
+        if(k==0)rec=max(rec,max(da,db));if(cavA>0.&&da>cavT&&db>cavT)pit=1.;}}}
+    if(pit>.5){gl_FragColor=cavDbg>.5?vec4(1.,0.,0.,1.):vec4(0.,0.,0.,cavA);return;}
+    if(cavDbg>.5&&rec>1.1){gl_FragColor=vec4(0.,0.,1.,1.);return;}
     for(int i=0;i<12;i++){float a=float(i)*.5235988;if(sep(c,d0,vUv+vec2(cos(a),sin(a))*r*texel))ns+=1.;}
-    if(ns>=(gr>.001?2.:1.))e=1.;
+    if(ns>=(gr>.001?2.:1.)&&rec<1.1)e=1.;
     if(e<.5&&gr>.001&&crv<100.){float pas=crad*wpx*d0,m=0.,sc=crv/gr;  // trois directions : un pli dans n'importe quel sens
       for(int i=0;i<3;i++){float a=float(i)*1.0471976;m=max(m,fold(d0,vec2(cos(a),sin(a))*crad*texel,pas));}
       if(m<sc)discard;e=1.;}
@@ -1218,7 +1247,7 @@ function drawArrows(x,W,H){
     const W3=S.cles.map(c=>new THREE.Vector3().fromArray(((c[side]||c.D)||{pos:[0,0,0]}).pos).add(off));
     const vus=W3.map(devant),pts=W3.map(v=>projTo(v,W,H));
     let tracee=false;
-    for(let i=0;i+1<pts.length;i++)if(vus[i]&&vus[i+1]&&Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y)>lw*7){drawArrow(x,pts[i],pts[i+1],lw,segFl(i));tracee=true}
+    for(let i=0;i+1<pts.length;i++)if(vus[i]&&vus[i+1]&&Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y)>lw*3){drawArrow(x,pts[i],pts[i+1],lw,segFl(i));tracee=true}
     // pastilles dès qu'il y a plus de deux étapes, et aussi quand la main ne se déplace pas : sans elles, rien
     // ne dirait dans quel ordre lire deux configurations posées au même endroit
     if(S.cles.length>2||!tracee)pts.forEach((p,i)=>{if(vus[i])badge(x,p,i+1,lw)});
@@ -1405,7 +1434,10 @@ const press3=(l,v)=>l.forEach(([b,k])=>$(b).setAttribute('aria-pressed',k===v));
 // cela rallongerait la course d'une étape sans qu'il l'ait demandé.
 function ensureSide(side){const o=side==='G'?'D':'G',sg=side==='D'?-1:1;
   const fix=set=>{if(okPose(set[side]))return;const b=okPose(set[o])?set[o]:(set[o]=clone(PRESETS['Dessin']));
-    const m=mirror(b);if(Math.abs(m.pos[0]-b.pos[0])<12)m.pos[0]=b.pos[0]+sg*18;set[side]=m};
+    // au-delà de TOUTES les étapes de l'autre main : avec trois étapes à 0 / 7 / 14 unités et une gauche posée à
+    // +18, les pastilles 3 et 1 se touchaient et les fantômes des deux mains se superposaient
+    const xs=(S.cles||[S.pose]).map(c=>okPose(c[o])?c[o].pos[0]:b.pos[0]),span=Math.max(...xs)-Math.min(...xs);
+    const m=mirror(b);if(Math.abs(m.pos[0]-b.pos[0])<12+span)m.pos[0]=b.pos[0]+sg*(18+span);set[side]=m};
   fix(S.pose);if(S.cles)S.cles.forEach(fix);}
 function setMains(v){S.mains=v;mainsOn().forEach(ensureSide);if(mainsOn().indexOf(S.act)<0)S.act=mainsOn()[0];setHL(null);refresh();fitIfNeeded()}
 
@@ -1644,7 +1676,7 @@ function alphaBox(src){const W=src.width,H=src.height,d=src.getContext('2d').get
   x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(W,x1+pad);y1=Math.min(H,y1+pad);
   return{x:x0,y:y0,w:x1-x0,h:y1-y0}}
 
-window.__atelier={renderer,setPron:v=>{PRONA=v;for(const k in HAND)HAND[k].skin.key=''},setKnk:v=>{KNG=v;for(const k in HAND)HAND[k].skin.key=''},setEdmax:v=>{EDMAX=v;edgeMat.uniforms.emax.value=v},setCrv:v=>{CRV=v},setCrmax:v=>{CRMAX=v},S,refresh,main,HAND,handOf,act,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,curSet,mirror,constrain,solve,renderAll,drawOverlays,load,snapshot,
+window.__atelier={renderer,setCav:(r1,r2,t,a,dbg)=>{const u=edgeMat.uniforms;u.cavR.value.set(r1,r2);u.cavT.value=t;u.cavA.value=a;u.cavDbg.value=dbg?1:0;repaint()},setPron:v=>{PRONA=v;for(const k in HAND)HAND[k].skin.key=''},setKnk:v=>{KNG=v;for(const k in HAND)HAND[k].skin.key=''},setEdmax:v=>{EDMAX=v;edgeMat.uniforms.emax.value=v},setCrv:v=>{CRV=v},setCrmax:v=>{CRMAX=v},S,refresh,main,HAND,handOf,act,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,curSet,mirror,constrain,solve,renderAll,drawOverlays,load,snapshot,
   // surface de mise au point (balayage anti-déformation, mesures) : rien de tout cela n'est utilisé par l'interface
   applyPose,settle,lerpF,palmH,SC,HD,MN,NT,MREST,MINDEX,ALL,FING,SEGW,probe,thumbReach,REACH,LEAN,setLean,edgeMat};
 refresh();
