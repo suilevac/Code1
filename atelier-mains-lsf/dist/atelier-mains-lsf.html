@@ -782,7 +782,7 @@ const CRIP=new Uint8Array(2*MN),CRWP=new Uint8Array(2*MN),CRID=new Uint8Array(2*
    le doigt tourne. Au repos tous les angles valent 0 : hauteur nulle, le dessin ne bouge pas d'un pixel.
    Direction : −f0 de l'articulation (le côté extenseur), donc exactement −z pour les doigts. */
 const KNK=.14;                 // hauteur de la bosse à flexion maximale (× demi-largeur du segment)
-const KNQ=.25/255;             // pas de quantification de la hauteur (unités moteur)
+let KNQ=.25/255;               // pas de quantification de la hauteur (unités moteur ; ajusté plus bas)
 let KNG=1;                     // multiplicateur global (mise au point : window.__atelier.setKnk)
 const KNJ=[],knAdd=(C,u,f0,s,w,rd,amp,drv)=>{const U=u.clone().normalize(),F=f0.clone().normalize();
   KNJ.push({C,u:U,f:F,lat:U.clone().cross(F).normalize(),s,w,rd,amp,drv})};
@@ -793,13 +793,29 @@ FING.forEach(k=>ARCJ[k].forEach((J,j)=>{const hw=hwOf(HD.segs[k][j]),key=['mcp',
     f=>clamp((f?f[k][key]||0:0)/CRMX[j],0,1))}));
 ['mcp','ip'].forEach((key,j)=>{const J=ARCJ.pouce[j],hw=hwOf(HD.segs.pouce[j]);
   knAdd(J.C,J.u,J.f0,hw,1.2*hw,J.rd,KNK*.8*hw,f=>clamp((f?f.pouce[key]||0:0)/CRMXT[j],0,1))});
+/* ÉMINENCE THÉNAR. C'est le volume qui change le PLUS sur la paume quand on signe, et il était absolument fixe :
+   la peau suivait la base du pouce, mais le muscle dessous ne gonflait jamais. Les trois muscles de la base du
+   pouce (court abducteur, court fléchisseur, opposant) sont d'autant plus contractés que le pouce s'OPPOSE — pas
+   qu'il s'avance seul, pas qu'il se rapproche seul. On réutilise donc exactement la mesure d'opposition qui pilote
+   déjà la pronation (`pronOf`), et le même mécanisme que le relief des jointures, mais côté PAUME et sur toute la
+   longueur du métacarpien. À (0,0) la mesure vaut 0 : le dessin au repos ne bouge pas d'un pixel. */
+const THEN=.17;                 // hauteur du gonflement (× longueur du métacarpien du pouce)
+{const A=toM(CMC_IMG[0],CMC_IMG[1],0),B=toM(MCP_T[0],MCP_T[1],0),u=B.clone().sub(A),L=u.length();u.normalize();
+ knAdd(A.clone().lerp(B,.52),u,Z.clone().negate(),.62*L,.44*L,1.1,THEN*L,
+   f=>{if(!f)return 0;const t=f.pouce,a=clamp(t.av/LIMT.av[1],0,1),r=clamp(Math.max(t.rap,0)/LIMT.rap[1],0,1);
+       return clamp(a*(.35+.65*r)+.25*r*(1-a),0,1)});}
 const KNN=KNJ.length,KNA=new Float32Array(KNN),KNI=new Uint8Array(2*MN),KNW=new Uint8Array(2*MN);
 {const bump=(J,x,y,z)=>{const rx=x-J.C.x,ry=y-J.C.y,rz=z-J.C.z,q=(rx*J.u.x+ry*J.u.y+rz*J.u.z)/J.s;
    if(q*q>9)return 0;const d=rx*J.f.x+ry*J.f.y+rz*J.f.z,l=rx*J.lat.x+ry*J.lat.y+rz*J.lat.z;
    return Math.exp(-q*q)*(1-smooth(J.w,1.7*J.w,Math.abs(l)))*smooth(0,.55*J.rd,-d)};   // côté dos seulement
+ const B0=new Float32Array(MN),B1=new Float32Array(MN);let mx=0;
  for(let i=0;i<MN;i++){const x=MREST[3*i],y=MREST[3*i+1],z=MREST[3*i+2];let b0=0,i0=0,b1=0,i1=0;
    for(let j=0;j<KNN;j++){const v=bump(KNJ[j],x,y,z)*KNJ[j].amp;if(v>b0){b1=b0;i1=i0;b0=v;i0=j}else if(v>b1){b1=v;i1=j}}
-   KNI[2*i]=i0;KNI[2*i+1]=i1;KNW[2*i]=Math.min(255,b0/KNQ);KNW[2*i+1]=Math.min(255,b1/KNQ)}}
+   KNI[2*i]=i0;KNI[2*i+1]=i1;B0[i]=b0;B1[i]=b1;if(b0>mx)mx=b0}
+ // le pas de quantification suit la plus forte amplitude : le thénar monte plus haut qu'une jointure et serait
+ // sinon écrêté à 0,25. On ne le diminue jamais, pour ne pas changer ce qui existait déjà.
+ KNQ=Math.max(.25,mx)/255;
+ for(let i=0;i<MN;i++){KNW[2*i]=Math.min(255,Math.round(B0[i]/KNQ));KNW[2*i+1]=Math.min(255,Math.round(B1[i]/KNQ))}}
 const gArc=x=>Math.abs(x)<1e-3?x/6+x*x*x/360:2/x-1/Math.tan(x/2);
 function arcState(J,q){ // décomposition « pivot + torsion » autour de l'axe u du doigt
   const u=J.u,tw=q.x*u.x+q.y*u.y+q.z*u.z,tn=Math.hypot(tw,q.w)||1;

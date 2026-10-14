@@ -79,6 +79,17 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   passe de `pou:44/14/55/-20` (bout en hyperextension, pouce plaqué à plat) à `pou:45/35/40/25`, la valeur même du
   preset, et les quatre doigts de `Index (1)` se replient enfin à égalité (l'annulaire restait à 75°).
   **Repos face et dos inchangés au pixel près.**
+- **Éminence thénar (tissus)** : c'est le volume qui change le PLUS sur la paume quand on signe, et il était
+  absolument fixe — la peau suivait la base du pouce, mais le muscle dessous ne gonflait jamais. Les trois muscles
+  de la base du pouce (court abducteur, court fléchisseur, opposant) sont d'autant plus contractés que le pouce
+  s'OPPOSE, pas qu'il s'avance seul ni qu'il se rapproche seul. On réutilise donc la mesure d'opposition qui pilote
+  déjà la pronation, et le même mécanisme que le relief des jointures (`knAdd`), mais côté PAUME et sur toute la
+  longueur du métacarpien : `THEN` = 0,17 × cette longueur. À (0,0) la mesure vaut 0, donc le dessin au repos ne
+  bouge pas d'un pixel (vérifié). Le pas de quantification de `KNW` suit désormais la plus forte amplitude : le
+  thénar dépasse une jointure et aurait été écrêté à 0,25.
+  **Reste à faire côté tissus** : la commissure pouce–index (première palmure). Une étude cadavérique de 2023
+  montre qu'elle s'ouvre en quadrilatère irrégulier incliné vers l'index, plus large en abduction PALMAIRE qu'en
+  abduction radiale ; elle est ici une simple échancrure qui ne s'ouvre pas.
 - **Fléchisseur profond commun** : `dip ≥ 0,45 (pip − 55)`. On ne tient pas l'articulation du milieu pliée à fond
   avec le bout parfaitement tendu ; ce doigt-là se lisait comme une pièce mécanique. (La borne haute
   `dip ≤ 25 + 0,65 pip` existait déjà : le couplage est maintenant dans les deux sens.)
