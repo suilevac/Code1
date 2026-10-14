@@ -157,8 +157,15 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
 .tracebox svg{position:absolute; inset:0; width:100%; height:100%}
 .tracebox canvas{position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:crosshair; display:block}
 .tghost{fill:none; stroke:#C7D3E8; stroke-width:12; stroke-linecap:round; stroke-linejoin:round}
-.tpt{fill:var(--red); transform-box:fill-box; transform-origin:center; transition:fill .15s, transform .2s}
-.tpt.lit{fill:var(--gold); transform:scale(1.35)}
+.tink{fill:none; stroke:var(--ink); stroke-width:11; stroke-linecap:round; stroke-linejoin:round}
+.tink2{fill:none; stroke:var(--tc,#2A68CC); stroke-width:11; stroke-linecap:round; stroke-linejoin:round; opacity:.92}
+.tdot circle{fill:var(--red); transition:fill .15s}
+.tdot text{fill:#fff; font-family:var(--font-display); font-weight:600; font-size:9px; text-anchor:middle; dominant-baseline:central; pointer-events:none}
+.tdot.lit circle{fill:var(--gold)}
+.tdot.next circle{animation:dotpulse 1s ease-in-out infinite; transform-box:fill-box; transform-origin:center}
+@keyframes dotpulse{50%{transform:scale(1.4)}}
+.tfront{fill:var(--tc,#2A68CC); transform-box:fill-box; transform-origin:center; animation:dotpulse 1s ease-in-out infinite}
+.tracebox.nope{animation:shake .45s}
 .tsteps{display:flex; gap:clamp(5px,.8vw,10px)}
 .tstep{border-radius:999px; border:3px solid var(--rule-soft); padding:3px clamp(10px,1.2vw,18px); font-weight:700;
   font-size:clamp(11px,1.2vw,15.5px); color:var(--ink-faint); background:#fff; font-family:var(--font-display)}
@@ -389,7 +396,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
       <div class="deco-turn" id="trace-turn"></div>
       <div class="tracewrap" id="tracewrap">
         <div class="tracebox" id="tracebox">
-          <svg id="tsvg" viewBox="-14 -12 128 132" aria-hidden="true"><g id="t-ghost"></g><g id="t-start"></g><g id="t-dots"></g></svg>
+          <svg id="tsvg" viewBox="-14 -12 128 132" aria-hidden="true"><g id="t-ghost"></g><g id="t-ink"></g><g id="t-start"></g><g id="t-dots"></g></svg>
           <canvas id="tpad"></canvas>
           <button class="wclear" id="tpad-clear">effacer</button>
         </div>
@@ -489,7 +496,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
     <p class="note">
       <b>Le tour.</b> La boîte s'ouvre, la collection apparaît → chacun compte dans sa tête et écrit le nombre sur son ardoise → on lève les ardoises → tu cliques sur l'élève qui a écrit juste le premier → il vient écrire le chiffre au tableau → tu cliques sur le chiffre qu'il a écrit. Juste : médaille. Faux : on recompte tous ensemble, personne ne perd rien, un autre peut essayer.<br><br>
       <b>Le secret du chiffre.</b> Le chiffre se retrace, puis il se couvre d'autant de points rouges que le nombre : 4 points pour le 4. On les compte à voix haute. Les points sont posés sur le tracé : ils servent aussi de repères pour écrire le chiffre.<br><br>
-      <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau, écrit le chiffre au stylet et le valide. On déroule le secret du chiffre (les points filent dans les coins, le chiffre se fonce, son tracé s'anime). Puis <b>chacun s'entraîne en trois temps, dans un ordre tiré au sort</b> affiché à l'écran : ① repasser sur le chiffre en allumant tous les points au stylet, ② repasser sur le chiffre sans les points (l'écran sent tout seul quand le tracé est couvert), ③ l'écrire tout seul, sans modèle — c'est toi qui donnes l'étoile. Ensuite vient la décomposition du même nombre, et c'est <b>celui qui avait trouvé le premier qui recommence</b>.<br><br>
+      <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau, écrit le chiffre au stylet et le valide. On déroule le secret du chiffre (les points filent dans les coins, le chiffre se fonce, son tracé s'anime). Puis <b>chacun s'entraîne en trois temps, dans un ordre tiré au sort</b> affiché à l'écran : ① relier les points numérotés dans l'ordre au stylet — à chaque point touché on compte (1, 2, 3…) et le chiffre apparaît morceau par morceau ; ② repasser sur le chiffre dans le sens du tracé, en partant du rond qui clignote — l'écran n'avance que si le stylet suit vraiment le chemin ; ③ l'écrire tout seul, sans modèle — c'est toi qui donnes l'étoile. Ensuite vient la décomposition du même nombre, et c'est <b>celui qui avait trouvé le premier qui recommence</b>.<br><br>
       <b>La décomposition.</b> Chacun son tour : prendre un paquet de billes dans la boîte rouge et un paquet dans la boîte bleue, les poser sur la droite. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand elle est juste, on vérifie en comptant les doigts un par un, les deux cases s'affichent — <b>3</b> + <b>4</b> — puis la flèche vers le nombre de départ : → 7. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
       <b>Au clavier.</b> <kbd>Espace</kbd> bouton principal · <kbd>1</kbd>…<kbd>9</kbd> le chiffre écrit au tableau · <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> l'élève qui va au tableau · <kbd>R</kbd> recompter · <kbd>Échap</kbd> fermer.<br><br>
       <b>Programmes.</b> Cycle 1 : dénombrer une collection jusqu'à 10, dire combien il y en a, utiliser le nombre pour exprimer une quantité, reconnaître de petites quantités organisées, écrire les chiffres. Cycle 2, CP : dénombrer, lire et écrire les nombres, associer les représentations (collection, constellation, doigts, chiffre), décomposer avec les deux paquets.
@@ -1488,44 +1495,109 @@ function renderTraceTurn(){
   });
 }
 function renderTSteps(){
-  const names = ["1 · avec les points", "2 · sur le modèle", "3 · tout seul"];
+  const names = ["1 · relier les points", "2 · sur le chiffre", "3 · tout seul"];
   $("#tsteps").innerHTML = names.map((nm, i) =>
     '<span class="tstep' + (i + 1 === T.stage ? " now" : (i + 1 < T.stage ? " done" : "")) + '">' + nm + (i + 1 < T.stage ? " ✓" : "") + '</span>'
   ).join("");
 }
+function revealChain(group, lens, target){
+  let cum = 0;
+  Array.from(group.children).forEach((pa, i) => {
+    const L = lens[i];
+    const show = Math.max(0, Math.min(L, target - cum));
+    pa.style.strokeDashoffset = L - show;
+    cum += L;
+  });
+}
+function traceShake(){
+  const bx = $("#tracebox");
+  bx.classList.remove("nope"); void bx.offsetWidth; bx.classList.add("nope");
+  tone(260, 0.14, "sine", 0.1);
+}
 function setStage(stage){
   clearTimers();
-  T.stage = stage; T.done = false;
+  T.stage = stage; T.done = false; T.lastWrong = 0;
   const n = R.n, who = T.who, c = COLORS[who.color] || "#16284F";
   tracePad.clear();
   requestAnimationFrame(() => { fitTrace(); });
   $("#tracebox").classList.remove("win");
-  $("#t-dots").innerHTML = ""; $("#t-ghost").innerHTML = ""; $("#t-start").innerHTML = "";
+  $("#tsvg").style.setProperty("--tc", c);
+  $("#t-dots").innerHTML = ""; $("#t-ghost").innerHTML = ""; $("#t-ink").innerHTML = ""; $("#t-start").innerHTML = "";
   renderTSteps();
-  const ghost = (DIGITS[n] ? DIGITS[n].p : []).map(d => '<path class="tghost" d="' + d + '"/>').join("");
   if(stage === 1){
-    $("#t-ghost").innerHTML = ghost;
-    T.dots = (ANG[n] ? ANG[n].d : []).map((d, i) => ({x:d[0], y:d[1], lit:false, i:i}));
-    T.dots.forEach(d => {
-      const cEl = svgEl("circle", {class:"tpt", r:8, cx:d.x, cy:d.y});
-      cEl.dataset.i = d.i;
-      $("#t-dots").appendChild(cEl);
+    /* relier les points dans l'ordre : le chiffre apparaît grâce au tracé */
+    const g = $("#t-ink");
+    g.innerHTML = (ANG[n] ? ANG[n].s : []).map(d => '<path class="tink" d="' + d + '"/>').join("");
+    const paths = Array.from(g.children);
+    T.lens = paths.map(pa => pa.getTotalLength());
+    T.total = T.lens.reduce((x, y) => x + y, 0);
+    paths.forEach((pa, i) => {
+      pa.style.strokeDasharray = T.lens[i];
+      pa.style.strokeDashoffset = T.lens[i];
+      pa.style.transition = "stroke-dashoffset .3s ease";
     });
-    say('<span style="color:' + c + '">' + who.name + '</span> repasse sur le <em>' + n + '</em>', "Allume tous les points !");
-    speak(who.name + " ! Repasse sur le " + WORDS[n] + " et allume tous les points.");
+    const dots = ANG[n] ? ANG[n].d : [];
+    T.dotPos = dots.map(d => {
+      let best = 0, bd = 1e9, cum = 0;
+      paths.forEach((pa, i) => {
+        for(let k = 0; k <= T.lens[i]; k += 2){
+          const q = pa.getPointAtLength(k);
+          const dist = Math.hypot(q.x - d[0], q.y - d[1]);
+          if(dist < bd){ bd = dist; best = cum + k; }
+        }
+        cum += T.lens[i];
+      });
+      return best;
+    });
+    T.next = 0;
+    T.dots = dots.map((d, i) => ({x:d[0], y:d[1], i:i}));
+    T.dots.forEach(d => {
+      const gr = svgEl("g", {class:"tdot" + (d.i === 0 ? " next" : "")});
+      gr.dataset.i = d.i;
+      gr.appendChild(svgEl("circle", {r:9, cx:d.x, cy:d.y}));
+      const tx = svgEl("text", {x:d.x, y:d.y}); tx.textContent = d.i + 1;
+      gr.appendChild(tx);
+      $("#t-dots").appendChild(gr);
+    });
+    say('<span style="color:' + c + '">' + who.name + '</span> relie les points dans l&rsquo;ordre', "Le chiffre va apparaître !");
+    speak(who.name + " ! Relie les points dans l'ordre, en comptant : le chiffre va apparaître.");
     buttons("", null, "Étape suivante →", () => setStage(2));
   } else if(stage === 2){
-    $("#t-ghost").innerHTML = ghost;
-    T.checks = [];
+    /* repasser sur le chiffre dans le sens du tracé, depuis le départ */
+    $("#t-ghost").innerHTML = (DIGITS[n] ? DIGITS[n].p : []).map(d => '<path class="tghost" d="' + d + '"/>').join("");
+    $("#t-ink").innerHTML = (DIGITS[n] ? DIGITS[n].p : []).map(d => '<path class="tink2" d="' + d + '"/>').join("");
+    const over = Array.from($("#t-ink").children);
+    T.lens = over.map(pa => pa.getTotalLength());
+    over.forEach((pa, i) => {
+      pa.style.strokeDasharray = T.lens[i];
+      pa.style.strokeDashoffset = T.lens[i];
+      pa.style.transition = "stroke-dashoffset .2s linear";
+    });
+    T.checks = []; T.prog = 0;
+    let cum = 0;
     Array.from($("#t-ghost").children).forEach(pa => {
       const L = pa.getTotalLength();
-      for(let d = 5; d < L; d += 9) {
-        const pt = pa.getPointAtLength(d);
-        T.checks.push({x:pt.x, y:pt.y, hit:false});
+      for(let k = 0; k <= L; k += 7){
+        const pt = pa.getPointAtLength(k);
+        T.checks.push({x:pt.x, y:pt.y, len:cum + k});
       }
+      cum += L;
     });
-    say('<span style="color:' + c + '">' + who.name + '</span>, sans les points&nbsp;!', "Repasse sur le chiffre.");
-    speak("Maintenant sans les points : repasse sur le " + WORDS[n] + ".");
+    const marks = [];
+    Array.from($("#t-ghost").children).forEach((pa, i) => {
+      const p0 = pa.getPointAtLength(0);
+      let x = p0.x, y = p0.y;
+      marks.forEach(m => { if(Math.hypot(m.x - x, m.y - y) < 16){ x += 20; y -= 15; } });
+      marks.push({x:x, y:y});
+      const gg = svgEl("g", {});
+      gg.appendChild(svgEl("circle", {class:"startn", cx:x, cy:y, r:9}));
+      const tt = svgEl("text", {class:"startt", x:x, y:y}); tt.textContent = i + 1;
+      gg.appendChild(tt);
+      $("#t-start").appendChild(gg);
+    });
+    $("#t-dots").appendChild(svgEl("circle", {id:"tfront", class:"tfront", r:7, cx:T.checks[0].x, cy:T.checks[0].y}));
+    say('<span style="color:' + c + '">' + who.name + '</span> repasse sur le chiffre', "Pars du rond qui clignote et suis le chemin.");
+    speak("Maintenant, repasse sur le " + WORDS[n] + " : pars du rond qui clignote et suis le chemin, sans sauter.");
     buttons("", null, "Étape suivante →", () => setStage(3));
   } else {
     say('<span style="color:' + c + '">' + who.name + '</span>, tout seul&nbsp;!', "Écris le " + n + " sans modèle.");
@@ -1541,30 +1613,47 @@ function traceHit(nx, ny){
   if(phase !== "trace" || !T || T.done) return;
   const vx = -14 + nx * 128, vy = -12 + ny * 132;
   if(T.stage === 1 && T.dots){
-    T.dots.forEach(d => {
-      if(!d.lit && Math.hypot(d.x - vx, d.y - vy) < 13){
-        d.lit = true;
-        const el = document.querySelector('.tpt[data-i="' + d.i + '"]');
-        if(el) el.classList.add("lit");
-        const lit = T.dots.filter(x => x.lit).length;
-        tone(500 + lit * 70, 0.18, "triangle", 0.15);
-        speak(WORDS[lit]);
+    const exp = T.dots[T.next];
+    if(exp && Math.hypot(exp.x - vx, exp.y - vy) < 13){
+      const el = document.querySelector('.tdot[data-i="' + exp.i + '"]');
+      if(el){ el.classList.remove("next"); el.classList.add("lit"); }
+      T.next++;
+      revealChain($("#t-ink"), T.lens, T.next >= T.dots.length ? T.total : T.dotPos[T.next - 1]);
+      tone(500 + T.next * 70, 0.18, "triangle", 0.15);
+      speak(WORDS[T.next]);
+      const nxt = document.querySelector('.tdot[data-i="' + T.next + '"]');
+      if(nxt) nxt.classList.add("next");
+      if(T.next >= T.dots.length){
+        T.done = true;
+        $("#tracebox").classList.add("win");
+        sfxWin();
+        later(() => speak("Et voilà le " + WORDS[R.n] + " ! Bravo !"), 500);
+        later(() => setStage(2), 2000);
       }
-    });
-    if(T.dots.every(d => d.lit)){ T.done = true; stageWon(2); }
+    } else if(Date.now() - T.lastWrong > 900){
+      const wrong = T.dots.some((d, k) => k > T.next && Math.hypot(d.x - vx, d.y - vy) < 13);
+      if(wrong){ T.lastWrong = Date.now(); traceShake(); }
+    }
   } else if(T.stage === 2 && T.checks && T.checks.length){
-    let hits = 0;
-    T.checks.forEach(ck => {
-      if(!ck.hit && Math.hypot(ck.x - vx, ck.y - vy) < 11) ck.hit = true;
-      if(ck.hit) hits++;
-    });
-    if(hits >= T.checks.length * 0.82){ T.done = true; stageWon(3); }
+    let j = -1;
+    for(let k = T.prog; k < Math.min(T.prog + 5, T.checks.length); k++){
+      if(Math.hypot(T.checks[k].x - vx, T.checks[k].y - vy) < 9.5) j = k;
+    }
+    if(j < 0) return;
+    T.prog = j + 1;
+    revealChain($("#t-ink"), T.lens, T.checks[T.prog - 1].len);
+    const fr = document.getElementById("tfront");
+    if(T.prog >= T.checks.length){
+      T.done = true;
+      if(fr) fr.remove();
+      $("#tracebox").classList.add("win");
+      sfxWin(); speak("Bravo !");
+      later(() => setStage(3), 1500);
+    } else if(fr){
+      fr.setAttribute("cx", T.checks[T.prog].x);
+      fr.setAttribute("cy", T.checks[T.prog].y);
+    }
   }
-}
-function stageWon(next){
-  $("#tracebox").classList.add("win");
-  sfxWin(); speak("Bravo !");
-  later(() => setStage(next), 1400);
 }
 function afterWriting(){
   if(S.mode === "plein") goDeco(); else startRound();
@@ -1670,7 +1759,7 @@ function openPanel(o){
   if(o) renderPanel();
 }
 $("#pad-clear").onclick = () => padBoard.clear();
-$("#tpad-clear").onclick = () => { tracePad.clear(); if(T){ if(T.stage === 1 && T.dots){ T.dots.forEach(d => d.lit = false); document.querySelectorAll(".tpt").forEach(e => e.classList.remove("lit")); } if(T.stage === 2 && T.checks) T.checks.forEach(c => c.hit = false); T.done = false; } };
+$("#tpad-clear").onclick = () => { if(phase === "trace" && T) setStage(T.stage); else tracePad.clear(); };
 $("#rsvg").onclick = () => { if(phase === "reveal" && rvStep < 3) nextStep(); };
 $("#bin-a").onclick = () => takeBille("a");
 $("#bin-b").onclick = () => takeBille("b");
