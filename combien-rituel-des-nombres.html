@@ -147,10 +147,39 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
 .rcap b{color:var(--red)}
 .rstage{flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr);
   gap:clamp(10px,2vw,28px); place-items:center; width:100%}
-.rstage.two{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .rmodel{height:100%; min-height:0; min-width:0; display:grid; place-items:center}
-.rwrite{height:100%; min-height:0; min-width:0; width:100%; display:flex; align-items:center; justify-content:center}
-.rwrite .wframe{height:100%; width:auto; max-width:100%; aspect-ratio:3/2}
+
+/* ---------- l'entrainement d'ecriture en trois temps ---------- */
+#view-trace{display:flex; flex-direction:column; align-items:center; gap:clamp(5px,1vh,12px); width:100%; flex:1; min-height:0}
+.tracewrap{flex:1; min-height:0; width:100%; display:grid; place-items:center}
+.tracebox{position:relative; background:#fff; border-radius:26px; box-shadow:var(--lift); border:3px solid var(--rule-soft); overflow:hidden}
+.tracebox.win{border-color:var(--gold); box-shadow:0 0 0 5px rgba(233,165,28,.35), var(--lift)}
+.tracebox svg{position:absolute; inset:0; width:100%; height:100%}
+.tracebox canvas{position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:crosshair; display:block}
+.tghost{fill:none; stroke:#C7D3E8; stroke-width:12; stroke-linecap:round; stroke-linejoin:round}
+.tpt{fill:var(--red); transform-box:fill-box; transform-origin:center; transition:fill .15s, transform .2s}
+.tpt.lit{fill:var(--gold); transform:scale(1.35)}
+.tsteps{display:flex; gap:clamp(5px,.8vw,10px)}
+.tstep{border-radius:999px; border:3px solid var(--rule-soft); padding:3px clamp(10px,1.2vw,18px); font-weight:700;
+  font-size:clamp(11px,1.2vw,15.5px); color:var(--ink-faint); background:#fff; font-family:var(--font-display)}
+.tstep.now{border-color:var(--bleu); color:var(--bleu)}
+.tstep.done{border-color:var(--vert); color:var(--vert)}
+
+/* ---------- le comptage final des doigts ---------- */
+#view-deco.counting .deco-main, #view-deco.counting .house, #view-deco.counting .deco-turn{display:none}
+#view-deco.counting{justify-content:center; gap:clamp(10px,2.4vh,28px)}
+#view-deco.counting .hs{height:clamp(120px,30vh,330px)}
+#view-deco.counting .handcard b{display:none}
+.eqrow{display:flex; align-items:center; justify-content:center; gap:clamp(8px,1.6vw,24px); flex-wrap:wrap}
+.eqcard{min-width:1.5em; padding:.02em .22em; text-align:center; border:5px solid var(--c,var(--ink)); border-radius:20px; background:#fff;
+  font-family:var(--font-display); font-weight:700; font-size:clamp(30px,5.6vw,80px); line-height:1.25; color:var(--c,var(--ink));
+  box-shadow:var(--lift); opacity:0; transform:scale(.4); transition:opacity .3s, transform .35s cubic-bezier(.2,1.6,.4,1)}
+.eqcard.on{opacity:1; transform:none}
+.eqrow .arr, .eqrow .plus{font-family:var(--font-display); font-weight:700; font-size:clamp(24px,4.4vw,64px); color:var(--ink-faint);
+  opacity:0; transition:opacity .3s}
+.eqrow .arr.on, .eqrow .plus.on{opacity:1}
+.eqcard.target{--c:var(--ink); background:#FFF6DC; border-color:var(--gold)}
+.fg.count{stroke:#E9A51C; stroke-width:7px}
 .glyphsvg{width:auto; height:100%; max-height:min(42vh,420px); max-width:100%; overflow:visible}
 .trace{fill:none; stroke:var(--ink); stroke-width:11; stroke-linecap:round; stroke-linejoin:round}
 .ghost{fill:none; stroke:var(--rule-soft); stroke-width:11; stroke-linecap:round; stroke-linejoin:round}
@@ -353,10 +382,19 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
             <g id="r-ang"></g><g id="r-school"></g><g id="r-start"></g><g id="r-dots"></g>
           </svg>
         </div>
-        <div class="rwrite" id="rwrite" hidden>
-          <div class="wframe"><span class="wtag">à toi d'écrire</span><canvas id="pad2"></canvas><button class="wclear" id="pad2-clear">effacer</button></div>
+      </div>
+    </div>
+
+    <div id="view-trace" hidden>
+      <div class="deco-turn" id="trace-turn"></div>
+      <div class="tracewrap" id="tracewrap">
+        <div class="tracebox" id="tracebox">
+          <svg id="tsvg" viewBox="-14 -12 128 132" aria-hidden="true"><g id="t-ghost"></g><g id="t-start"></g><g id="t-dots"></g></svg>
+          <canvas id="tpad"></canvas>
+          <button class="wclear" id="tpad-clear">effacer</button>
         </div>
       </div>
+      <div class="tsteps" id="tsteps"></div>
     </div>
     <div id="view-deco" hidden>
       <div class="deco-turn" id="deco-turn"></div>
@@ -366,6 +404,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
         <button class="bigbin" id="bin-b" style="--m:var(--mB)" aria-label="boîte bleue"><span class="binpile" id="pile-b"></span></button>
       </div>
       <div class="handsrow" id="deco-hands"></div>
+      <div class="eqrow" id="deco-eq2" hidden></div>
       <div class="house" id="house"></div>
     </div>
 
@@ -450,8 +489,8 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
     <p class="note">
       <b>Le tour.</b> La boîte s'ouvre, la collection apparaît → chacun compte dans sa tête et écrit le nombre sur son ardoise → on lève les ardoises → tu cliques sur l'élève qui a écrit juste le premier → il vient écrire le chiffre au tableau → tu cliques sur le chiffre qu'il a écrit. Juste : médaille. Faux : on recompte tous ensemble, personne ne perd rien, un autre peut essayer.<br><br>
       <b>Le secret du chiffre.</b> Le chiffre se retrace, puis il se couvre d'autant de points rouges que le nombre : 4 points pour le 4. On les compte à voix haute. Les points sont posés sur le tracé : ils servent aussi de repères pour écrire le chiffre.<br><br>
-      <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau, écrit le chiffre au stylet et le valide. On déroule alors le secret du chiffre, puis <b>chaque élève vient écrire le même chiffre à côté du modèle</b> — tout le monde passe, tout le monde a son étoile. Ensuite seulement vient la décomposition du même nombre.<br><br>
-      <b>La décomposition.</b> Chacun son tour : prendre un paquet de billes dans la boîte rouge et un paquet dans la boîte bleue, les poser sur la droite. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
+      <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau, écrit le chiffre au stylet et le valide. On déroule le secret du chiffre (les points filent dans les coins, le chiffre se fonce, son tracé s'anime). Puis <b>chacun s'entraîne en trois temps, dans un ordre tiré au sort</b> affiché à l'écran : ① repasser sur le chiffre en allumant tous les points au stylet, ② repasser sur le chiffre sans les points (l'écran sent tout seul quand le tracé est couvert), ③ l'écrire tout seul, sans modèle — c'est toi qui donnes l'étoile. Ensuite vient la décomposition du même nombre, et c'est <b>celui qui avait trouvé le premier qui recommence</b>.<br><br>
+      <b>La décomposition.</b> Chacun son tour : prendre un paquet de billes dans la boîte rouge et un paquet dans la boîte bleue, les poser sur la droite. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand elle est juste, on vérifie en comptant les doigts un par un, les deux cases s'affichent — <b>3</b> + <b>4</b> — puis la flèche vers le nombre de départ : → 7. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
       <b>Au clavier.</b> <kbd>Espace</kbd> bouton principal · <kbd>1</kbd>…<kbd>9</kbd> le chiffre écrit au tableau · <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> l'élève qui va au tableau · <kbd>R</kbd> recompter · <kbd>Échap</kbd> fermer.<br><br>
       <b>Programmes.</b> Cycle 1 : dénombrer une collection jusqu'à 10, dire combien il y en a, utiliser le nombre pour exprimer une quantité, reconnaître de petites quantités organisées, écrire les chiffres. Cycle 2, CP : dénombrer, lire et écrire les nombres, associer les représentations (collection, constellation, doigts, chiffre), décomposer avec les deux paquets.
     </p>
@@ -590,7 +629,7 @@ function traceIn(svg, ms){
 }
 
 /* ---------------- l'ardoise numerique : on ecrit au stylet ---------------- */
-function makePad(id){
+function makePad(id, onPoint){
   const cv = document.getElementById(id);
   if(!cv) return {clear(){}, setColor(){}, fit(){}, empty(){return true;}};
   const ctx = cv.getContext("2d");
@@ -627,9 +666,15 @@ function makePad(id){
   function at(e){ const r = cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width, y:(e.clientY-r.top)/r.height}; }
   cv.addEventListener("pointerdown", e => {
     e.preventDefault(); try{ cv.setPointerCapture(e.pointerId); }catch(err){}
-    cur = {color:color, pts:[at(e)]}; strokes.push(cur); redraw();
+    const q = at(e);
+    cur = {color:color, pts:[q]}; strokes.push(cur); redraw();
+    if(onPoint) onPoint(q.x, q.y);
   });
-  cv.addEventListener("pointermove", e => { if(!cur) return; e.preventDefault(); cur.pts.push(at(e)); seg(cur); });
+  cv.addEventListener("pointermove", e => {
+    if(!cur) return; e.preventDefault();
+    const q = at(e); cur.pts.push(q); seg(cur);
+    if(onPoint) onPoint(q.x, q.y);
+  });
   const stop = () => { cur = null; };
   cv.addEventListener("pointerup", stop);
   cv.addEventListener("pointercancel", stop);
@@ -819,8 +864,8 @@ function fitBox(){
 try{ new ResizeObserver(fitBox).observe(document.getElementById("view-box")); }catch(e){}
 window.addEventListener("resize", fitBox);
 
-const padBoard = makePad("pad"), padWrite = makePad("pad2");
-const VIEWS = {box:"#view-box", picks:"#view-picks", board:"#view-board", medal:"#view-medal", reveal:"#view-reveal", deco:"#view-deco"};
+const padBoard = makePad("pad"), tracePad = makePad("tpad", (x, y) => traceHit(x, y));
+const VIEWS = {box:"#view-box", picks:"#view-picks", board:"#view-board", medal:"#view-medal", reveal:"#view-reveal", deco:"#view-deco", trace:"#view-trace"};
 function show(list){
   Object.keys(VIEWS).forEach(k => { $(VIEWS[k]).hidden = list.indexOf(k) < 0; });
   $("#verdict").hidden = list.indexOf("reveal") < 0;
@@ -1001,14 +1046,14 @@ function celebrate(st, label, line2){
 function win(){
   clearTimers(); phase = "win";
   picked.stars++; S.streak++;
-  if(!R.order.length){ R.order = newOrderFrom(picked); R.writeIdx = 1; }
+  if(!R.order.length) R.order = newOrderFrom(picked);
   save();
   renderChips(picked.id);
   celebrate(picked, R.n, picked.name + " a trouvé le premier — maintenant tout le monde passe au tableau");
   say("C'est juste&nbsp;: il y en a <em>" + R.n + "</em>&nbsp;!", "");
   speak("Bravo " + picked.name + " ! C'est bien " + WORDS[R.n] + ".");
-  buttons(S.secret ? "Le secret du chiffre →" : "Au tour de " + (R.order[1] ? R.order[1].name : "la suite") + " →",
-          S.secret ? reveal : () => reveal(3), "", null);
+  buttons(S.secret ? "Le secret du chiffre →" : "À vous d'écrire →",
+          S.secret ? reveal : startPractice, "", null);
   later(S.secret ? reveal : () => {}, 2800);
   if(S.autoLevel && S.streak >= 5 && S.level < LEVELS.length - 1){
     S.level++; S.streak = 0; save(); renderChips();
@@ -1084,31 +1129,37 @@ function houseGot(n){ const g = S.houses[n]; return Array.isArray(g) ? g : []; }
 function decoPool(){ const p = S.digits.filter(d => d >= (S.decoBoth ? 2 : 1)); return p.length ? p : [3]; }
 function decoStudent(){ return (R && R.order && R.order[R.decoIdx]) || S.students[0]; }
 
-function handSVGC(cols, mirror){
+function handSVGC(cols, mirror, tagStart){
   const F = [{x:28,h:64},{x:46,h:74},{x:64,h:66},{x:82,h:52}], SKIN = "#FFD9B8";
+  let tag = (typeof tagStart === "number") ? tagStart : null;
+  const attr = () => (tag === null ? "" : ' class="fg" data-f="' + (tag++) + '"');
   let s = '<svg viewBox="-28 -4 138 156" aria-hidden="true"' + (mirror ? ' style="transform:scaleX(-1)"' : '') + '>';
   s += '<g stroke="#DFA87A" stroke-width="3.5" stroke-linejoin="round">';
   s += cols[0]
-    ? '<rect x="-24" y="70" width="24" height="60" rx="12" transform="rotate(32 -12 128)" fill="'+cols[0]+'"/>'
+    ? '<rect' + attr() + ' x="-24" y="70" width="24" height="60" rx="12" transform="rotate(32 -12 128)" fill="'+cols[0]+'"/>'
     : '<rect x="6" y="96" width="50" height="22" rx="11" fill="'+SKIN+'"/>';
   for(let i=0;i<4;i++){
     const f = F[i], c = cols[i+1], h = c ? f.h : 26;
-    s += '<rect x="'+f.x+'" y="'+(96-h)+'" width="16" height="'+(h+16)+'" rx="8" fill="'+(c||SKIN)+'"/>';
+    s += '<rect' + (c ? attr() : "") + ' x="'+f.x+'" y="'+(96-h)+'" width="16" height="'+(h+16)+'" rx="8" fill="'+(c||SKIN)+'"/>';
   }
   s += '<rect x="20" y="84" width="78" height="64" rx="24" fill="'+SKIN+'"/></g></svg>';
   return s;
 }
-function handCard(count, col){
+function handsSVG(count, col, tagStart){
   const hands = Math.max(1, Math.ceil(count / 5));
-  let hs = "";
+  let out = "", tag = (typeof tagStart === "number") ? tagStart : null;
   for(let h=0; h<hands; h++){
     const up = Math.max(0, Math.min(5, count - h*5));
     const cols = [];
     for(let i=0;i<up;i++) cols.push(col);
     while(cols.length < 5) cols.push(null);
-    hs += handSVGC(cols, h % 2 === 1);
+    out += handSVGC(cols, h % 2 === 1, tag === null ? undefined : tag);
+    if(tag !== null) tag += up;
   }
-  return '<span class="handcard"><span class="hs">' + hs + '</span><b style="color:' + col + '">' + count + '</b></span>';
+  return out;
+}
+function handCard(count, col, tagStart){
+  return '<span class="handcard"><span class="hs">' + handsSVG(count, col, tagStart) + '</span><b style="color:' + col + '">' + count + '</b></span>';
 }
 function pileHTML(k){ let o = ""; for(let i=0;i<Math.max(0,k);i++) o += "<i></i>"; return o; }
 
@@ -1117,6 +1168,8 @@ function startDeco(){
   if(!R) return;
   if(!R.order.length) R.order = newOrderFrom(S.students[0]);
   D = {n:R.n, a:0, b:0};
+  $("#view-deco").classList.remove("counting");
+  $("#deco-eq2").hidden = true;
   show(["deco"]);
   const st = decoStudent(), c = COLORS[st.color] || COLORS.bleu;
   const both = bothRequired(D.n);
@@ -1227,12 +1280,54 @@ function validateDeco(){
   const st = decoStudent();
   st.stars++; save();
   renderChips(st.id);
-  clearTimers(); phase = "decowin";
-  const eq = '<b style="color:' + MA + '">' + a + '</b> + <b style="color:' + MB + '">' + b + '</b> = ' + n;
-  celebrate(st, a + "+" + b, eq);
-  say('<span style="color:' + MA + '">' + a + '</span> + <span style="color:' + MB + '">' + b + '</span> = <em>' + n + '</em>', "");
-  speak(WORDS[a] + " plus " + WORDS[b] + " égale " + WORDS[n] + ". Bravo " + st.name + " !");
+  clearTimers();
   R.decoIdx++;
+  decoCount(st, a, b, n);
+}
+
+/* on verifie sur les doigts : on compte chacun, puis [a] + [b] -> n */
+function decoCount(st, a, b, n){
+  phase = "decocount";
+  $("#view-deco").classList.add("counting");
+  show(["deco"]);
+  say("On compte sur les doigts&nbsp;…", "");
+  speak("On vérifie sur les doigts !");
+  $("#deco-hands").innerHTML = handCard(a, MA, 0) + handCard(b, MB, a);
+  const eq = $("#deco-eq2");
+  eq.hidden = false;
+  eq.innerHTML = '<span class="eqcard" id="eq-a" style="--c:' + MA + '">' + a + '</span>'
+    + '<span class="plus" id="eq-p">+</span>'
+    + '<span class="eqcard" id="eq-b" style="--c:' + MB + '">' + b + '</span>'
+    + '<span class="arr" id="eq-f">→</span>'
+    + '<span class="eqcard target" id="eq-n">' + n + '</span>';
+  buttons("", null, "Passer →", () => finishDeco(st, a, b, n));
+  if(a === 0) later(() => { $("#eq-a").classList.add("on"); }, 500);
+  for(let i = 0; i < n; i++){
+    later(() => {
+      const f = document.querySelector('#deco-hands .fg[data-f="' + i + '"]');
+      if(f) f.classList.add("count");
+      tone(480 + i * 55, 0.2, "triangle", 0.15);
+      speak(WORDS[i + 1]);
+      if(i === a - 1){ $("#eq-a").classList.add("on"); $("#eq-p").classList.add("on"); }
+      if(i === n - 1){ $("#eq-b").classList.add("on"); $("#eq-p").classList.add("on"); }
+    }, 700 + i * 660);
+  }
+  later(() => {
+    $("#eq-f").classList.add("on"); $("#eq-n").classList.add("on");
+    tone(880, 0.4, "triangle", 0.17);
+    speak(WORDS[a] + " plus " + WORDS[b] + ", ça fait bien " + WORDS[n] + " !");
+    say('<span style="color:' + MA + '">' + a + '</span> + <span style="color:' + MB + '">' + b + '</span> = <em>' + n + '</em>', "");
+  }, 700 + n * 660 + 450);
+  later(() => finishDeco(st, a, b, n), 700 + n * 660 + 2600);
+}
+function finishDeco(st, a, b, n){
+  clearTimers();
+  $("#view-deco").classList.remove("counting");
+  $("#deco-eq2").hidden = true;
+  phase = "decowin";
+  celebrate(st, a + "+" + b, '<b style="color:' + MA + '">' + a + '</b> + <b style="color:' + MB + '">' + b + '</b> = ' + n);
+  say('<span style="color:' + MA + '">' + a + '</span> + <span style="color:' + MB + '">' + b + '</span> = <em>' + n + '</em>', "");
+  speak("Bravo " + st.name + " !");
   if(R.decoIdx >= (R.decoGoal || R.order.length)){
     later(() => toast("Tout le monde a trouvé sa décomposition de " + n), 700);
     buttons("On avance →", startRound, "", null);
@@ -1262,8 +1357,6 @@ function reveal(from){
   clone.querySelectorAll(".item").forEach(e => e.classList.add("in", "counted"));
   col.appendChild(clone); watchU(col);
   say("Le secret du <em>" + R.n + "</em>", "");
-  $("#rstage").classList.remove("two");
-  $("#rwrite").hidden = true;
   $("#r-ang").innerHTML = ""; $("#r-school").innerHTML = ""; $("#r-start").innerHTML = ""; $("#r-dots").innerHTML = "";
   document.querySelectorAll(".fcell.target").forEach(e => e.classList.remove("target"));
   const f = $("#frise .fcell[data-d=\'" + R.n + "\']"); if(f) f.classList.add("target");
@@ -1342,61 +1435,136 @@ function stepReveal(){
     buttons("À toi d'écrire →", nextStep, "", null);
     return;
   }
-  writeTurn();
+  startPractice();
 }
 
-/* le modèle complet, dessiné d'un coup (quand on saute les étapes animées) */
-function buildModelInstant(){
-  const n = R.n;
-  $("#r-ang").innerHTML = (ANG[n] ? ANG[n].s : []).map(d => '<path class="ang fade" d="' + d + '"/>').join("");
-  $("#r-school").innerHTML = (DIGITS[n] ? DIGITS[n].p : []).map(d => '<path class="trace" d="' + d + '"/>').join("");
-  $("#r-dots").innerHTML = "";
-  (ANG[n] ? ANG[n].d : []).forEach((t, i) => {
-    const g = svgEl("g", {class:"ptg"});
-    g.style.transform = "translate(" + t[0] + "px," + t[1] + "px)";
-    g.appendChild(svgEl("circle", {class:"pt", r:9}));
-    const tx = svgEl("text", {class:"ptn", x:0, y:0}); tx.textContent = i + 1; g.appendChild(tx);
-    $("#r-dots").appendChild(g);
-  });
-  $("#r-start").innerHTML = "";
-  const marks = [];
-  Array.from($("#r-school").children).forEach((pa, i) => {
-    const p0 = pa.getPointAtLength(0);
-    let x = p0.x, y = p0.y;
-    marks.forEach(m => { if(Math.hypot(m.x - x, m.y - y) < 16){ x += 20; y -= 15; } });
-    marks.push({x:x, y:y});
-    const g = svgEl("g", {});
-    g.appendChild(svgEl("circle", {class:"startn", cx:x, cy:y, r:10}));
-    const t = svgEl("text", {class:"startt", x:x, y:y}); t.textContent = i + 1; g.appendChild(t);
-    $("#r-start").appendChild(g);
-  });
+/* ---------------- l'entrainement d'ecriture : trois temps, ordre aleatoire ---------------- */
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
 }
+let T = null;
 
-/* chacun vient écrire le chiffre à côté du modèle */
-function writeTurn(){
+function fitTrace(){
+  const w = $("#tracewrap"), b = $("#tracebox");
+  if(!w || !b || !w.clientHeight) return;
+  const ratio = 128 / 132;
+  const bh = Math.min(w.clientHeight, w.clientWidth / ratio);
+  b.style.width = (bh * ratio) + "px"; b.style.height = bh + "px";
+}
+try{ new ResizeObserver(fitTrace).observe(document.getElementById("tracewrap")); }catch(e){}
+
+function startPractice(){
   clearTimers();
   if(!R.order.length) R.order = newOrderFrom(picked || S.students[0]);
-  const who = R.order[R.writeIdx];
+  R.writeOrder = shuffle(S.students);
+  R.writeIdx = 0;
+  practiceTurn();
+}
+function practiceTurn(){
+  clearTimers();
+  const who = R.writeOrder[R.writeIdx];
   if(!who){ afterWriting(); return; }
-  phase = "reveal"; rvStep = 3;
-  const n = R.n, c = COLORS[who.color] || "#16284F";
-  show(["reveal"]);
-  if(!$("#r-school").children.length) buildModelInstant();
-  chain(5);
-  $("#rcap").innerHTML = '<span style="color:' + c + '">' + who.name + '</span>, écris le <b>' + n + '</b> à côté du modèle.';
-  $("#rstage").classList.add("two");
-  $("#rwrite").hidden = false;
-  padWrite.setColor(c); padWrite.clear();
-  requestAnimationFrame(() => padWrite.fit());
-  say("Au tableau, chacun son tour&nbsp;: <span style=\"color:" + c + "\">" + who.name + "</span>",
-      "Les autres préparent leur ardoise : tout le monde écrira le " + n + ".");
-  speak(who.name + ", écris le " + WORDS[n] + " à côté du modèle.");
-  const last = R.writeIdx >= R.order.length - 1;
-  const suite = last ? (S.mode === "plein" ? " — on décompose →" : " — nouvelle question →") : " — au suivant →";
-  buttons("⭐ Bien écrit" + suite, () => {
-    who.stars++; save(); renderChips(who.id); sfxWin(); speak("Bravo " + who.name);
-    R.writeIdx++; writeTurn();
-  }, "Passer son tour", () => { R.writeIdx++; writeTurn(); });
+  phase = "trace";
+  T = {stage:1, who:who};
+  show(["trace"]);
+  tracePad.setColor(COLORS[who.color] || "#16284F");
+  renderTraceTurn();
+  setStage(1);
+}
+function renderTraceTurn(){
+  const t = $("#trace-turn"); t.innerHTML = "";
+  R.writeOrder.forEach((st, i) => {
+    const b = document.createElement("button");
+    b.className = "tpill" + (i === R.writeIdx ? " now" : "") + (i < R.writeIdx ? " done" : "");
+    b.style.setProperty("--c", COLORS[st.color] || COLORS.bleu);
+    b.innerHTML = '<span class="av">' + st.name.slice(0,1).toUpperCase() + '</span>' + st.name + (i < R.writeIdx ? " ✓" : "");
+    b.onclick = () => { R.writeIdx = i; practiceTurn(); };
+    t.appendChild(b);
+  });
+}
+function renderTSteps(){
+  const names = ["1 · avec les points", "2 · sur le modèle", "3 · tout seul"];
+  $("#tsteps").innerHTML = names.map((nm, i) =>
+    '<span class="tstep' + (i + 1 === T.stage ? " now" : (i + 1 < T.stage ? " done" : "")) + '">' + nm + (i + 1 < T.stage ? " ✓" : "") + '</span>'
+  ).join("");
+}
+function setStage(stage){
+  clearTimers();
+  T.stage = stage; T.done = false;
+  const n = R.n, who = T.who, c = COLORS[who.color] || "#16284F";
+  tracePad.clear();
+  requestAnimationFrame(() => { fitTrace(); });
+  $("#tracebox").classList.remove("win");
+  $("#t-dots").innerHTML = ""; $("#t-ghost").innerHTML = ""; $("#t-start").innerHTML = "";
+  renderTSteps();
+  const ghost = (DIGITS[n] ? DIGITS[n].p : []).map(d => '<path class="tghost" d="' + d + '"/>').join("");
+  if(stage === 1){
+    $("#t-ghost").innerHTML = ghost;
+    T.dots = (ANG[n] ? ANG[n].d : []).map((d, i) => ({x:d[0], y:d[1], lit:false, i:i}));
+    T.dots.forEach(d => {
+      const cEl = svgEl("circle", {class:"tpt", r:8, cx:d.x, cy:d.y});
+      cEl.dataset.i = d.i;
+      $("#t-dots").appendChild(cEl);
+    });
+    say('<span style="color:' + c + '">' + who.name + '</span> repasse sur le <em>' + n + '</em>', "Allume tous les points !");
+    speak(who.name + " ! Repasse sur le " + WORDS[n] + " et allume tous les points.");
+    buttons("", null, "Étape suivante →", () => setStage(2));
+  } else if(stage === 2){
+    $("#t-ghost").innerHTML = ghost;
+    T.checks = [];
+    Array.from($("#t-ghost").children).forEach(pa => {
+      const L = pa.getTotalLength();
+      for(let d = 5; d < L; d += 9) {
+        const pt = pa.getPointAtLength(d);
+        T.checks.push({x:pt.x, y:pt.y, hit:false});
+      }
+    });
+    say('<span style="color:' + c + '">' + who.name + '</span>, sans les points&nbsp;!', "Repasse sur le chiffre.");
+    speak("Maintenant sans les points : repasse sur le " + WORDS[n] + ".");
+    buttons("", null, "Étape suivante →", () => setStage(3));
+  } else {
+    say('<span style="color:' + c + '">' + who.name + '</span>, tout seul&nbsp;!', "Écris le " + n + " sans modèle.");
+    speak("À toi tout seul : écris " + WORDS[n] + ".");
+    const last = R.writeIdx >= R.writeOrder.length - 1;
+    buttons("⭐ C'est réussi" + (last ? (S.mode === "plein" ? " — on décompose →" : " — on avance →") : " — au suivant →"), () => {
+      T.who.stars++; save(); renderChips(T.who.id); sfxWin(); speak("Bravo " + T.who.name + " !");
+      R.writeIdx++; practiceTurn();
+    }, "Passer", () => { R.writeIdx++; practiceTurn(); });
+  }
+}
+function traceHit(nx, ny){
+  if(phase !== "trace" || !T || T.done) return;
+  const vx = -14 + nx * 128, vy = -12 + ny * 132;
+  if(T.stage === 1 && T.dots){
+    T.dots.forEach(d => {
+      if(!d.lit && Math.hypot(d.x - vx, d.y - vy) < 13){
+        d.lit = true;
+        const el = document.querySelector('.tpt[data-i="' + d.i + '"]');
+        if(el) el.classList.add("lit");
+        const lit = T.dots.filter(x => x.lit).length;
+        tone(500 + lit * 70, 0.18, "triangle", 0.15);
+        speak(WORDS[lit]);
+      }
+    });
+    if(T.dots.every(d => d.lit)){ T.done = true; stageWon(2); }
+  } else if(T.stage === 2 && T.checks && T.checks.length){
+    let hits = 0;
+    T.checks.forEach(ck => {
+      if(!ck.hit && Math.hypot(ck.x - vx, ck.y - vy) < 11) ck.hit = true;
+      if(ck.hit) hits++;
+    });
+    if(hits >= T.checks.length * 0.82){ T.done = true; stageWon(3); }
+  }
+}
+function stageWon(next){
+  $("#tracebox").classList.add("win");
+  sfxWin(); speak("Bravo !");
+  later(() => setStage(next), 1400);
 }
 function afterWriting(){
   if(S.mode === "plein") goDeco(); else startRound();
@@ -1502,7 +1670,7 @@ function openPanel(o){
   if(o) renderPanel();
 }
 $("#pad-clear").onclick = () => padBoard.clear();
-$("#pad2-clear").onclick = () => padWrite.clear();
+$("#tpad-clear").onclick = () => { tracePad.clear(); if(T){ if(T.stage === 1 && T.dots){ T.dots.forEach(d => d.lit = false); document.querySelectorAll(".tpt").forEach(e => e.classList.remove("lit")); } if(T.stage === 2 && T.checks) T.checks.forEach(c => c.hit = false); T.done = false; } };
 $("#rsvg").onclick = () => { if(phase === "reveal" && rvStep < 3) nextStep(); };
 $("#bin-a").onclick = () => takeBille("a");
 $("#bin-b").onclick = () => takeBille("b");
