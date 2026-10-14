@@ -397,12 +397,15 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
   </div>
 
   <div class="compteur">
-    <button class="rond" id="rituel-moins" type="button" aria-label="Rituel précédent">−</button>
-    <div class="compteur__corps">
-      <label for="rituel-num">Rituel</label>
-      <input id="rituel-num" type="number" min="1" max="200" step="1" value="1" aria-label="Numéro du rituel">
+    <button class="rond" id="rituel-moins" type="button" aria-label="Rituel précédent"
+      title="Rituel précédent : on recule d’un jour dans la progression">−</button>
+    <div class="compteur__corps" title="Le numéro du jour dans la progression. C’est lui qui décide des nombres du jour et de la difficulté des deux onglets.">
+      <label for="rituel-num">Jour n°</label>
+      <input id="rituel-num" type="number" min="1" max="200" step="1" value="1"
+        aria-label="Numéro du rituel, c’est-à-dire le jour de la progression">
     </div>
-    <button class="rond" id="rituel-plus" type="button" aria-label="Rituel suivant">+</button>
+    <button class="rond" id="rituel-plus" type="button" aria-label="Rituel suivant"
+      title="Rituel suivant : on avance d’un jour dans la progression">+</button>
   </div>
 
   <button class="btn btn--outil" id="btn-reglages" type="button" aria-haspopup="dialog">
@@ -443,6 +446,10 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
 
     <section class="reg">
       <h3>Aujourd’hui</h3>
+      <p class="reg__aide">Le compteur du bandeau, c’est le <strong>jour de la progression</strong> : 1 le premier
+        jour, 2 le lendemain, et ainsi de suite sur l’année. Il commande la difficulté des deux onglets, et
+        chaque numéro donne toujours les mêmes nombres. Les boutons − et + reculent ou avancent d’un jour ;
+        en fin de rituel, le bouton « Jour suivant » fait la même chose.</p>
       <p id="reg-aujourdhui" style="margin:0"></p>
     </section>
 
@@ -541,9 +548,9 @@ dialog::backdrop{background:rgba(10,20,26,.5)}
   <div class="dlg__barre"><strong>La progression de l’année</strong>
     <button class="btn" type="button" data-ferme="dlg-progression">Fermer</button></div>
   <div class="dlg__corps">
-    <p>Un rituel par jour. Les deux onglets avancent ensemble : le numéro du rituel commande les deux
-      progressions. Les nombres d’un rituel sont toujours les mêmes — le rituel 14 donnera demain
-      exactement les nombres du rituel 14.</p>
+    <p>Un rituel par jour. Le compteur du bandeau est le numéro de ce jour : 1 au premier jour, 2 le
+      lendemain. Il commande les deux progressions en même temps, et les nombres d’un jour sont toujours les
+      mêmes — le jour 14 donnera exactement les nombres du jour 14, qu’on y arrive en novembre ou en mars.</p>
     <h3>Onglet 1 — Lire et écrire les nombres</h3>
     <table class="echelle"><thead><tr><th>Rituels</th><th>Ce qu’on travaille</th></tr></thead>
       <tbody id="echelle-nb"></tbody></table>
@@ -1637,7 +1644,7 @@ function bilan(onglet){
   ETAT.histo[onglet][ETAT.rituel]={ok:ok,total:total};
   sauver(); majJournal();
   const b=el('section','bilan');
-  b.appendChild(el('h2','','Rituel '+ETAT.rituel+' terminé'));
+  b.appendChild(el('h2','','Jour '+ETAT.rituel+' terminé'));
   const s=el('div','bilan__score',ok+' / '+total); b.appendChild(s);
   const aRevoir=res.filter(r=>r==='revoir').length;
   b.appendChild(el('p','', aRevoir
@@ -1649,24 +1656,24 @@ function bilan(onglet){
     sauver(); onglet==='nombres'?rendreNombres():rendreDroite(); });
   const autre=el('button','btn','Aller à l’autre rituel'); autre.type='button';
   autre.addEventListener('click',()=>choisirOnglet(onglet==='nombres'?'droite':'nombres'));
-  const suivant=el('button','btn btn--plein','Rituel '+(ETAT.rituel+1)+' →'); suivant.type='button';
+  const suivant=el('button','btn btn--plein','Jour '+(ETAT.rituel+1)+' →'); suivant.type='button';
   suivant.addEventListener('click',()=>{ reglerRituel(ETAT.rituel+1); });
   act.appendChild(refaire); act.appendChild(autre); act.appendChild(suivant);
   return b;
 }
 function majJournal(){
-  const j=$('#journal'); j.textContent='Journal : ';
+  const j=$('#journal'); j.textContent='';
   const onglet=ETAT.onglet;
   const debut=Math.max(1,ETAT.rituel-9);
   let vide=true;
   for(let n=debut;n<=ETAT.rituel;n++){
     const h=ETAT.histo[onglet][n];
     const i=el('i');
-    i.title='Rituel '+n+(h?' : '+h.ok+'/'+h.total:' : pas encore fait');
+    i.title='Jour '+n+(h?' : '+h.ok+'/'+h.total:' : pas encore fait');
     if(h&&h.total){ const p=h.ok/h.total; i.dataset.note=p>=0.99?'3':p>=0.6?'2':p>0?'1':'0'; vide=false; }
     j.appendChild(i);
   }
-  if(vide) j.appendChild(el('span','',' (rien d’enregistré pour l’instant)'));
+  if(vide) j.appendChild(el('span','','Les dix derniers jours : rien d’enregistré pour l’instant.'));
 }
 
 /* =============================================================
