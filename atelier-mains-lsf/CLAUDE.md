@@ -178,13 +178,14 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   métacarpiennes dans le poing, marches entre phalanges repliées : photos 2357, 2364, 2374).
   `script.js` ajoute donc, AVANT l'arc (le déplacement est ensuite porté par lui, comme `mesh.dz`), un relief local
   centré sur chaque articulation, du côté DOS seulement : gaussienne le long de l'os, refermée de côté, hauteur
-  `KNK` = 0,14 × demi-largeur du segment (× 1,35 à la MCP, dont la tête est plus large et plus saillante ; × 0,7 à
-  l'IPD). Direction : −f0 de l'articulation (le côté extenseur), donc exactement −z pour les doigts et oblique pour
+  `KNK` = 0,22 × demi-largeur du segment (× 1,45 à la MCP, dont la tête est plus large et plus saillante ; × 1,05 à
+  l'IPP ; × 0,55 à l'IPD). Direction : −f0 de l'articulation (le côté extenseur), donc exactement −z pour les doigts et oblique pour
   le pouce. Hauteur proportionnelle à la part de course parcourue, donc **nulle au repos : `cas_0` et `cas_1`
   restent exacts au pixel près.** Les deux articulations qui commandent le plus chaque sommet sont retenues au
   chargement, le rafraîchissement n'est qu'une somme de deux produits (+1,3 ms sur `skinMesh`, médiane 13,4 ms).
   `x0`/`y0` de `skinMesh` sont désormais lus dans `pa` et plus dans `MREST`, pour que ce déplacement de base compte
-  sur les trois axes. Amplitude réglée AU BALAYAGE (ci-dessous) : à 0,21 et plus la peau du dos se froissait.
+  sur les trois axes. Amplitude réglée AU BALAYAGE (ci-dessous) et aux rendus : à 0,14 elle ne faisait pas lire
+  une jointure dans le poing (piste X), à 0,27 la peau du dos commençait à se froisser ; 0,22 est le compromis.
 - **Tranche de la main** (même piste) : l'épaisseur n'est pas dessinée, elle est déduite, et elle sortait trop
   uniforme. `rig3d.py` ajoute à `mesh.dz` une dilatation de l'intervalle [−arrière, avant] : éminence hypothénar
   (`TH_HYP` = 0,30 côté paume, 0,40 × côté dos, tache large centrée sur (330, 668)) et doigts (`TH_FIN` = 0,09 ;
@@ -203,10 +204,13 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   variation d'épaisseur des anneaux de peau loin des articulations. Sort le tableau des pires poses et, avec
   `--images N`, les rend en PNG. `--knk 0` éteint le relief des jointures (comparaison A/B).
   Le relevé de référence est gardé dans `tests/out/balayage.txt`.
-  **Relevé de référence (170 poses, relief à 0,14)** : replis 1 120, froissements 5 194, pincés 18 258, gonflés
-  3 720, allongement d'os max 0,0 %, variation d'épaisseur max 12,0 %. Sans le relief : 1 153 / 5 195 / 18 255 /
-  2 959 / 0,0 % / 8,8 %. Le relief ne crée donc NI repli NI froissement NI pincement de plus ; il étire seulement la
-  peau du dos, ce qu'une jointure fait vraiment. **L'os ne s'allonge jamais, dans aucune des 170 poses.**
+  **Relevé de référence (170 poses, relief à 0,22 + élargissement latéral 0,11)** : replis 1 685, froissements
+  7 627, pincés 19 495, gonflés 7 452, allongement d'os max 0,0 %, variation d'épaisseur max 13,3 %.
+  (Avant la piste X, relief à 0,14 sans élargissement : 1 120 / 5 194 / 18 258 / 3 720 / 0,0 % / 12,0 % ; sans
+  aucun relief : 1 153 / 5 195 / 18 255 / 2 959 / 0,0 % / 8,8 %.) À 0,14 le relief ne créait ni repli ni
+  froissement de plus ; à 0,22, avec l'élargissement latéral, il en crée — c'est le prix d'une jointure qui
+  SORT, et la peau étirée sur une jointure est ce qu'une vraie main fait. Ce qui n'est pas négociable tient :
+  **l'os ne s'allonge jamais, dans aucune des 170 poses, et le repos reste exact au pixel près.**
   Les pires poses sont toujours les flexions complètes (`tous.100/115/85`, `PRESET Poing serré`) et, pour une seule
   articulation, la MCP du majeur et celle de l'auriculaire : c'est là que les palmures travaillent le plus.
 - Essayé et écarté sur la piste D : **bourrelets palmaires** (deux lobes de part et d'autre du pli, pour que la
@@ -218,6 +222,69 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   et coupe aussi les vrais traits entre deux doigts repliés, retiré.
 - Essayé et écarté à l'intégration : partage linéaire des palmures entre deux doigts (essai C) par-dessus le déformeur en arc (fente/pointe entre annulaire et majeur, poing d'un seul doigt) ; trait épais tiré de la passe identité pour le pouce devant la paume (taches sur le contour dos).
 - Les photos de la main de l'utilisateur (profil, poing, pince, O…) ont servi de référence de volumes ; elles ne sont pas dans le dépôt.
+
+## LE POING SERRÉ (piste X) — « tu vois bien que c'est pas réaliste »
+
+Grief de l'utilisateur, photos de son vrai poing à l'appui (2357, 2374, 2375) : *« le poing serré ne correspond
+pas et les doigts sont toujours atroces »*. Quatre mesures, et trois d'entre elles ont démenti mon premier
+diagnostic — à garder en tête avant de refaire la même erreur :
+
+1. **Les proportions n'étaient PAS en cause.** J'avais annoncé un poing « colonne haute et étroite » contre son
+   « bloc compact ». Mesuré : hauteur / largeur du poing = 1,59 en comptant l'avant-bras DESSINÉ (220 px de
+   poignet qui font partie de son dessin), **1,19 du pli du poignet au sommet des jointures** — une vraie main
+   donne 1,18 à 1,29. De même le doigt replié vu côté paume : jointure + P2 + rayon du bout = 2,2 × la largeur
+   du doigt chez lui comme chez moi. Il n'y avait rien à corriger là, et allonger P1 de 6 % n'aurait rien changé.
+2. **Le poing n'est pas creux.** Les quatre bouts touchent la paume à 0,1–0,2 mm près (mesuré sommet à sommet,
+   `scipy.cKDTree`). Le « trou » vu de profil est le tunnel connu (défaut 0), pas un défaut de fermeture.
+3. **Ce qui n'allait pas, c'était la LISIBILITÉ.** Deux choses, mesurées :
+   - **Aucun relief de jointure.** `KNK` = 0,14 donnait 1,8 mm de saillie à la tête du métacarpien, là où une
+     vraie jointure sort de 4 à 5 mm. Les quatre doigts repliés se lisaient comme quatre tuyaux lisses, sans
+     arête pour accrocher l'ombre franche. `KNK` = 0,22 et des gaussiennes RESSERRÉES le long de l'os (une
+     jointure est un dôme court, pas un renflement qui court sur la phalange) : les quatre têtes sortent.
+   - **Les doigts ne se touchaient pas.** Le dessin de référence est une main OUVERTE : à la racine, deux
+     doigts voisins sont séparés par ~2 mm d'air (1,96 unité entre deux centres de MCP pour 1,78 de
+     demi-largeurs cumulées). L'adduction ne referme rien — elle tourne AUTOUR du centre de la MCP, qui est
+     justement là où la fente est. Résultat : quatre fentes CLAIRES, chacune doublée du contour noir, et le
+     poing se lisait comme quatre bananes posées sur une paume. Sur une vraie main les jointures se touchent et
+     ce qu'on voit entre elles est une OMBRE. D'où `KNL` = 0,11 : chaque jointure (MCP et IPP) s'élargit des
+     deux côtés avec sa flexion, sur une gaussienne LONGUE le long de l'os (2,0 et 1,6 × la demi-largeur) pour
+     fermer la fente sur toute la longueur du doigt et pas seulement au droit de la jointure.
+     L'os le dit aussi : la tête du métacarpien est la partie la plus large de l'os, et elle ne sort qu'en flexion.
+4. **Le pouce était faux, et c'était ça « le poing serré ne correspond pas ».** Il se couchait À PLAT EN TRAVERS
+   de la paume : bout à x = −1,73, c'est-à-dire **au-delà du majeur**, dépassant du poing comme une palette.
+   Sur sa photo 2357, le pouce s'enroule sur le FLANC RADIAL de l'index, MCP et IP bien pliées.
+   - La cible de `thumbReach` était un point INTÉRIEUR à la masse des doigts (milieu de l'IPP de l'index et de
+     l'IPD du majeur) : inatteignable, donc le solveur s'arrêtait au contact, n'importe où. Elle vise maintenant
+     un point qui est vraiment à la SURFACE : milieu de P2 de l'index, décalé de 1,05 × demi-largeur côté radial.
+   - Balayage de 1 232 poses de pouce contre cette cible : le preset passe de `TH(45,35,40,25)` à
+     `TH(20,0,50,65)`, l'écart à la cible de **5,52 à 1,0 unité**, sans une seule unité de pénétration en plus
+     (0,77, qui est celle des quatre doigts eux-mêmes).
+
+**Contour dans un creux de contact.** `HULL_FS` gardait la coque dès que deux parties étaient deux doigts
+différents (`real`), quel que soit l'écart de profondeur. Deux doigts repliés qui SE TOUCHENT ont un écart nul :
+la coque des deux se superposait au point de contact et le test basculait d'un pixel à l'autre. `real` exige
+désormais un vrai écart (`d > 0,5 × push`) : un contour « doigt sur doigt » veut dire qu'un doigt passe DEVANT
+l'autre. Le trait de contact est l'affaire de la passe identité, qui en trace UN, propre (son seuil entre deux
+doigts est déjà de 0,02). Reste les lambeaux au FOND des crevasses (défaut 5) : là, l'écart de profondeur est
+réel (on voit la paume tout au fond), le contour est légitime, et il est déchiré parce que le fond est rasant.
+Invisible à l'échelle d'usage, visible en très gros plan.
+
+**Coût mesuré au balayage** (170 poses) : replis 1 120 → 1 685, froissements 5 194 → 7 627, pincés 18 258 →
+19 495, gonflés 3 720 → 7 452, **allongement d'os toujours 0,0 %**, variation d'épaisseur 12,0 → 13,3 %.
+Les 13,3 % SONT l'élargissement voulu (1 mm par côté sur 9 mm de demi-largeur). Le reste vient du relief plus
+haut : c'est de la peau étirée sur une jointure, ce qu'une vraie jointure fait. Une leçon au passage : le champ
+latéral s'allume sur `0,55 × rd` ; avec `rd` = demi-largeur, la rampe faisait un demi-millimètre et étirait les
+triangles (8 400 gonflés) — `rd` = 2,2 × demi-largeur donne le même volume sur une rampe longue (7 452).
+
+**`cas_0` et `cas_1` restent identiques au pixel près** après chacune de ces corrections (vérifié à chaque étape).
+
+## Chiffres (leçons de mathématiques)
+
+`PRESETS` contenait déjà « Index (1) » et « V (2) ». Ajoutés : **« Trois (3) »** (pouce + index + majeur),
+**« Quatre (4) »** (les quatre doigts, pouce replié en travers de la paume) et **« Main ouverte (5) »**.
+Au-delà de 5, les formes varient d'un usage à l'autre : elles ne sont PAS devinées — à poser à la main et à
+ranger dans la bibliothèque. Attention : une clé d'objet qui est un entier (`'3'`) est remontée EN TÊTE par
+`Object.keys`, donc les boutons apparaissaient avant « Dessin » ; d'où les noms « Trois (3) », etc.
 
 ## La planche : référent, deux mains, étapes, flèches, fond (v9)
 
@@ -386,7 +453,9 @@ python3 tests/balayage.py          # balayage anti-déformation (≈170 poses) �
 **Toujours regarder la planche** avant de livrer : repos face et dos = dessins exacts, majeur levé (doigts serrés, pouce cerné d'un trait), poing serré, pince, gros plan des ongles.
 
 ## Défauts connus (à traiter en priorité)
-0. **Creux du poing vu de profil** (`poing_cote`) : à pleine flexion, la boucle phalange 1 / 2 / 3 d'un doigt
+0. *(mesuré et démenti en partie — voir « LE POING SERRÉ (piste X) » : les proportions du doigt replié sont
+   justes, le poing n'est pas creux, les bouts touchent la paume. Ce qui reste est le tunnel ci-dessous.)*
+   **Creux du poing vu de profil** (`poing_cote`) : à pleine flexion, la boucle phalange 1 / 2 / 3 d'un doigt
    enferme un tunnel, et par ce tunnel on aperçoit les doigts voisins, cernés de traits — cela se lit comme un trou
    rectangulaire. Mesuré : pour l'index replié seul, le tunnel libre fait ≈ 78 × 31 px, alors qu'une vraie main n'en
    laisse qu'une dizaine. Cause : les phalanges moyenne et distale sont trop longues (voir la mesure des doigts) et

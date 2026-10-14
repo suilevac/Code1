@@ -99,9 +99,23 @@ const PRESETS={
   'Repos':pose(k=>({index:F(18,28,14,5),majeur:F(22,33,16,0),annulaire:F(27,38,18,-3),auriculaire:F(32,42,20,-8)})[k],TH(25,10,10,15)),
   'Main plate (B)':pose(k=>F(0,0,0,together[k]),TH(20,35,30,10)),
   'Poing (A)':pose(fist,TH(5,35,10,5)),
-  'Poing serré':pose(fist,TH(45,35,40,25)),
+  // Pouce du poing serré, repris sur la photo 2357 (son vrai poing) : il ne se couche pas À PLAT EN TRAVERS de
+  // la paume — il s'enroule sur le FLANC RADIAL de l'index, MCP et IP bien pliées. L'ancien réglage (45/35/40/25)
+  // envoyait le bout du pouce à x = −1,7, c'est-à-dire au-delà du majeur : le pouce dépassait du poing comme une
+  // palette, et c'est ce qui faisait que « le poing serré ne correspond pas ». Balayage de 1 232 poses de pouce
+  // contre la cible (flanc radial de P2 de l'index) : l'écart passe de 5,52 à ≈ 1,0 unité, sans ajouter une seule
+  // unité de pénétration (0,77, qui est celle des quatre doigts eux-mêmes).
+  'Poing serré':pose(fist,TH(20,0,50,65)),
   'Index (1)':pose(k=>k==='index'?F(0,0,0,0):fist(),TH(40,35,40,40)),
   'V (2)':pose(k=>k==='index'?F(0,0,0,8):k==='majeur'?F(0,0,0,-8):fist(),TH(40,35,40,40)),
+  // Chiffres. 1 et 2 existaient déjà (« Index (1) », « V (2) ») ; 3, 4 et 5 complètent la première dizaine, qui
+  // est ce dont on a besoin pour une leçon de mathématiques. Formes françaises courantes : 3 = pouce + index +
+  // majeur, 4 = les quatre doigts, pouce replié en travers de la paume, 5 = main ouverte, doigts écartés.
+  // Au-delà de 5, les formes varient d'un usage à l'autre : elles ne sont PAS devinées ici — à poser et à ranger
+  // dans la bibliothèque.
+  'Trois (3)':pose(k=>k==='index'||k==='majeur'?F(0,0,0,together[k]):fist(),TH(14,2,0,0)),
+  'Quatre (4)':pose(k=>F(0,0,0,together[k]),TH(28,40,45,20)),
+  'Main ouverte (5)':pose(k=>F(0,0,0,-PAR[k]),TH(8,-12,0,0)),
   'L':pose(k=>k==='index'?F(0,0,0,0):fist(),TH(0,-20,0,0)),
   'Y':pose(k=>k==='auriculaire'?F(0,0,0,-30):fist(),TH(0,-20,0,0)),
   'C':pose(k=>F(35,45,30,together[k]),TH(45,5,10,10)),
@@ -281,9 +295,14 @@ const HULL_VS=`attribute float part;varying float vP;varying float vZ;void main(
 const HULL_FS=`uniform float opacity;uniform float push;uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 res;uniform float cn;uniform float cf;varying float vP;varying float vZ;
   float L(vec2 uv){float z=texture2D(tDepth,uv).r*2.-1.;return 2.*cn*cf/(cf+cn-z*(cf-cn));}
   void main(){if(push>0.){vec2 uv=gl_FragCoord.xy/res;vec4 c=texture2D(tId,uv);
-    if(c.a>.5){float pb=floor(c.r*8.+.5),ph=floor(vP+.5);
-      bool real=pb!=ph&&pb>1.5&&ph>1.5;   // doigt sur doigt, pouce et doigt
-      if(!real&&L(uv)-vZ<push)discard;}}
+    if(c.a>.5){float pb=floor(c.r*8.+.5),ph=floor(vP+.5);float d=L(uv)-vZ;
+      // « doigt sur doigt / pouce et doigt » n'est un VRAI contour que s'il y a un vrai écart de profondeur :
+      // un doigt passe DEVANT l'autre. Quand deux doigts repliés se TOUCHENT (le poing), l'écart est nul, la
+      // coque des deux se superpose au point de contact et le test bascule d'un pixel à l'autre : le creux se
+      // remplissait de lambeaux noirs déchirés. Le trait de contact est l'affaire de la passe identité, qui en
+      // trace UN, propre et d'épaisseur constante (voir sep() : entre deux doigts son seuil est déjà de 0,02).
+      bool real=pb!=ph&&pb>1.5&&ph>1.5&&d>.5*push;
+      if(!real&&d<push)discard;}}
     gl_FragColor=vec4(.067,.067,.067,opacity);}`;
 const hullMatProto=()=>new THREE.ShaderMaterial({uniforms:{opacity:{value:1},push:{value:0},tId:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2(1,1)},cn:{value:.5},cf:{value:500}},
   vertexShader:HULL_VS,fragmentShader:HULL_FS,side:THREE.BackSide,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:4});
@@ -512,7 +531,12 @@ const CRIP=new Uint8Array(2*MN),CRWP=new Uint8Array(2*MN),CRID=new Uint8Array(2*
    Le déplacement est posé AVANT l'arc (comme mesh.dz), donc porté par lui : la bosse reste sur la jointure quand
    le doigt tourne. Au repos tous les angles valent 0 : hauteur nulle, le dessin ne bouge pas d'un pixel.
    Direction : −f0 de l'articulation (le côté extenseur), donc exactement −z pour les doigts. */
-const KNK=.14;                 // hauteur de la bosse à flexion maximale (× demi-largeur du segment)
+// Mesuré sur les rendus de contrôle du poing, comparés à la photo 2357 : la bosse valait .14 × la demi-largeur,
+// soit 1,8 mm à la tête du métacarpien là où une vraie jointure sort de 4 à 5 mm. Les quatre doigts repliés se
+// lisaient donc comme quatre tuyaux lisses, sans arête de jointure pour accrocher l'ombre. On monte la hauteur de moitié
+// et on RESSERRE la gaussienne le long de l'os (s plus petit) : une jointure est un dôme court, pas un renflement
+// qui court sur toute la phalange. C'est le contraste bosse / creux qui fait lire la marche.
+const KNK=.22;                 // hauteur de la bosse à flexion maximale (× demi-largeur du segment)
 let KNQ=.25/255;               // pas de quantification de la hauteur (unités moteur ; ajusté plus bas)
 let KNG=1;                     // multiplicateur global (mise au point : window.__atelier.setKnk)
 const KNJ=[],knAdd=(C,u,f0,s,w,rd,amp,drv)=>{const U=u.clone().normalize(),F=f0.clone().normalize();
@@ -522,8 +546,31 @@ const KNJ=[],knAdd=(C,u,f0,s,w,rd,amp,drv)=>{const U=u.clone().normalize(),F=f0.
 const hwOf=g=>g.wl.reduce((a,v,i)=>a+(v+g.wr[i])/2,0)/g.wl.length/SC;
 FING.forEach(k=>ARCJ[k].forEach((J,j)=>{const hw=hwOf(HD.segs[k][j]),key=['mcp','pip','dip'][j];
   // la tête du métacarpien est plus large et plus saillante que celles des phalanges
-  knAdd(J.C,J.u,J.f0,(j?1:1.35)*hw,1.2*hw,J.rd,KNK*(j===0?1.35:j===1?1:.7)*hw,
+  knAdd(J.C,J.u,J.f0,(j===0?1.0:j===1?.85:.8)*hw,1.2*hw,J.rd,KNK*(j===0?1.45:j===1?1.05:.55)*hw,
     f=>clamp((f?f[k][key]||0:0)/CRMX[j],0,1))}));
+/* LARGEUR DES JOINTURES. Le dessin de référence est une main OUVERTE : à la racine, deux doigts voisins sont
+   séparés de ~2 mm d'air (1,96 unité entre deux centres de MCP pour 1,78 de demi-largeurs cumulées, mesuré sur
+   le squelette). Quand le poing se ferme, l'adduction ne referme rien — elle tourne autour du centre de la MCP,
+   qui est justement là où la fente est. Résultat : quatre fentes CLAIRES, chacune doublée du contour noir du
+   rendu, et le poing se lit comme quatre bananes posées sur une paume. Sur une vraie main (photos 2357, 2374)
+   les quatre jointures SE TOUCHENT et ce qu'on voit entre elles est une ombre, pas un trou.
+   L'os dit la même chose : la tête du métacarpien est la partie la plus LARGE de l'os, et elle ne sort qu'en
+   flexion (en extension ce sont les tendons qui occupent le dos). On élargit donc chaque tête, des deux côtés,
+   proportionnellement à la flexion de SA MCP. À la pose du dessin la flexion vaut 0 : rien ne bouge. */
+// Même chose à l'IPP : ses condyles sont larges, et c'est LE dos de la phalange moyenne qu'on voit quand on
+// regarde un poing côté paume (la P1 est vue en bout). Sans cet élargissement, la fente se refermait à la
+// jointure et restait ouverte sur toute la longueur du doigt replié.
+const KNL=.11;                 // élargissement latéral d'une jointure (× demi-largeur du doigt)
+FING.forEach(k=>[0,1].forEach(j=>{const J=ARCJ[k][j],hw=hwOf(HD.segs[k][j]),key=['mcp','pip'][j],
+    lt=J.u.clone().cross(J.f0).normalize();
+  // gaussiennes LONGUES le long de l'os : ce n'est pas la jointure seule qu'il faut fermer, c'est la fente sur
+  // TOUTE la longueur du doigt replié. Entre deux jointures, le creux restait ouvert et profond, et la coque des
+  // deux doigts s'y déchirait en lambeaux.
+  // rd = 2,2 × demi-largeur : le champ s'allume sur .55 × rd, donc sur TOUTE l'épaisseur du doigt au lieu d'un
+  // demi-millimètre. Une rampe courte sur un déplacement latéral étire les triangles (balayage : 8 400 triangles
+  // gonflés contre 4 300 sans l'élargissement) ; une rampe longue fait le même volume sans froisser la peau.
+  [1,-1].forEach(sg=>knAdd(J.C,J.u,lt.clone().multiplyScalar(sg),(j?1.6:2.0)*hw,1.15*hw,2.2*hw,KNL*(j?.85:1)*hw,
+    f=>clamp((f?f[k][key]||0:0)/CRMX[j],0,1)))}));
 ['mcp','ip'].forEach((key,j)=>{const J=ARCJ.pouce[j],hw=hwOf(HD.segs.pouce[j]);
   knAdd(J.C,J.u,J.f0,hw,1.2*hw,J.rd,KNK*.8*hw,f=>clamp((f?f.pouce[key]||0:0)/CRMXT[j],0,1))});
 /* ÉMINENCE THÉNAR. C'est le volume qui change le PLUS sur la paume quand on signe, et il était absolument fixe :
@@ -577,7 +624,9 @@ const TEND=.11,VALL=.075,SILL=.15;
 // d'un relief à l'autre rend le déplacement DISCONTINU — d'où des facettes, et le détecteur de plis qui lisait
 // chacune comme un trait : le dos se couvrait de griffures. Quatre emplacements repoussent la discontinuité
 // sur le quatrième relief, bien plus faible, et elle cesse de se voir.
-const KNB=4;
+// (cinq depuis l'élargissement latéral des têtes : sur le flanc d'une jointure pliée se superposent la bosse
+// dorsale, l'élargissement de ce côté, le tendon, le sillon et la vallée.)
+const KNB=5;
 const KNN=KNJ.length,KNA=new Float32Array(KNN),KNI=new Uint8Array(KNB*MN),KNW=new Uint8Array(KNB*MN);
 {const bump=(J,x,y,z)=>{const rx=x-J.C.x,ry=y-J.C.y,rz=z-J.C.z,q=(rx*J.u.x+ry*J.u.y+rz*J.u.z)/J.s;
    if(q*q>9)return 0;const d=rx*J.f.x+ry*J.f.y+rz*J.f.z,l=rx*J.lat.x+ry*J.lat.y+rz*J.lat.z;
@@ -751,13 +800,19 @@ function thumbReach(f,targetFn){
   return cur;
 }
 const W3=()=>new THREE.Vector3();
+const XR=new THREE.Vector3(1,0,0);   // côté radial (pouce) dans le repère du modèle
 const REACH={
   'O':h=>h.joints.index.tip.getWorldPosition(W3()),
   'Pince':h=>h.joints.index.tip.getWorldPosition(W3()),
-  'Poing serré':h=>h.joints.index[1].getWorldPosition(W3()).lerp(h.joints.majeur[2].getWorldPosition(W3()),.5),
+  // Poing serré : la pulpe du pouce se pose sur le FLANC RADIAL de la 2e phalange de l'index (photo 2357).
+  // L'ancienne cible — milieu de l'IPP de l'index et de l'IPD du majeur — est un point INTÉRIEUR à la masse des
+  // doigts repliés : le pouce ne pouvait pas l'atteindre, le solveur s'arrêtait au contact et le laissait à plat
+  // SOUS le poing, dépassant comme une palette. On vise maintenant un point qui est vraiment à la surface.
+  'Poing serré':h=>h.joints.index[1].getWorldPosition(W3()).lerp(h.joints.index[2].getWorldPosition(W3()),.5)
+      .addScaledVector(XR,1.05*hwOf(HD.segs.index[1])),
   'Index (1)':h=>h.joints.majeur[1].getWorldPosition(W3()).lerp(h.joints.annulaire[2].getWorldPosition(W3()),.5),
   'V (2)':h=>h.joints.annulaire[1].getWorldPosition(W3()).lerp(h.joints.auriculaire[2].getWorldPosition(W3()),.5)
-};
+};   // pas de cible pour « 3 » : son pouce est TENDU, c'est le troisième doigt du chiffre, il ne se pose sur rien
 // passage d'une configuration à une autre : le pouce s'écarte d'abord (il ne bloque plus les doigts), puis chaque doigt,
 // puis le pouce rejoint sa place. Le résultat ne dépend donc pas de la pose précédente.
 function settle(fromF,toF){let cur=clone(fromF);
