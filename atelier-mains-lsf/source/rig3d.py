@@ -308,7 +308,13 @@ back8 = wfin * fB + (1 - wfin) * hbP
 # base) : on garde sa FORME dessinée, recoupée à NAILM px de la tranche, coins arrondis, rangée en distance signée
 # (texture texNail, < 0 dans l'ongle) ; le shader le trace net à tout grossissement : aplat + trait fin comme le dessin.
 # Le volume suit : ongle bombé en travers, peau un peu relevée autour (replis latéraux et proximal, pas au bord libre).
-NAILM, NAILLW, NDOME, NFOLD = 10.0, 2.4, .08, 1.6   # marge de peau (px), trait (px), bombé (× demi-largeur), repli (px)
+NAILM, NAILLW, NDOME, NFOLD = 10.0, 2.4, .17, 1.6   # marge de peau (px), trait (px), bombé (× demi-largeur), repli (px)
+# NDOME : la tablette est un ARC en travers (rayon NARC × sa demi-largeur, pente maximale AU BORD), pas une bosse en S.
+# Mesuré sur l'index avec l'ancien profil (.08, smoothstep nul au bord) : la normale ne s'inclinait que de 6° de plus
+# qu'au repos (20° → 26° au bord, qui vient de l'arrondi du doigt), et l'ombre ne variait que de 3,3 à 4,9 % sur
+# l'ongle : invisible, l'ongle se lisait comme un autocollant. Arc de rayon 1,8 × demi-largeur : flèche 0,30 × la
+# demi-largeur (≈ 1,4 mm pour un ongle de 9 mm ; anatomie 1,3-1,8 mm), pente au bord 34° — ce que l'ombre lit.
+NARC = 1.8
 from skimage.morphology import convex_hull_image
 _ss = lambda x: np.clip(x, 0, 1) ** 2 * (3 - 2 * np.clip(x, 0, 1))
 lumA = DA[..., :3].mean(-1)
@@ -358,7 +364,8 @@ DA[..., :3] = DA_old
 # volume : bombé de l'ongle (nul au bord, plein à mi-largeur) + repli de peau autour (sauf au bord libre). Appliqué aux
 # sommets du dos APRÈS le lissage (rien ne bouge ailleurs, ni la tranche ni la paume) ; nul près de la tranche.
 # Le relief s'éteint en douceur vers la tranche (12 px) : vu de profil, la silhouette ne fait pas de cran au bord de l'ongle.
-bumpN = np.where(M8, NDOME * loc * _ss(-sdN / (.5 * loc)) + NFOLD * np.clip(1 - ((sdN - 3) / 5) ** 2, 0, 1) ** 2 * (1 - _ss((tax - tcen) / .3)), 0) * _ss((d8 - 10) / 12)
+_arc = lambda u: (np.sqrt(NARC ** 2 - (1 - np.clip(u, 0, 1)) ** 2) - np.sqrt(NARC ** 2 - 1)) / (NARC - np.sqrt(NARC ** 2 - 1))   # 0 au bord, 1 au milieu
+bumpN = np.where(M8, NDOME * loc * _arc(-sdN / (.55 * loc)) + NFOLD * np.clip(1 - ((sdN - 3) / 5) ** 2, 0, 1) ** 2 * (1 - _ss((tax - tcen) / .3)), 0) * _ss((d8 - 10) / 12)
 # trait de l'ongle : comme dans le dessin, un « U » (côtés et base) ouvert au bord libre, qui se confond avec le contour du
 # doigt. Poids du trait = 1 sur les côtés et à la base, 0 au bord libre (normale sortante du bord dans l'axe du doigt).
 uxN = np.zeros((H, W)); uyN = np.zeros((H, W)); lastP = np.zeros((H, W), bool)
@@ -367,7 +374,42 @@ for k, pts in CP.items():
     own = np.char.startswith(owner.astype(str), k + '.' + str(len(pts) - 2)); uxN[own], uyN[own] = u; lastP |= own
 _, (ly_, lx_) = ndimage.distance_transform_edt(~lastP, return_indices=True); uxN, uyN = uxN[ly_, lx_], uyN[ly_, lx_]
 gyS, gxS = np.gradient(ndimage.gaussian_filter(sdN, 1.5)); gnS = np.hypot(gxS, gyS) + 1e-9
-nailE = ndimage.gaussian_filter(1 - _ss(((gxS * uxN + gyS * uyN) / gnS - .3) / .35), 1.0)
+# Le trait s'amincit sur une longue rampe (cos de .1 à .7, soit du côté presque droit jusqu'à 45° du bout) : avec la
+# rampe courte d'avant (.3 → .65, 23° d'arc, ≈ 6 px dans le coin arrondi) le trait plein s'arrêtait d'un coup au
+# coin de l'ongle et se lisait, de biais, comme un crochet ou un second trait. Les côtés de l'ongle convergent vers le
+# bout (cos ≈ .25 sur l'index) : ils entrent dans la rampe, donc les bras du « U » s'affinent vers le haut, comme la
+# plume du dessin (bras dessinés pleins jusqu'à 0,3-0,5 de la hauteur de l'ongle, mesuré sur les cinq ongles).
+cosN = (gxS * uxN + gyS * uyN) / gnS
+nailE = ndimage.gaussian_filter(1 - _ss((cosN - .1) / .6), 1.0)
+# bord libre (canal G de texNailE) : la part du bord qui regarde le bout du doigt (cos > .5, à moins de 60° de l'axe).
+# Sur ses photos le bord libre est une mince frange plus claire que la tablette ; le shader y pose un aplat plus
+# clair de la largeur du trait, là où le « U » est ouvert.
+nailF = ndimage.gaussian_filter(_ss((cosN - .5) / .3), 1.0)
+# ombre franche de la tablette bombée (canal B de texNailE), hors pose du dessin seulement (le shader la multiplie par
+# npose). Un croissant le long du bord, du côté où le DESSIN pose ses ombres (mesuré sur texBack : la dernière phalange
+# est ombrée côté n < 0 sur les quatre doigts, 22-29 % de pixels d'ombre contre 0 % en face), large de NSHW × la
+# demi-largeur de l'ongle, qui s'éteint vers la ligne médiane. Peinte dans la texture, comme les ombres du dessin,
+# et pas déduite de la normale du maillage : essayé — un seuil sur N·L lisait le bruit des facettes (pas de 5 px)
+# et donnait une tache déchiquetée, pas une ombre franche.
+NSHW = .55
+nailS = np.zeros((H, W)); labK, nK = ndimage.label(nail_cut)
+for i in range(1, nK + 1):
+    c = labK == i; ys_, xs_ = np.nonzero(c); cy, cx = ys_.mean(), xs_.mean()
+    ux, uy = uxN[int(cy), int(cx)], uyN[int(cy), int(cx)]; nx, ny = -uy, ux
+    wN = np.abs((xs_ - cx) * nx + (ys_ - cy) * ny).max()                     # demi-largeur de l'ongle
+    zone = ndimage.binary_dilation(c, iterations=4); yz, xz = np.nonzero(zone)
+    side = _ss((-((xz - cx) * nx + (yz - cy) * ny) / wN - .1) / .3)         # côté n < 0, nul sur la ligne médiane
+    # Le croissant s'éteint vers la BASE de l'ongle (nul sous 0,3 de sa hauteur, plein au-dessus de 0,6). Un bout de
+    # doigt replié vu de la paume (annulaire et majeur de « V (2) », « Index (1) », « Poing serré ») ne montre de l'ongle
+    # qu'une lamelle : sa base, 25 % (annulaire) à 45 % (majeur) de la hauteur, mesuré sur les UV des sommets d'ongle
+    # tournés vers la caméra ; le croissant y faisait une tache grise (102,150,146) sur l'aplat pâle (120,176,171). Pas
+    # de porte par l'inclinaison dans le shader : mesurée au fragment, la lamelle est à |N.z| 0,23-0,45 et le croissant
+    # de la vue « dessous ¾ » commence à 0,36 (l'ombre est là où le bombé est le plus incliné) — elle mangeait l'une avec
+    # l'autre. À la base, l'ongle est plat (sous le repli, lunule) : le bombé et son ombre sont distaux.
+    tb = (xs_ - cx) * ux + (ys_ - cy) * uy; tz = (xz - cx) * ux + (yz - cy) * uy
+    ax = _ss(((tz - tb.min()) / (tb.max() - tb.min()) - .3) / .3)
+    nailS[yz, xz] = side * ax * _ss((NSHW * wN + sdN[yz, xz]) / (.3 * NSHW * wN))   # plein près du bord, nul à NSHW·wN du bord (lisière courte : ombre franche)
+nailS = ndimage.gaussian_filter(nailS, 1.5)
 out8 =ndimage.distance_transform_edt(~M8)
 front8 = np.where(M8, front8, -out8); back8 = np.where(M8, back8, -out8)
 # poignet coupé net (le bas du dessin) : on ferme le volume par un fond plat
@@ -493,13 +535,21 @@ for k in FINGS:
     t1 = sstep(cs[1] - .85 * w0, cs[1] + .85 * w0, s); t2 = sstep(cs[2] - .75 * w0, cs[2] + .75 * w0, s)
     b = BONES.index(k + '.0'); Wb[:, b] = c * (1 - t1); Wb[:, b + 1] = c * t1 * (1 - t2); Wb[:, b + 2] = c * t1 * t2
 # pouce : métacarpien (éminence thénar) puis 2 phalanges
+# Rampe de la part du métacarpien le long de son axe (s = 0 au trapèze, 1 à la MCP). Elle s'achevait à s = .78 :
+# la base du pouce ne suivait l'os qu'à moitié (part 0,44 à 0,8 pour s = 0,3..0,55) et, pouce replié sous la paume,
+# restait dehors en bosse sur le bord radial vu de dos (3,75 u contre 3,08 u pour la ligne tête du 2e métacarpien →
+# poignet, soit 7,7 mm de saillie en « Quatre (4) »). La peau au-dessus de l'os suit l'os dès la base du métacarpien,
+# au tiers de sa longueur : mesuré en balayant SAX (.78 / .60 / .45 / .30 / .20), la saillie passe à 6,4 / 5,3 / 4,4 /
+# 4,3 mm — elle sature à .30, et ce qui reste est le contour DESSINÉ du poignet (sommets à 0,1 u du trapèze, qui
+# ne peuvent pas tourner). Repos inchangé (ce sont des poids).
+SAX = .30
 def thenarW8(x, y):
     ax, ay = CP['pouce'][0][0] - CMC8[0], CP['pouce'][0][1] - CMC8[1]; L2 = ax * ax + ay * ay; L = np.sqrt(L2); dx, dy = x - CMC8[0], y - CMC8[1]
     s = (dx * ax + dy * ay) / L2; nx, ny = -ay / L, ax / L
     if nx * (500 - CMC8[0]) + ny * (560 - CMC8[1]) < 0: nx, ny = -nx, -ny
     l = dx * nx + dy * ny
     # éminence thénar : influence large et progressive vers le creux de la paume (pouce rentré sans pliure en « feuille de papier »)
-    return sstep(-.12, .78, s) * np.where(l > 0, 1 - sstep(20, 210, l), 1) * (1 - sstep(1.15, 1.6, s) * sstep(10, 60, l))
+    return sstep(-.12, SAX, s) * np.where(l > 0, 1 - sstep(20, 210, l), 1) * (1 - sstep(1.15, 1.6, s) * sstep(10, 60, l))
 sT, lT = polyproj(P2, chain8['pouce']); csT = cum(chain8['pouce'])
 # influence du pouce continue (pas de marche au bord de la « région pouce ») : éminence thénar OU proximité de l'axe du pouce
 wT = np.array([np.mean([(a + b) / 2 for a, b in zip(g['wl'], g['wr']) if a + b > 8]) for g in segs['pouce']]).mean()
@@ -507,6 +557,55 @@ latT = np.where(lT <= wT + 2, 1.0, np.exp(-((lT - wT - 2) / 26.0) ** 2))
 axT = sstep(csT[1] - 70, csT[1] + 10, sT) * latT
 axT = np.where(np.array([o != '' and not o.startswith('pouce.') for o in vown]), 0, axT)
 cT = np.maximum(thenarW8(P2[:, 0], P2[:, 1]), axT)
+# LE DOS DE LA PREMIÈRE COMMISSURE (« le pouce est un réel problème avec son creux »). thenarW8 est un poids 2D,
+# le même pour la peau de la paume et pour celle du dos. Côté paume c'est juste : l'éminence thénar suit le
+# métacarpien jusqu'au pli thénar (portée 210 px). Côté dos il n'y a aucune masse qui suive le pouce : entre le
+# 1er et le 2e métacarpien la peau recouvre le premier interosseux dorsal, qui reste avec l'index. Mesuré sur la
+# peau posée (« Quatre (4) », rapprocher 40 / avancer 28, vue dos) : les sommets dorsaux au repos en x = 645..675 px
+# — là où le bord radial devrait être — portaient 0,6 à 0,94 de part du métacarpien et étaient balayés de 11 à
+# 27 mm vers le centre de la paume ; le sommet qui faisait la silhouette à hauteur de la commissure venait de
+# (615, 505), AU-DESSUS du 2e métacarpien, avec 0,48 de part. D'où le « S » du bord radial (flèche 21 mm) dans tous
+# les presets à pouce replié, alors que sa main (photo dos, pouce caché dessous) montre une ligne droite qui
+# prolonge le bord radial de l'index jusqu'au poignet. On annule donc, côté dos seulement, la part du pouce en
+# deçà de la ligne bord radial de la tête du 2e métacarpien (648 px, à 45 px de l'axe de l'index) → trapèze (CMC8,
+# 652 px) : la peau du dos y reste avec l'index, et la commissure dorsale se plie sur XW px juste au-delà, sous
+# la main. Rampe en profondeur (ZA, ZB) pour ne pas toucher la paume. Ce sont des
+# poids : au repos rien ne bouge (cas_0 et cas_1 identiques au pixel près, vérifié).
+# XW est la largeur du pli (en x, à partir de la ligne xl). La silhouette ne dépend pas de lui (c'est la ligne à part
+# nulle qui la fait) ; la peau du pli, elle, est étirée : elle relie le bord du dos, qui reste, au pouce passé sous
+# la paume (au niveau de la MCP la peau à part 1 recule de 113 px et s'enfonce de 95). Un premier réglage à XW = 60
+# constant donnait, en vue « Profil », une tache d'ombre rectangulaire sous la base du pouce et 35 à 44 arêtes à
+# dièdre > 60° dans la fenêtre de la commissure (1 avant). Mesuré :
+# - la tache est la TEXTURE : le dessin du dos porte une ombre peinte de ~20 px le long du bord de l'échancrure
+#   (x 645..700, y 440..545, luminance 136 contre 161), et c'est cette bande qui, étirée ×4 à 5 sur le pli, s'affiche
+#   à plat face à la caméra (vérifié : texture du dos remplacée par un aplat, la tache disparaît ; les pixels de la
+#   tache viennent de UV x 645..683, y 452..542). On ne peut pas l'éviter (ce sont ses dessins, exacts au repos),
+#   seulement la concentrer là où l'ombre est naturelle, sous le pouce, et garder le bord du dos net au-dessus ;
+# - les arêtes à grand dièdre (jusqu'à 175°, triangles retournés) étaient au FOND de l'échancrure (x − xl 33..41,
+#   y 527..552, z −7..−29) : ce fond est un tube serré (rayon ~10 px) et la rampe y faisait encore varier la part de
+#   0,78 à 0,98, soit 30 px d'écart de déplacement sur 10 px de peau. Le fond de l'échancrure doit être sur un
+#   PLATEAU à part 1 : au niveau du fond (y ≈ 525) le pli ne peut dépasser 30 px (sstep(27/30) = 0,97). Mesuré
+#   (arêtes > 60°, V (2) / Quatre / B / Index (1)) : 30 px → 1 / 6 / 10 / 0 ; 36 px → 11 / 23 / 16 / 0 ; 44 px
+#   (rampe z ±20) → 11 / 20 / 16 / 6 ; 60 px (rampe z 0..−15) → 38 / 44 / 39 / 35.
+#   Les triangles « gonflés » du balayage (aire > 320 %) SONT cette nappe : 16 869 à 30 px, 16 217 à 36, 12 419 à
+#   60 (7 452 sans la coupe) ; on ne les réduit qu'en remettant la rampe sur le fond, donc en retrouvant les
+#   retournements. Un triangle étiré est invisible (c'est la nappe), un triangle retourné fait un trait.
+# D'où une largeur qui dépend de y : large en haut de l'échancrure (95 px à y = 440, où le bord libre n'est qu'à
+# 5 px de xl et le bord ulnaire du pouce à 95 : l'ombre peinte du bord y reste serrée, comme au repos), 30 au fond
+# (y 515..550), 60 sur le dos du 1er métacarpien (y ≈ 600 : optimum du balayage de la première version, au-delà la
+# rampe mord sur le dos de la MCP), puis réduite comme le recul lui-même, qui tombe de 115 px à la MCP à 70 (s = .75),
+# 30 (s = .5) et 0 au quart du métacarpien (y 611 / 657 / 703).
+XW_Y = ([440., 515., 550., 600., 640., 660., 690.], [95., 30., 32., 60., 52., 34., 20.])
+# Rampe en profondeur : elle allait de z = 0 à −15 px. Au bord libre de la palmure (tube de 75 à 85 px d'épaisseur)
+# elle tombait en marche sur la tranche : face paume à cT0 (0,6..0,9), face dos coupée, le passage en 3 arêtes.
+# La face paume (éminence thénar, palmure palmaire avec ses plis dessinés) suit le pouce ; la face dos reste ; la
+# tranche passe de l'une à l'autre sur 40 px, centrés sur z = 0. Le bord vu de dos est fait par les sommets à
+# z ≤ −20 (part nulle) ; ceux de la tranche, à part partielle, reculent d'au moins 56 px et passent dessous.
+ZA, ZB = -20., 20.
+gz = sstep(ZA, ZB, -V8[:, 2])
+xl = 648. + (CMC8[0] - 648.) * (P2[:, 1] - 421.) / (CMC8[1] - 421.)
+XW = np.interp(P2[:, 1], XW_Y[0], XW_Y[1])
+cT = cT * (1 - (1 - sstep(xl, xl + XW, P2[:, 0])) * gz)
 cT = np.minimum(cT, 1 - np.minimum(Wb[:, 4:].sum(1), 1))
 tM = sstep(csT[1] - 40, csT[1] + 40, sT); tI = sstep(csT[2] - 32, csT[2] + 32, sT)
 Wb[:, 1] = cT * (1 - tM); Wb[:, 2] = cT * tM * (1 - tI); Wb[:, 3] = cT * tM * tI
@@ -592,8 +691,10 @@ gy8, gx8 = np.gradient(ndimage.gaussian_filter(d8, 2.0))
 gn = np.hypot(gx8, gy8) + 1e-9; dv = d8[vy, vx]; push = np.clip(7 - dv, 0, 7)
 UV8 = np.stack([vx + gx8[vy, vx] / gn[vy, vx] * push, vy + gy8[vy, vx] / gn[vy, vx] * push], 1)
 # sur l'ongle (dos), coordonnées de texture exactes (pas arrondies au pixel) : bord net sans ondulation au grossissement.
+# Jusqu'à 14 px du bord de l'ongle : la couture entre coordonnées exactes et arrondies (saut ≤ ½ px) tombait à 6 px,
+# en plein dans le trait élargi à l'écran et son bord libre ; à 14 px elle est dans la peau, où rien de fin n'est tracé.
 # Pas sur la tranche (dv ≥ 11) : vue de face au repos, le bout du doigt reste exact au pixel près
-UV8 = np.where(((sdN[vy, vx] < 6) & (dv >= 11) & (V8[:, 2] < -2))[:, None], P2, UV8)
+UV8 = np.where(((sdN[vy, vx] < 14) & (dv >= 11) & (V8[:, 2] < -2))[:, None], P2, UV8)
 mesh8 = {'uv': base64.b64encode(np.round(UV8 * 4).astype(np.int16).tobytes()).decode(), 'n': int(nV), 'xyz': base64.b64encode(np.round(V8 * 4).astype(np.int16).tobytes()).decode(), 'q': 4,
          'idx': base64.b64encode(ff.astype(np.uint16 if nV < 65536 else np.uint32).tobytes()).decode(), 'i32': nV >= 65536,
          'nFront': nFront, 'bi': base64.b64encode(order.astype(np.uint8).tobytes()).decode(), 'bw': base64.b64encode(w8.astype(np.uint8).tobytes()).decode(),
@@ -697,7 +798,9 @@ data = {'W': W, 'H': H, 'chains': CP, 'segs': segs,
         'texFront': png_b64(P_tex), 'texBack': png_b64(DA), 'outw': OUTW,
         # ongles : R = distance signée au bord (px, codée 128 + 12·d), G/B = bouts de trait à effacer ; couleur de l'aplat, trait
         'texNail': png_rgb(np.clip(np.round(np.stack([128 + 12 * sdN, 255 * tickW, 200 * tickB], -1)), 0, 255)),
-        'texNailE': png_rgb(np.repeat(np.clip(np.round(255 * nailE), 0, 255)[..., None], 3, -1)),   # poids du trait de l'ongle
+        # R = poids du trait de l'ongle (« U » ouvert au bout), G = poids du bord libre (la part du bord qui regarde le bout),
+        # B = ombre franche de la tablette (croissant côté ombre du dessin, hors pose)
+        'texNailE': png_rgb(np.clip(np.round(255 * np.stack([nailE, nailF, nailS], -1)), 0, 255)),
         # plis et rides : R = trait de la paume, G = le même élargi (pli creusé), B = aplat du dos, A = masque des rides du dos
         'texCrease': png_rgba(np.clip(np.round(np.stack([255 * crF, 255 * crW, crBL, 255 * crBM], -1)), 0, 255)),
         'nail': {'col': [float(x) for x in NAILC], 'lw': NAILLW, 'skin': [float(x) for x in GREEN / 255 / 200]},

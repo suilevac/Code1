@@ -38,6 +38,62 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
 - **Racines sans « col »** (essai A) : le volume du dessin a, à la racine de chaque doigt et du pouce, une gorge puis un bourrelet. Profil corrigé exporté en déplacement `mesh.dz`, appliqué progressivement dès que la pose quitte « Dessin » (`rootBlend`, part `gR`) : dessin au repos exact au pixel près. Au pouce : côté dos seulement (MCP sans cran) ; côté paume, combler la gorge contre l'éminence effaçait l'écart de profondeur qui fait le contour du pouce posé devant la paume (trait effiloché).
 - **Coque gardée** (`hullMatProto`) : hors pose « Dessin », main entière, un fragment de coque est jeté s'il est à moins de `HPUSH`(1,8) × épaisseur du trait devant la peau qu'il recouvre (profondeur de la passe identité), ET que les deux parties ne sont pas deux doigts différents (même partie, paume sous un doigt, pouce et paume/éminence) : les fentes en dents de scie et « confettis » des plis (pli de l'éminence et de la MCP du pouce, IP) disparaissent. Le vrai contour garde son poids : silhouette (aucune peau derrière), doigt sur doigt, pouce et doigt, et pouce posé devant la paume, qui en est toujours loin (écart ≥ 2 × HPUSH mesuré). Pas d'exception près du fond : elle laissait des éclats à l'embouchure des plis, et le contour n'y prend pas de cran.
 - **Ongles** (essai D, repris) : forme dessinée (enveloppe convexe, recoupée à `NAILM`=10 px de la tranche) en distance signée dans `texNail` (R) ; le shader trace l'aplat + le trait fin (`NAILLW`=2,4 px), nets à tout grossissement. Le trait est un « U » comme dans le dessin : il s'amincit jusqu'à rien au bord libre (`texNailE`), pas d'anneau noir « autocollant ». La texture dos reste celle d'avant (ses mipmaps lues en biais changeaient la vue paume au repos) ; la peau repeinte (sous l'ongle, son trait, bouts de trait étirés en taches) passe par `texNail` G/B, appliquée sur le dos franc au repos et partout hors pose (plus de points noirs sous l'ongle vus de côté). Bombé + repli de peau (`NDOME`, `NFOLD`) dans `mesh.dz` (hors pose seulement), éteint sur 12 px vers la tranche (pas de cran de silhouette au bord de l'ongle).
+- **Ongles « pas propres et nets » (piste N)** — grief de l'utilisateur sur sa capture de « V (2) » en dos ¾. Mesuré avant
+  de toucher : la largeur de l'ongle n'était PAS en cause (texNail 0,55 × la largeur du doigt, son dessin 0,52-0,57,
+  sa vraie main 0,70-0,80 : le rendu est plus étroit que le réel, pas plus large ; `NAILM` gardé). Ni les traits
+  intérieurs, ni la coque, ni les mipmaps du dos (isolés un à un : 0 pixel changé près de l'ongle). Quatre causes, toutes
+  dans le trait et l'aplat eux-mêmes :
+  1. **Le trait était large de 2,4 px DE DESSIN sur la peau**, donc à l'écran il suivait le raccourci de la texture
+     (projection plane sur un bout de doigt arrondi) : à l'angle de la capture, 0,60 px de dessin par pixel d'écran
+     d'un côté, 0,36 de l'autre → bras du « U » de 4 et 7-8 px (×3 : 9 et 17 px, rapport 1,9). Le trait est maintenant
+     de largeur constante À L'ÉCRAN (`nailPx` = 2,4 px ramenés à la distance de la cible, comme le rayon des traits
+     intérieurs ; × `vAw`, pixels de dessin par pixel d'écran calculé AU SOMMET — pas `fwidth(sd)`, bruité par la
+     quantification 8 bits de la distance signée, qui crénelait le bord intérieur). Mesuré ×3 : 18 et 16 px (1,12).
+  2. **Rampe du « U » trop courte** (cos .3 → .65, 23° d'arc ≈ 6 px) : le trait plein s'arrêtait net au coin de
+     l'ongle, lu de biais comme un crochet ou un second trait. Rampe .1 → .7 : les bras s'affinent vers le haut, comme
+     la plume de son dessin (bras dessinés pleins jusqu'à 0,3-0,5 de la hauteur de l'ongle, mesuré sur les cinq ongles).
+  3. **Bombé illisible** : `NDOME` = .08 en S n'inclinait la normale que de 6° de plus qu'au repos et l'ombre générale
+     (saturée dès N·L > .77) ne variait que de 3 à 5 % sur l'ongle. Tablette en ARC (`NARC` = 1,8 × demi-largeur,
+     flèche 0,30 × demi-largeur ≈ 1,4 mm, pente 34° au bord) ET ombre franche PEINTE dans `texNailE` B : croissant
+     le long du bord, du côté où le dessin pose ses ombres (texBack : dernière phalange ombrée côté n < 0 sur les
+     quatre doigts, 22-29 % contre 0 %), au ton de l'ombre du dessin (0,82), hors pose seulement. Écarté : seuil sur
+     N·L du maillage — il lisait le bruit des facettes (pas de 5 px) et donnait une tache déchiquetée.
+  4. **Bord libre** (`texNailE` G) : aplat plus clair (mix 0,45 vers le blanc) de la largeur du trait, sur la part du
+     bord qui regarde le bout (sur sa photo la frange libre est ≈ 1,35 × plus claire que la tablette).
+  Couture UV exacte/arrondie repoussée de 6 à 14 px du bord de l'ongle (le saut de ½ px tombait dans le trait élargi).
+  **`cas_0` identique au pixel près ; `cas_1` : 917 pixels changés, tous à moins de 13 px d'un ongle. Balayage
+  inchangé (1685 / 7627 / 19495 / 7452 / 0,0 % / 13,3 %).**
+  Deuxième passe (shader seul, `hand3d.json` inchangé), après contrôle adverse :
+  - **Le croissant n'était pas franc** : la rampe peinte (0,3 × sa largeur) + flou 1,5 px, interpolés par la texture,
+    donnaient une lisière en dégradé de ≈ 10 px de dessin (index de « V (2) » ×3 : 194 → 155 sur 34 px d'écran, 28 %
+    de l'ongle). Le shader seuille maintenant `texNailE.b` à mi-hauteur, adouci sur ~1,5 px d'écran (comme la distance
+    signée de l'ongle) : lisière 186 → 150 en 4 px d'écran (≈ 1,3 px de dessin), « entre-deux » 1-2 pas de 2 px contre
+    7-10. Raccourcir la rampe dans la texture aurait laissé un dégradé qui grossit avec le zoom. Ton peint 0,85 (et non
+    0,82) : au bord de l'arc l'ombre générale retire déjà 4 % (194 → 186), l'écran lit ≈ 0,82, le ton du dessin.
+  - **Ongles vus de chant** (bouts repliés vus de la paume : annulaire et pouce de « V (2) » face, « Index (1) »,
+    « Poing serré ») : la mince lamelle visible était mangée par le trait constant à l'écran (jusqu'à 8 px de dessin en
+    biais) et par le bord libre blanc de même largeur — « tiret noir + tiret blanc ». Plafond du trait et du bord libre
+    à 5/3 × le trait du dessin (4 px) : au-delà de 53° (N.z < 0,6) le trait suit de nouveau le raccourci, la lamelle
+    redevient un ongle (filet + frange claire). 4 px et pas 3,6 : à 3,6 le bras éloigné du « U » de l'index en dos ¾ ×3
+    retombait à 7-8 px d'écran contre 10-11 (rapport 1,43, le dédoublement revenait) ; à 4 px le rapport reste ≤ 1,25.
+    Plancher gardé : jamais sous ~1,25 px d'écran (de loin, caméra à 100-160, le trait reste continu).
+  **`cas_0` identique ; `cas_1` : les mêmes 917 pixels (rien ne change à la pose du dessin, npose = 0).**
+  Troisième passe (`rig3d.py` seul, canal B de `texNailE` ; shader inchangé), après second contrôle adverse :
+  - **Tache grise sur les ongles de chant** : le plafond du trait avait rendu la lamelle lisible, mais le croissant y
+    restait — une tache (102,150,146) sur l'aplat pâle (120,176,171), ≈ 10 % de la lamelle (327 px sur l'annulaire
+    de « V (2) » ×3). Mesuré sur les UV des sommets d'ongle tournés vers la caméra : la lamelle est la BASE de l'ongle,
+    25 % (annulaire) à 45 % (majeur) de sa hauteur, et le croissant courait le long du côté jusque dans le coin de la
+    base. Il s'éteint maintenant vers la base (nul sous 0,3 de la hauteur, plein dès 0,6) : à la base l'ongle est plat
+    (sous le repli, lunule), le bombé et son ombre sont distaux. Lamelles de « V (2) », « Index (1) », « Poing serré »,
+    « L » : aplat pâle + filet, 0 pixel du ton du croissant ; index en dos ¾ ×3 : profil à mi-hauteur inchangé
+    (tablette 84 px, croissant 40, 1 px d'entre-deux), bras du U 1,08-1,25, près du bout croissant 44 px, près de la
+    base 1 px.
+  - **Écarté : une porte par l'inclinaison dans le shader** (croissant × smoothstep(|N.z|)). Mesuré au fragment
+    (shader de débogage) : la lamelle est à |N.z| 0,23-0,45 (médiane 0,33), et dans la vue « dessous ¾ » les pixels
+    du croissant commencent à 0,36 (médiane 0,44) — l'ombre est précisément là où le bombé est le plus incliné, toute
+    porte par la normale mange le croissant des vues de biais avant d'effacer la lamelle. (Les normales lues sur
+    l'attribut `normal` au sommet donnaient 0,07-0,14 : ne pas s'y fier pour juger ce que voit le shader.)
+  **`cas_0` identique ; `cas_1` : les mêmes 917 pixels ; `hand3d.json` ne change que par `texNailE` B (5306 texels).**
 - **Colonne du pouce (piste T)** : les CENTRES d'articulation du pouce ne sont plus les plis dessinés.
   Mesuré sur le dessin : métacarpien 193,6 px, P1 100,5 px, P2 + pulpe 128,4 px → 1 : 0,52 : 0,66, alors que
   l'anatomie donne 1 : 0,67 : 0,55 (46 / 31 / 21 mm + ~4,5 mm de pulpe). Le pli IP dessiné est ≈ 25 px trop
@@ -115,6 +171,57 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   s'ouvre pas » ; c'était faux. Rendue à trois abductions (0°, 22°, 45°) en paume, dos et biais, la palmure
   s'ouvre bien en nappe continue et sa courbe reste lisse — la peau étant UNE surface fermée, le tissu s'étire
   tout seul. Ne pas y ajouter de déformeur : il n'y a pas de problème à résoudre.
+- **Le creux du pouce — le DOS de la première commissure** (« le pouce est un réel problème avec son creux »).
+  Pouce replié sous ou en travers de la paume (V (2), Quatre (4), B, Index (1), Poing serré), le bord radial de la
+  main vue de DOS faisait un « S » : concavité profonde sous la tête du 2e métacarpien, bosse à la base du pouce,
+  poignet. Sur sa main (photos dos, pouce caché dessous ; V de dos), ce bord est une ligne droite qui prolonge le
+  bord radial de l'index jusqu'au poignet. Mesuré (profil x(y) de la peau posée, vue dos, tête du 2e métacarpien →
+  poignet) : flèche de 20,9 mm en Quatre, 18,4 en V (2), 19,3 en B, 15,6 en Index (1). Ce n'était ni le relief
+  (`setKnk(0)` : 21,8), ni la pronation (`setPron(0)` : 26,0, pire), ni les axes de la CMC : c'était les POIDS.
+  `thenarW8` (rig3d.py) est un poids 2D, le même pour la paume et pour le dos ; côté paume c'est l'éminence thénar
+  et c'est juste, mais côté dos la peau de la commissure et celle qui recouvre le 2e MÉTACARPIEN portaient 0,5 à
+  0,94 de part du métacarpien du pouce (le sommet qui faisait la silhouette venait de (615, 505) px, au-dessus de
+  l'index, avec 0,48) : « rapprocher 40 » balayait tout le dos de la commissure de 11 à 27 mm vers le centre.
+  Deux corrections, toutes deux des poids (repos exact au pixel près, vérifié) :
+  1. côté dos seulement, part du pouce annulée en deçà de la ligne bord radial de la tête du 2e métacarpien
+     (648 px) → trapèze (652 px) ; la commissure dorsale se plie sur `XW` px juste au-delà, sous la main. La face
+     paume (éminence, palmure palmaire et ses plis dessinés) suit le pouce ; la tranche passe de l'une à l'autre sur
+     40 px centrés sur z = 0 (`ZA, ZB`) ;
+  2. rampe axiale de la part du métacarpien `SAX` = .30 au lieu de .78 : la peau suit l'os dès le tiers du
+     métacarpien, sinon la base du pouce restait dehors en bosse (saillie 7,7 → 4,3 mm, saturée à .30 ; le reste
+     est le contour dessiné du poignet, qui ne peut pas tourner autour du trapèze).
+  **Le pli lui-même (seconde passe).** Un premier réglage `XW` = 60 constant (rampe z 0 → −15) donnait le bord droit
+  mais, en vue « Profil », une tache d'ombre RECTANGULAIRE sous la base du pouce et 35 à 44 arêtes à dièdre > 60°
+  dans la fenêtre de la commissure (1 avant). Mesuré :
+  - la tache est la TEXTURE, pas la lumière : texture du dos remplacée par un aplat, elle disparaît ; ses pixels
+    viennent de UV x 645..683, y 452..542, c'est-à-dire de l'ombre peinte de ~20 px le long du bord de l'échancrure
+    (luminance 136 contre 161). Le pli est une nappe qui relie le bord du dos, immobile, au pouce passé sous la
+    paume (113 à 160 px plus loin, 95 à 170 px plus bas) : cette nappe est faite de 27 à 44 px de peau au repos,
+    étirée ×4 à 5, et c'est l'ombre dessinée du bord qu'elle affiche à plat. On ne peut pas l'éviter sans toucher
+    aux UV (donc au repos) : on la concentre sous le pouce, où une ombre est naturelle ;
+  - les dièdres de 60 à 175° (triangles retournés) étaient au FOND de l'échancrure (x − xl 33..41, y 527..552,
+    z −7..−29) : tube serré (rayon ~10 px) où la rampe faisait encore varier la part de 0,78 à 0,98, soit 30 px
+    d'écart de déplacement sur 10 px de peau. Le fond doit être un PLATEAU à part 1 : `XW` ≤ 30 à ce niveau.
+    Mesuré : 30 px → 1 / 6 / 10 / 0 arêtes (V (2) / Quatre / B / Index (1)) ; 36 px → 11 / 23 / 16 / 0 ; 44 px
+    (rampe z ±20) → 11 / 20 / 16 / 6 ; 60 px (rampe z 0..−15) → 38 / 44 / 39 / 35.
+    Un palier intermédiaire (part 0,7 au fond, le reste sur la base ulnaire du pouce) a été essayé et rejeté :
+    la peau du pouce lui-même, coupée de 5 à 15 %, se retourne (44 à 57 arêtes sur son bord ulnaire, y 437..460).
+  D'où `XW_Y`, largeur du pli fonction de y : 95 px en haut de l'échancrure (y 440, le bord libre n'est qu'à 5 px
+  de xl et le pouce à 95 : l'ombre du bord reste serrée), 30 au fond (y 515..550), 60 sur le dos du 1er métacarpien
+  (y 600), puis 34 / 20 (y 660 / 690) : plus la rampe est étroite près du trapèze, moins la base du pouce ressort
+  (bosse convexe du bord 4,5 → 2,8 mm). Résultat (V (2) / Quatre / B / Index (1)) : flèche concave sur l'image
+  0,7 / 0,2 / 0,2 / 0,7 mm (première passe 0,1..0,2, original 13..18) ; arêtes > 60° : 1 / 6 / 10 / 0 (première
+  passe 38 / 44 / 39 / 35) ; la tache est devenue une ombre sous la base du pouce, bord supérieur sur le pouce, sans
+  le côté rectiligne du bas ; plus de traits parasites au pli. Pénétration des 15 presets inchangée (≤ 0,42).
+  Balayage (172 poses) : replis 1 685 → 1 789, froissements 7 627 → 8 025, pincés 19 495 → 21 395, gonflés
+  7 452 → 16 869 (première passe 12 419 ; 16 217 avec un pli de 36 px au fond), os 0,0 %, épaisseur 13,3 %. Les « gonflés » SONT la nappe du pli : son
+  aire est fixée par la pose (le pouce passe 2 à 3,7 cm sous la paume) et par les 27..44 px de peau disponibles
+  entre le bord droit et le pouce ; les ramener sous 9 000 demanderait ≥ 47 px de pli au fond de l'échancrure,
+  c'est-à-dire remettre la rampe sur le tube du fond et retrouver les retournements. Le compromis choisi est le pli
+  sans retournement : un triangle étiré est invisible (c'est la nappe), un triangle retourné fait un trait.
+  Pouce dehors (L, Y, Main ouverte (5)) : la palmure dorsale, qui ne suit plus le métacarpien, se tend en membrane
+  et prend une ombre douce — comme sur sa photo paume ouverte ; l'éminence thénar vue de paume (B) reste une masse
+  lisse.
 - **Fléchisseur profond commun** : `dip ≥ 0,45 (pip − 55)`. On ne tient pas l'articulation du milieu pliée à fond
   avec le bout parfaitement tendu ; ce doigt-là se lisait comme une pièce mécanique. (La borne haute
   `dip ≤ 25 + 0,65 pip` existait déjà : le couplage est maintenant dans les deux sens.)
@@ -204,8 +311,13 @@ Auteur et utilisateur : Cavélius, enseignant LSF natif (CODA) à l'INJS de Metz
   variation d'épaisseur des anneaux de peau loin des articulations. Sort le tableau des pires poses et, avec
   `--images N`, les rend en PNG. `--knk 0` éteint le relief des jointures (comparaison A/B).
   Le relevé de référence est gardé dans `tests/out/balayage.txt`.
-  **Relevé de référence (170 poses, relief à 0,22 + élargissement latéral 0,11)** : replis 1 685, froissements
-  7 627, pincés 19 495, gonflés 7 452, allongement d'os max 0,0 %, variation d'épaisseur max 13,3 %.
+  **Relevé de référence (172 poses, version intégrée pistes N + creux du pouce + Z)** : replis 1 713,
+  froissements 8 067, pincés 21 465, gonflés 17 920, allongement d'os max 0,0 %, variation d'épaisseur max 15,0 %.
+  Les « gonflés » sont pour l'essentiel la NAPPE du pli dorsal de la première commissure (27 à 44 px de peau au
+  repos étirés ×4 à 5 sous la main quand le pouce passe dessous — invisibles en tant que triangles, voir « Le
+  creux du pouce ») ; les 15,0 % d'épaisseur sont l'auriculaire replié seul (plus de sillon dorsal en face, voir
+  piste Z). Avant ces trois pistes (relief 0,22 + élargissement 0,11) : 1 685 / 7 627 / 19 495 / 7 452 / 0,0 % /
+  13,3 %.
   (Avant la piste X, relief à 0,14 sans élargissement : 1 120 / 5 194 / 18 258 / 3 720 / 0,0 % / 12,0 % ; sans
   aucun relief : 1 153 / 5 195 / 18 255 / 2 959 / 0,0 % / 8,8 %.) À 0,14 le relief ne créait ni repli ni
   froissement de plus ; à 0,22, avec l'élargissement latéral, il en crée — c'est le prix d'une jointure qui
@@ -277,6 +389,105 @@ latéral s'allume sur `0,55 × rd` ; avec `rd` = demi-largeur, la rampe faisait 
 triangles (8 400 gonflés) — `rd` = 2,2 × demi-largeur donne le même volume sur une rampe longue (7 452).
 
 **`cas_0` et `cas_1` restent identiques au pixel près** après chacune de ces corrections (vérifié à chaque étape).
+
+## LES DOIGTS REPLIÉS À CÔTÉ DES DOIGTS TENDUS (piste Z) — « les doigts sont déformés »
+
+Grief de l'utilisateur, capture de « V (2) » vue de dos aux trois quarts et photo de sa main dans la même
+configuration : l'annulaire et l'auriculaire repliés se lisaient comme deux boudins ronds séparés, cernés d'un
+gros trait, avec un creux sombre entre eux et le dos de la main ; sur sa photo ils sont serrés l'un contre
+l'autre, rangés sous le majeur, en UNE masse continue avec le dos de la main. Trois lots de corrections ; chacun
+a démenti un diagnostic du précédent, à garder en tête.
+
+1. **La cause était dans `CONV`, pas dans la peau.** Mesuré sur la peau posée (`scipy.cKDTree`, station par station
+   le long de la phalange proximale) : dans le poing, les P1 voisines restaient PARALLÈLES (axes à 1,97 / 1,91 / 1,74
+   unité à la MCP et 2,01 / 1,96 / 1,63 à l'IPP) et, le doigt s'amincissant vers l'IPP, l'écart de peau y atteignait
+   4,0 mm (index–majeur), 4,2 mm (majeur–annulaire) et 2,0 mm (annulaire–auriculaire) ; en V (2), annulaire–auriculaire
+   1,1 à 2,0 mm sur toute la P1. `CONV` tourne le doigt autour de Z : à 90° de flexion c'est l'axe même de la P1,
+   donc il oriente P2/P3 (les bouts convergent, comme mesuré à la piste P) mais ne déplace pas la P1 d'un millimètre,
+   et `ab` non plus (vérifié à chaud : `ab` = −8 sur l'auriculaire ne change rien). Le relief latéral `KNL` fermait
+   la fente à la jointure seulement. L'anatomie dit autre chose : les axes de flexion des MCP sont OBLIQUES, et en
+   pliant chaque P1 penche vers l'axe de la main (le majeur). D'où `LEAN` (script.js) : l'axe de flexion de la MCP
+   est incliné autour de l'os, comme `tAxis` pour le pouce ; à 90° la P1 pointe vers Z·cos β + lat·sin β, le déport
+   vaut hauteur × sin β, nul au repos. Réglé pour le CONTACT et pas pour l'écart nul (la peau est de la chair, pas de
+   l'os) : β = −6,5° / 0 / 6,5° / 12° → écarts de peau le long de la P1 (stations ¼ à 1, mm) : V (2)
+   annulaire–auriculaire 0,41 / 0,05 / 0,17 ; poing index–majeur 1,3 / 1,4 / 0,6, majeur–annulaire 0,2 / 1,1 / 0,8,
+   annulaire–auriculaire 0,2 / 0,2 / 0,1 ; les squelettes ne se chevauchent nulle part (terme 3 de `penetration` = 0
+   dans tous les presets). Prix connu : l'obliquité agit dès 20–30° de flexion, donc les poses « molles » bougent aussi
+   (Repos : auriculaire 3,2 mm en moyenne, index 1,4 ; C et O : 2 à 4 mm ; Pince : index 2,5 mm) — pas un défaut
+   visible, c'est l'anatomie, mais à savoir en comparant deux rendus.
+2. **Le budget du solveur était un escalier, puis une pose rangée au plafond.** Le vérificateur du lot 1 a vu la
+   pénétration des presets repliés passer de 0,08 à 0,48 et la marionnette perdre de la liberté (V (2), écarter
+   l'auriculaire à −8° donnait −2 ; poing, ouvrir l'index à 80° donnait 85,9). Mesuré terme par terme
+   (`r2/pen_decomp.py`) : tout vient du terme 1, les BOUTS de l'annulaire et de l'auriculaire posés sur la paume.
+   Trois causes, trois corrections :
+   - **`palmH` lisait la cellule la plus proche** d'une grille au pas de 8 px, à hauteurs ENTIÈRES : la paume était un
+     escalier à marches de 1 px, le budget du solveur est 0,5 px. Écarter l'auriculaire de 2° déplace son bout de
+     2 px, change de cellule (hf 51 → 52) et la pénétration saute de 0,00 à 0,92 ; l'annulaire du poing était bloqué à
+     `ab` = −3,3 (à −3,0 : +0,61). La liberté de la version précédente (0,42 px de marge) était le hasard de la cellule
+     où le bout s'était arrêté. Lecture bilinéaire : la hauteur est continue, le solveur s'arrête là où la chair le veut.
+   - **`penetration()` rend le contact le plus profond, pas la somme.** Un bout posé sur la paume consommait le budget de
+     la main entière : plus rien pour le pouce ni pour un autre doigt. Deux contacts sont deux contacts.
+   - **Une articulation bloquée s'assied à la MOITIÉ du budget (`PEN_SEAT` = 0,25), le geste garde l'autre moitié
+     (`PEN_MAX` = 0,5) ; et un bout posé sur la paume GLISSE.** Avec un seul seuil, la pose résolue (l'auriculaire demandé
+     à 90° s'arrête à ≈ 76°, bout sur l'hypothénar) était rangée exactement AU PLAFOND, et le geste suivant sur ce doigt
+     n'avait plus aucune marge : écarter l'auriculaire de V (2) à −8° donnait −3,5 (son bout monte de 0,6 px sur le bord
+     arrondi de l'hypothénar). Quand une articulation d'un doigt (ab, IPP, IPD) est bloquée par ce contact, `solve`
+     relâche la MCP du même doigt de ce qu'il faut (≤ `SLIDE` = 4°, le plus petit relâchement trouvé par dichotomie)
+     pour que la commande passe entière — c'est ce qu'une main fait : le bout reste posé et glisse. Jamais le pouce
+     (ses couplages sont dans `constrain`), jamais plus que `SLIDE`. Mesuré (`verif/probe_solve.py`) : V (2) auriculaire
+     ab −8 → −8 (MCP 76,3 → 75,9), annulaire 1,8 → 1,8 (avant : −3,3 bloqué) ; poing, index 80 → 80 ; Y −15 → −15 ;
+     Quatre (4), auriculaire fermé avec `ab` 2,3 → 2,3 (avant 8,8, la MCP cède 3,7°). Pénétration des 15 presets :
+     ≤ 0,18 (avant 0,08 à 0,42 au hasard des cellules), différence d'angle 0,2° (0,06 mm de peau).
+3. **Les pouces « validés » étaient les presets bruts, jamais thumbReach.** Tracé pas à pas (`r2/reach_trace.py`) :
+   dans la version précédente, CHAQUE pas de `thumbReach` était rejeté (pénétration 0,77 > 0,5) parce que
+   `constrain()` ramenait l'ab de l'annulaire de −3,3 à −3,0 et que ce 0,3° faisait sauter son bout d'une cellule.
+   Grille continue, la montée reprenait et trouvait son optimum : V (2) 24,5/35/55/−8 (IP en hyperextension, coût
+   1,75 contre 3,05 au preset), Poing serré 11/1,5/39/80 (0,60 contre 1,29), Index (1) 31/18/46/58 — ce que le
+   vérificateur a vu au lot 1 et qui n'était PAS dû aux P1 déplacées. Les cibles `REACH` de V (2), Index (1) et
+   Poing serré sont retirées : leur pouce est celui du preset (Poing serré validé sur la photo 2357). Mesuré sur les
+   15 presets : V (2) 40/35/40/40, Index (1) 40/23,9/40/40, Poing serré 20/0/46/65 identiques à la version
+   précédente ; O 33/18/25/27 → 30 et Pince 25,5/27,5/5/15,5 → 8/14 (cibles sur le bout de l'index, qui penche).
+4. **Les échardes : le sillon dorsal, puis la coque vue en rasant** (`SILL` = 0,15 → 0 ; coque hors « doigt sur doigt »
+   à 2 × push). Diagnostic coloré (passe identité en rouge, coque en bleu puis par CATÉGORIE selon ce qu'elle recouvre,
+   `r2/echardes_diag.py`, `r2/hull_cat.py`) : le « trait noir double » entre les deux jointures repliées de V (2) était
+   la coque de l'auriculaire posée sur la bande de DOS qui plonge entre les deux jointures, à 2,5 px du trait de contact
+   de la passe identité — le sillon sculpté creusait là une rigole dont la coque lisait le fond comme un second contour.
+   Le sillon était un creux SCULPTÉ là où, les P1 ne se touchant pas, rien ne faisait d'ombre ; maintenant qu'elles se
+   touchent, la jointure fait son propre creux et la passe identité y trace UN trait. Sillon éteint, le « bouquet » qui
+   restait au bas de la jointure était la coque des crêtes (même partie, ou paume derrière un doigt) vue en rasant
+   par-dessus le fond de la vallée, à 1 à 2 push derrière : elle ne perce que par lambeaux d'un ou deux pixels entre
+   les facettes de la peau. Sur le DOS de la main (`rnz` < −0,3, le « dos franc » du nuanceur de peau, passé à la coque
+   par l'attribut `rnz`), hors « doigt sur doigt », la coque exige donc 2 × push ; le vrai contour de ces cas-là est
+   toujours bien plus loin (un doigt replié devant la paume : 16 mm d'épaisseur). Côté PAUME le seuil reste push :
+   mesuré sur 15 presets × 5 vues (pixels de trait perdus image par image), à 2 push partout c'est le bord inférieur
+   du pouce sur le THÉNAR qui s'effaçait (V (2) de face 322 px, Quatre (4) 286 — un pli de la paume, même partie, à 1 à
+   2 push), et l'excepter par partie ne suffisait pas (209 / 226 : le thénar est « paume ») ; le côté, lui, sépare
+   exactement les creux rasants du dos des plis de la paume ; ce qui disparaît encore ailleurs est le bord de coque
+   d'un bout de doigt posé sur la paume, dans la bande de 1 à 2 push au ras du contact (Y de face, 115 px ; le trait de
+   la passe identité y reste). Mesuré (fenêtre des jointures du vérificateur, dos34, fragments noirs < 120 px /
+   pixels dedans, sur les images mêmes des composites) : V (2) 50 / 326 → 18 / 213 (dont UN trait de 117 px à la base
+   du majeur, compté parce que juste sous le seuil, et les lambeaux d'une coque « doigt sur doigt » légitime à plus de
+   2 push), Index (1) 41 / 161 → 7 / 7, Poing serré 41 / 78 → 13 / 17 ; les jointures du poing se lisent toujours
+   (`KNK`, `KNL` inchangés).
+   Essayé et écarté, à chiffres égaux ou pires : coque « consciente des jointures » (46 → 59), test corrigé de la
+   pente (46 → 69), `EDMAX` 1,0 ou 0,5 (traits tronqués) ; **zone de contact entre deux doigts dans `sep()`** (le côté
+   qui trace décidé par l'identité quand |dn − d0| < 0,12 / 0,3 / 0,6 au lieu de 0,02) : 18 → 22 / 19 / 17 fragments en
+   V (2), 7 → 10 / 8 / 5 en Index (1) — dans le bruit de mesure (± 3 d'un rendu à l'autre), donc pas touché ; ce qui
+   reste en V (2) n'est pas un trait qui clignote mais la coque. La règle « deux échantillons sur douze » (hors pose
+   seulement) est GARDÉE, mesurée à sillon nul : V (2) 23 contre 43 avec un seul, Index (1) 24 contre 40, Poing serré
+   25 contre 28 ; à trois, les traits se tronquent (V (2) 29).
+5. La coque « doigt sur doigt » exige un écart ≥ push (2,6 mm), comme la paume sous un doigt : au contact, c'est la
+   passe identité qui trace le trait (seuil 0,02 entre deux doigts).
+
+**`cas_0` et `cas_1` identiques au pixel près** (vérifié : écart max 0). `cas_3` (poing) et `cas_4` (pince) changent :
+P1 pressées (annulaire `ab` −3,3 → 0, auriculaire 74,6 → 76,3°), pouces identiques ; `cas_5` (Repos) bouge de 2 à 3 mm
+latéralement (obliquité, point 1). Main gauche vérifiée (miroir de la droite). **Balayage (172 poses)** : replis
+1 685 → 1 613, froissements 7 627 → 7 666, pincés 19 495 → 19 549, gonflés 7 452 → 8 483, os max 0,0 %, épaisseur
+max 13,3 → 15,0 % (lot 1 : 1 819 / 7 911 / 19 629 / 8 281 / 14,6 %). Les 15,0 % sont l'auriculaire SEUL replié à
+90/105 (12,5 % avant) : vérifié sur la peau posée, il ne touche pas l'annulaire tendu (12,6 mm d'écart, aucun sommet à
+moins de 1,1 mm, dans les deux versions) — c'est l'anneau de peau de sa P1 mesuré dans un plan fixe alors que la P1
+tourne désormais autour d'un axe oblique de 12°, pas un doigt plus gros ni une collision. La règle « sillon = min des
+deux flexions » du lot 1 est retirée (sans effet à `SILL` = 0).
 
 ## Chiffres (leçons de mathématiques)
 
@@ -395,6 +606,7 @@ S = {
   d'écran : le trait se brisait en pointillé et l'ongle devenait une tache claire sans bord. Il garde maintenant au
   moins ~1,25 px d'écran (`max(nailLW, 1.25*fwidth(sd))`), multiplié par le profil en « U » pour que le bord libre
   reste ouvert. Au zoom des rendus de contrôle, `fwidth` < 1,9 : la pose du dessin est inchangée.
+  (Depuis la piste N, la largeur est constante à l'écran à tout angle : `nailPx` × `vAw`, voir « Ongles ».)
 
 ## Architecture précédente (v7)
 
@@ -479,6 +691,15 @@ python3 tests/balayage.py          # balayage anti-déformation (≈170 poses) �
    on voit les doigts du fond ; la passe « identité » y empile des traits épais. La piste P l'a beaucoup réduit
    (les bouts atteignent la paume, la boucle du doigt se referme) mais pas supprimé. Sur la vraie main (photo 2364)
    il n'y a pas de jour du tout.
+6. Ongles, croissant d'ombre (piste N) : le croissant se termine côté bord libre par une coupe à ≈ 40° plutôt
+   qu'en pointe le long du bord ; à ×6 il se lit comme un éclat sombre dans le coin haut de l'ongle (vérificateur
+   du lot 2). Piste : faire décroître sa LARGEUR avec la hauteur (rampe longue sur `ax`) au lieu de le couper.
+   Et sur le majeur de « V (2) » en dos ¾ ×3, le rapport des deux bras du U atteint encore 1,5 (index : 1,08-1,25).
+7. Vue « Profil », pouce replié : une ombre plus foncée subsiste sous la base du pouce — c'est l'ombre PEINTE du
+   dessin du dos le long de l'échancrure, étirée sur la nappe du pli (mesuré : disparaît avec une texture unie).
+   Plus de bord rectiligne ni de traits parasites, mais pas « sans tache » ; inévitable sans toucher aux UV.
+8. Échardes au contact de deux doigts repliés : divisées par deux à trois (V (2) dos ¾ 50 → 19 fragments,
+   Index (1) 41 → 23) mais pas nulles ; un trait doublé pré-existant sur le flanc ulnaire de l'auriculaire reste.
 
 ## Publication
 La version en ligne est un artifact claude.ai privé, publié depuis Claude. Pour le mettre à jour, republier `dist/atelier-mains-lsf.html` (sans doctype : claude.ai l'ajoute) avec les capacités `db`, `user`, `downloads`.

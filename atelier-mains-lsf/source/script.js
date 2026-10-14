@@ -48,6 +48,23 @@ const SPREAD={index:[-10,25],majeur:[-15,15],annulaire:[-20,12],auriculaire:[-45
 // à 236 px (et à 239 px aux 3/4), le poing se ferme en entier sans pénétration (cas_3 : 90/105/70 au lieu de
 // 89/103/69) et le jour entre les bouts et la paume se referme en bonne partie.
 const CONV={index:6,majeur:2,annulaire:-2,auriculaire:-7};
+// OBLIQUITÉ des axes de flexion des MCP. `CONV` tourne le doigt autour de Z : à 90° de flexion c'est une rotation
+// autour de l'axe même de la 1re phalange, donc elle oriente P2/P3 (les bouts convergent) mais ne déplace pas P1
+// d'un millimètre. Mesuré sur le poing serré (peau posée, scipy.cKDTree, station 0,75–1,0 de P1) : les phalanges
+// proximales voisines restaient PARALLÈLES et, le doigt s'amincissant vers l'IPP, l'écart y atteignait 4,0 mm
+// (index–majeur), 4,2 mm (majeur–annulaire) et 2,0 mm (annulaire–auriculaire) — quatre boudins séparés, chacun
+// cerné de son contour, là où les photos 2357, 2364 et 2375 montrent les P1 pressées l'une contre l'autre sur
+// toute leur longueur. L'anatomie le dit : les axes de flexion des MCP ne sont pas parallèles, et en pliant
+// chaque P1 PENCHE vers l'axe de la main (le majeur), d'autant plus qu'elle en est loin. On incline donc l'axe
+// de flexion de la MCP autour de l'os (comme `tAxis` pour le pouce) : à 90° la P1 pointe vers Z·cos β + lat·sin β
+// (+ = vers le pouce), le déport latéral vaut hauteur × sin β, nul au repos (dessin exact au pixel près).
+// β ≈ asin(écart / hauteur de l'IPP dans le poing : 3,23 / 3,72 / 3,20 / 2,51 unités), majeur = axe de la main,
+// réglé pour le CONTACT et pas pour l'écart nul (la peau est de la chair) : écarts de peau le long de la P1 après
+// réglage, V (2) annulaire–auriculaire 0,23 / 0,25 / 0,17 mm, poing index–majeur 1,3 / 1,4 / 0,6, majeur–annulaire
+// 0,4 / 1,1 / 0,8, annulaire–auriculaire 0,3 / 0,2 / 0,2. L'obliquité agit dès 20–30° : les poses molles (Repos, C,
+// O) bougent aussi de 2 à 4 mm en moyenne sur l'auriculaire — c'est l'anatomie, à savoir en comparant deux rendus.
+const LEAN={index:-6.5,majeur:0,annulaire:6.5,auriculaire:12};
+const setLean=o=>{Object.assign(LEAN,o||{});FING.forEach(k=>{const A=AX[k][0],b=LEAN[k]*D;A.flex=A.lat.clone().multiplyScalar(Math.cos(b)).addScaledVector(Z,-Math.sin(b)).normalize()})};setLean();
 const LIMF={mcp:[-20,90],pip:[0,105],dip:[-10,80]};
 const LIMT={av:[0,45],rap:[-20,40],mcp:[-10,55],ip:[-20,80]};
 const AVC=.7;   // part d'abduction palmaire entraînée par le rapprochement (vis sans fin de la CMC)
@@ -145,7 +162,10 @@ const [TF,TB,TN,TE,TC]=await Promise.all([tex(HD.texFront),tex(HD.texBack),tex(H
 [TN,TE].forEach(t=>{t.generateMipmaps=false;t.minFilter=THREE.LinearFilter});   // distance signée : pas de moyenne entre niveaux (elle déborderait sur la tranche)
 const NAILC=new THREE.Vector3(...HD.nail.col),NAILS=new THREE.Vector3(...HD.nail.skin);
 const LIGHT=new THREE.Vector3(-.45,.55,1).normalize();
-const VS=`attribute float part;attribute float rnz;attribute vec2 crf;uniform float hlPart;uniform float nflip;varying float vH;varying float vS;varying vec2 vCr;varying vec2 vUv;varying vec3 vN;void main(){vH=abs(part-hlPart)<.5?1.:0.;vS=smoothstep(-.3,.3,rnz);vCr=crf;vUv=uv;vN=normalize(normalMatrix*normal)*nflip;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
+// vAw : pixels de dessin par pixel d'écran au sommet (profondeur × raccourci de la normale), LISSE d'un sommet à l'autre.
+// Sert à la largeur du trait d'ongle. Pris par fwidth(sd) au fragment, il était bruité : sd est une texture 8 bits
+// (1/12 px) interpolée, sa dérivée saute d'un texel à l'autre (≈ 8 % à ×3) et le bord intérieur du trait était crénelé.
+const VS=`attribute float part;attribute float rnz;attribute vec2 crf;uniform float hlPart;uniform float nflip;uniform float pxk;varying float vH;varying float vS;varying vec2 vCr;varying vec2 vUv;varying vec3 vN;varying float vAw;void main(){vH=abs(part-hlPart)<.5?1.:0.;vS=smoothstep(-.3,.3,rnz);vCr=crf;vUv=uv;vN=normalize(normalMatrix*normal)*nflip;vAw=50.*max(-(modelViewMatrix*vec4(position,1.0)).z,.5)/pxk/max(abs(vN.z),.3);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
 // ongles (dos seulement) : texNail R = distance signée au bord (px) → aplat net + trait fin du dessin, nets à tout grossissement ;
 // G/B = peau repeinte (sous l'ongle, son trait, bouts de trait étirés en taches), sur le dos franc (vS≈0) ; texNailE = poids
 // du trait : il s'amincit jusqu'à rien au bord libre (« U » ouvert du dessin). Pose du dessin : rien sur la tranche ni vu en biais (vue paume = dessin exact) ; hors pose (npose) partout
@@ -153,20 +173,45 @@ const VS=`attribute float part;attribute float rnz;attribute vec2 crf;uniform fl
 // du dos (A) ; vCr donne l'effacement du trait selon l'angle de l'articulation voisine (x paume, négatif = creusé ;
 // y dos, positif = effacé). Paume : le trait est gris, un multiplicateur (1-a(1-e))/(1-a) suffit. Dos : le trait est
 // NOIR, on le remplace par l'aplat voisin. Les deux valent exactement l'identité à e = 0 (dessin exact au repos).
-const FS=`uniform sampler2D nailTex;uniform sampler2D nailE;uniform float npose;uniform vec3 nailCol;uniform vec3 nailSkin;uniform float nailLW;uniform sampler2D colTex;uniform sampler2D colTex2;uniform sampler2D crTex;uniform sampler2D alphaTex;uniform float opacity;uniform float hl;uniform vec3 L;varying float vH;varying float vS;varying vec2 vCr;varying vec2 vUv;varying vec3 vN;
+const FS=`uniform sampler2D nailTex;uniform sampler2D nailE;uniform float npose;uniform vec3 nailCol;uniform vec3 nailSkin;uniform float nailLW;uniform float nailPx;uniform sampler2D colTex;uniform sampler2D colTex2;uniform sampler2D crTex;uniform sampler2D alphaTex;uniform float opacity;uniform float hl;uniform vec3 L;varying float vH;varying float vS;varying vec2 vCr;varying vec2 vUv;varying vec3 vN;varying float vAw;
 void main(){if(texture2D(alphaTex,vUv).a<.35){gl_FragColor=vec4(.067,.067,.067,opacity);return;}vec3 cb=texture2D(colTex2,vUv).rgb,cf=texture2D(colTex,vUv).rgb;
 if(vCr.x!=0.||vCr.y!=0.){vec4 cr=texture2D(crTex,vUv);
  cb=mix(cb,nailSkin*cr.b*255.,cr.a*vCr.y);
  cf*=max(1.-cr.r*(1.-vCr.x),.08)/max(1.-cr.r,.15)*(1.-.22*max(-vCr.x,0.)*smoothstep(.13,.26,cr.g));}
 vec3 nt=texture2D(nailTex,vUv).rgb;cb=mix(cb,nailSkin*nt.b*255.,nt.g*max((1.-smoothstep(0.,.15,vS))*smoothstep(.15,.4,normalize(vN).z),npose));
-float sd=(nt.r*255.-128.)/12.,aw0=fwidth(sd),aw=max(aw0,.03),wn=max(1.-smoothstep(.5,.9,vS),npose);cb=mix(cb,nailCol,wn*clamp(.5-sd/aw,0.,1.));
-// Le trait de l'ongle garde au moins ~1,25 pixel d'écran. Il était fixé en pixels du DESSIN : de loin, ou vu en
-// biais, les 2,4 px de dessin tombaient sous le pixel d'écran et le trait se brisait en pointillé — l'ongle
-// devenait une tache claire sans bord. Un illustrateur garde la même plume quelle que soit la taille du dessin.
-// La forme en « U » est préservée : l'élargissement est multiplié par le profil (nailE), qui s'éteint au bord libre.
-float lw=texture2D(nailE,vUv).r*max(nailLW,1.25*aw0);cb*=1.-wn*min(lw/aw,1.)*clamp(.5-(abs(sd+lw*.5)-lw*.5)/aw,0.,1.);vec3 c=mix(cb,cf,vS);
+float sd=(nt.r*255.-128.)/12.,aw0=fwidth(sd),aw=max(aw0,.03),wn=max(1.-smoothstep(.5,.9,vS),npose),fill=wn*clamp(.5-sd/aw,0.,1.);vec3 ne=texture2D(nailE,vUv).rgb;
+// Tablette bombée (mesh.dz, hors pose) lue par UNE ombre franche, au ton de l'ombre du dessin (0,82 de l'aplat, mesuré
+// sur les deux dessins) : le terme d'ombre général (.8 + .26·N·L, saturé dès N·L > .77) ne variait que de 3 à 5 % sur
+// l'ongle, l'ongle restait un autocollant. Le croissant (nailE.b) est peint dans la texture, du côté où le dessin
+// pose ses ombres, comme les ombres du dessin lui-même ; nul à la pose du dessin (npose), où l'ongle est l'aplat dessiné.
+// FRANCHE : la texture (rampe + flou, interpolée) donnait une lisière en dégradé de ≈ 10 px de dessin (mesuré en travers
+// de l'index de « V (2) » ×3 : 194 → 155 sur 34 px d'écran, 28 % de la largeur de l'ongle). Elle est seuillée ici à
+// mi-hauteur (comme la distance signée de l'ongle), adoucie sur ~1,5 px d'écran : une seule lisière nette à tout grossissement
+// (mesuré ×3 : 186 → 150 en 4 px d'écran ≈ 1,3 px de dessin). Peint à 0,85 et non 0,82 : au bord de l'arc le terme d'ombre
+// général en retire déjà 4 % (194 → 186), l'écran lit 0,85 × 0,96 ≈ 0,82, le ton de l'ombre du dessin.
+float eb=clamp(.75*fwidth(ne.b),.02,.25),sh=smoothstep(.5-eb,.5+eb,ne.b);cb=mix(cb,nailCol*(1.-.15*npose*sh),fill);
+// Trait de largeur CONSTANTE À L'ÉCRAN (nailPx : les 2,4 px du dessin ramenés en pixels d'écran à la distance de la
+// cible, calculé par renderAll comme le rayon des traits intérieurs ; × vAw, pixels de dessin par pixel d'écran au
+// sommet — pas fwidth(sd), bruité, voir VS), au moins ~1,25 px. Il était fixé en pixels du
+// DESSIN sur la peau : sa largeur à l'écran suivait le raccourci de la texture, mesuré à l'angle de la capture sur
+// l'index de « V (2) » : 0,60 px de dessin par pixel d'écran côté éloigné, 0,36 côté proche — un bras du « U » deux
+// fois plus gros que l'autre (4 contre 7-8 px). Un illustrateur garde la même plume des deux côtés et à toute taille.
+// Plafond 5/3 × le trait du dessin (4 px de dessin) : un ongle vu presque DE CHANT (bout replié vu de la paume : le
+// pouce et l'annulaire de « V (2) » face, « Index (1) », « Poing serré ») n'est plus qu'une mince lamelle, et un trait
+// constant à l'écran (jusqu'à 8 px de dessin en biais) la mangeait, bord libre compris : « tiret noir + tiret blanc »
+// au lieu d'un ongle. Avec le plafond, le trait suit de nouveau le raccourci au-delà de 53° (N.z < 0,6), là où
+// l'illustrateur ne pose qu'un filet. 4 px et pas 3,6 : à 3,6 le bras éloigné du « U » de l'index en dos ¾ (×3)
+// retombait à 7-8 px d'écran contre 10-11 (rapport 1,43, le dédoublement revenait) ; à 4 px, 8-9 px (≤ 1,25).
+// Jamais sous ~1,25 px d'écran (de loin le trait reste continu).
+// La forme en « U » est préservée : la largeur est multipliée par le profil (nailE.r), qui s'éteint au bord libre.
+// Bord libre (nailE.g, la part du bord qui regarde le bout) : aplat plus clair de la même largeur, là où le U est ouvert
+// (sur ses photos la frange libre est ≈ 1,35 × plus claire que la tablette).
+float px=min(max(nailPx,1.25)*vAw,max(5.*nailLW/3.,1.25*vAw)),lw=ne.r*px,bw=ne.g*px;
+cb=mix(cb,mix(nailCol,vec3(1.),.45),wn*min(bw/aw,1.)*clamp(.5-(abs(sd+bw*.5)-bw*.5)/aw,0.,1.));
+cb*=1.-wn*min(lw/aw,1.)*clamp(.5-(abs(sd+lw*.5)-lw*.5)/aw,0.,1.);vec3 c=mix(cb,cf,vS);
 float s=clamp(.8+.26*max(dot(normalize(vN),L),0.),0.,1.);c*=s;c=mix(c,vec3(1.,.78,.1),hl*vH*.4);gl_FragColor=vec4(c,opacity);}`;
-const skinMat=back=>new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},colTex2:{value:TB},crTex:{value:TC},alphaTex:{value:TF},nailTex:{value:TN},nailE:{value:TE},npose:{value:0},nailCol:{value:NAILC},nailSkin:{value:NAILS},nailLW:{value:HD.nail.lw},opacity:{value:1},hl:{value:0},hlPart:{value:-10},nflip:{value:1},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS,extensions:{derivatives:true}});
+const SKINMATS=[];   // toutes les matières de peau (mains pleines et fantômes) : renderAll y pousse la largeur du trait d'ongle
+const skinMat=back=>{const m=new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},colTex2:{value:TB},crTex:{value:TC},alphaTex:{value:TF},nailTex:{value:TN},nailE:{value:TE},npose:{value:0},nailCol:{value:NAILC},nailSkin:{value:NAILS},nailLW:{value:HD.nail.lw},nailPx:{value:HD.nail.lw},pxk:{value:1e3},opacity:{value:1},hl:{value:0},hlPart:{value:-10},nflip:{value:1},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS,extensions:{derivatives:true}});SKINMATS.push(m);return m};
 const HULL=HD.outw+.6;
 
 function orient(geo,inside){
@@ -241,7 +286,16 @@ const PALM_RIM=[];for(let i=0;i<NP;i+=3)if(PZF[i]<=2*ZS)PALM_RIM.push(toM(PXY[2*
 
 /* ---------- collisions ---------- */
 const HG=HD.hgrid,HGF=b64arr(HG.hf,Int16Array),HGB=b64arr(HG.hb,Int16Array);
-const palmH=(x,y)=>{const i=Math.round(x/HG.step),j=Math.round(y/HG.step);if(i<0||j<0||i>=HG.gw||j>=HG.gh)return null;const k=j*HG.gw+i;return HGF[k]||HGB[k]?[HGF[k],HGB[k]]:null};
+// Hauteur de la paume lue par INTERPOLATION BILINÉAIRE, plus par la cellule la plus proche. La grille a un pas de
+// 8 px et des hauteurs ENTIÈRES (px) : lue au plus proche, la paume était un escalier à marches de 1 px tous les
+// 8 px, et le budget du solveur (solve, thumbReach) n'est que de 0,5 px. Mesuré sur le bout de l'auriculaire replié
+// de V (2) : écarter le doigt de 2° déplace le bout de 2 px, change de cellule (hf 51 → 52) et la pénétration saute
+// de 0,00 à 0,92 ; de même l'annulaire du poing bloqué à ab = −3,3 (à −3,0 : +0,61). Une marche valait deux fois le
+// budget, et la liberté de la marionnette dépendait de la cellule où le bout s'était arrêté. Interpolée, la
+// hauteur est continue : le solveur s'arrête là où la chair le veut, pas sur une frontière de cellule.
+const palmH=(x,y)=>{const fx=x/HG.step,fy=y/HG.step,i=Math.floor(fx),j=Math.floor(fy);if(i<0||j<0||i+1>=HG.gw||j+1>=HG.gh)return null;
+  const k=j*HG.gw+i,tx=fx-i,ty=fy-j,g=HG.gw,bl=(a,b,c,d)=>(a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+d*tx)*ty;
+  const hf=bl(HGF[k],HGF[k+1],HGF[k+g],HGF[k+g+1]),hb=bl(HGB[k],HGB[k+1],HGB[k+g],HGB[k+g+1]);return hf||hb?[hf,hb]:null};
 const SEGW={};ALL.forEach(k=>SEGW[k]=HD.segs[k].map(sg=>{const w=sg.ts.map((_,i)=>(sg.wl[i]+sg.wr[i])/2).filter(v=>v>4);return w.reduce((a,b)=>a+b,0)/w.length/SC}));
 // la vraie articulation de la base (tête du métacarpien) n'est pas au pli de la racine du doigt visible sur le dessin,
 // mais ≈ 1,5 cm plus bas, sous le pli distal de la paume : le doigt pivote de là (sinon 1re phalange trop courte,
@@ -291,8 +345,8 @@ const idMats={};for(const k in ID)idMats[k]=new THREE.MeshBasicMaterial({color:n
    ou le pouce et la paume (pli de l'éminence, pli de la MCP du pouce). Le vrai contour garde tout son poids : silhouette
    (pas de peau derrière), doigt sur doigt, pouce et doigt, et pouce posé devant la paume, toujours loin devant elle
    (écart ≥ 2 push mesuré dans pouce_ip80_cote) ; pas d'exception près du fond (elle laissait des éclats à l'embouchure des plis). */
-const HULL_VS=`attribute float part;varying float vP;varying float vZ;void main(){vP=part;vec4 mv=modelViewMatrix*vec4(position,1.);vZ=-mv.z;gl_Position=projectionMatrix*mv;}`;
-const HULL_FS=`uniform float opacity;uniform float push;uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 res;uniform float cn;uniform float cf;varying float vP;varying float vZ;
+const HULL_VS=`attribute float part;attribute float rnz;varying float vP;varying float vZ;varying float vD;void main(){vP=part;vD=rnz;vec4 mv=modelViewMatrix*vec4(position,1.);vZ=-mv.z;gl_Position=projectionMatrix*mv;}`;
+const HULL_FS=`uniform float opacity;uniform float push;uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 res;uniform float cn;uniform float cf;varying float vP;varying float vZ;varying float vD;
   float L(vec2 uv){float z=texture2D(tDepth,uv).r*2.-1.;return 2.*cn*cf/(cf+cn-z*(cf-cn));}
   void main(){if(push>0.){vec2 uv=gl_FragCoord.xy/res;vec4 c=texture2D(tId,uv);
     if(c.a>.5){float pb=floor(c.r*8.+.5),ph=floor(vP+.5);float d=L(uv)-vZ;
@@ -301,8 +355,27 @@ const HULL_FS=`uniform float opacity;uniform float push;uniform sampler2D tId;un
       // coque des deux se superpose au point de contact et le test bascule d'un pixel à l'autre : le creux se
       // remplissait de lambeaux noirs déchirés. Le trait de contact est l'affaire de la passe identité, qui en
       // trace UN, propre et d'épaisseur constante (voir sep() : entre deux doigts son seuil est déjà de 0,02).
-      bool real=pb!=ph&&pb>1.5&&ph>1.5&&d>.5*push;
-      if(!real&&d<push)discard;}}
+      // Le seuil était 0,5 × push : avec les P1 voisines maintenant pressées l'une contre l'autre (obliquité des
+      // MCP), l'écart de profondeur au droit du contact croît lentement depuis zéro et le test basculait sur une
+      // bande entière — le contour entre deux jointures repliées était une déchirure de 2 à 3 trois lambeaux
+      // (mesuré en dos34 de V (2), fenêtre des jointures : 54 fragments noirs isolés). Même seuil que la paume
+      // sous un doigt : la coque ne compte que si un doigt passe franchement DEVANT l'autre (≥ push = 2,6 mm) ;
+      // en deçà, la passe identité trace déjà UN trait à ce contact (seuil 0,02 entre deux doigts).
+      bool real=pb!=ph&&pb>1.5&&ph>1.5&&d>push;
+      // Sur le DOS de la main (rnz < −0,3, le « dos franc » du nuanceur de peau), hors « doigt sur doigt », la coque
+      // ne compte qu'à 2 × push. Entre deux jointures repliées, le dos plonge dans une vallée dont le fond est à 1 à
+      // 2 push derrière les crêtes : la coque de chaque crête, vue en rasant par-dessus ce fond (même partie, ou
+      // paume derrière un doigt), ne perce que par lambeaux d'un ou deux pixels entre les facettes de la peau — le
+      // « bouquet d'échardes » au bas de la jointure. Le vrai contour de ces cas-là est toujours bien plus loin
+      // devant (un doigt replié devant la paume : l'épaisseur du doigt, 16 mm), et la passe identité trace déjà
+      // le trait de la vallée (seuil 0,3 entre paume et doigt). Mesuré en dos34, fenêtre des jointures (fragments
+      // noirs < 120 px / pixels dedans) : Index (1) 23 / 80 → 7 / 7, Poing serré 24 / 74 → 13 / 17, V (2) 19 / 160
+      // → 18 / 213 (ce qui reste en V (2) est un seul trait de 117 px à la base du majeur et les lambeaux d'une
+      // coque « doigt sur doigt » légitime, à plus de 2 push). Côté PAUME le seuil reste push : les plis y sont des
+      // contours à 1 à 2 push qu'on veut (mesuré sur 15 presets × 5 vues, à 2 push partout : le bord inférieur du
+      // pouce sur le thénar perdait 322 px en V (2) de face, 286 en Quatre (4)).
+      float lim=vD<-.3?2.*push:push;
+      if(!real&&d<lim)discard;}}
     gl_FragColor=vec4(.067,.067,.067,opacity);}`;
 const hullMatProto=()=>new THREE.ShaderMaterial({uniforms:{opacity:{value:1},push:{value:0},tId:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2(1,1)},cn:{value:.5},cf:{value:500}},
   vertexShader:HULL_VS,fragmentShader:HULL_FS,side:THREE.BackSide,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:4});
@@ -335,7 +408,7 @@ function makeHand(skeletonOnly){
       gc.computeVertexNormals();MRNZC=new Float32Array(MN);const nc=gc.attributes.normal.array;for(let i=0;i<MN;i++)MRNZC[i]=nc[3*i+2]}
     g.setAttribute('rnz',new THREE.BufferAttribute(MRNZ.slice(),1));
     g.setAttribute('crf',new THREE.BufferAttribute(new Int8Array(2*MN),2,true));   // plis et rides (piste R)
-    const hg=new THREE.BufferGeometry();hg.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));hg.setAttribute('part',MPARTA);hg.setIndex(MINDEX);
+    const hg=new THREE.BufferGeometry();hg.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));hg.setAttribute('part',MPARTA);hg.setAttribute('rnz',g.attributes.rnz);hg.setIndex(MINDEX);   // rnz : côté dos / paume, lu par HULL_FS
     const me=new THREE.Mesh(g,f),mh=new THREE.Mesh(hg,hullMat);me.frustumCulled=mh.frustumCulled=false;
     me.userData={hull:false};mh.userData={hull:true};root.add(me,mh);meshes.push(me,mh);
     const idg=new THREE.BufferGeometry();idg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9*NT),3));idg.setAttribute('color',MIDFA);
@@ -389,7 +462,7 @@ function cmcPose(t,g){
 }
 function setJoints(h,p){
   FING.forEach(k=>{const v=p.f[k],A=AX[k],j=h.joints[k];
-    j[0].quaternion.copy(qa(Z,-(v.ab+convOf(k,v)+PAR[k]))).multiply(qa(A[0].lat,v.mcp));
+    j[0].quaternion.copy(qa(Z,-(v.ab+convOf(k,v)+PAR[k]))).multiply(qa(A[0].flex,v.mcp));
     j[1].quaternion.copy(qa(A[1].lat,v.pip));j[2].quaternion.copy(qa(A[2].lat,v.dip))});
   const t=p.f.pouce,j=h.joints.pouce;
   cmcPose(t,h.joints.cmc);j[0].quaternion.copy(qa(TFA[0],t.mcp));j[1].quaternion.copy(qa(TFA[1],t.ip));
@@ -599,7 +672,15 @@ const THEN=.17;                 // hauteur du gonflement (× longueur du métaca
 // (pas de 5 px) ne sait pas la lisser, et le détecteur de plis lit chaque facette comme un trait — le dos se
 // couvrait de griffures. Un tendon est un renflement DOUX : on le voit par l'ombre, pas par un trait.
 // Pente ≈ 2 × hauteur / largeur ; on la garde sous le seuil du détecteur (CRV = 0,55).
-const TEND=.11,VALL=.075,SILL=.15;
+// SILL = 0 : le sillon sculpté entre deux jointures repliées est ÉTEINT. Il creusait le dos là où, les P1 ne se
+// touchant pas, rien ne faisait d'ombre entre deux jointures ; depuis que les P1 se pressent l'une contre l'autre
+// (LEAN), la jointure fait son propre creux et la passe identité y trace UN trait. Le sillon ajoutait par-dessus
+// une rigole étroite dont la coque lisait le fond (1,2 à 2 × push derrière la crête) comme un second contour à
+// 2,5 px du premier, et dont les parois rasantes finissaient en bouquet d'échardes. Mesuré en dos34 (fenêtre des
+// jointures, fragments noirs isolés) : V (2) 46 → 23, Index (1) 44 → 24, Poing serré 39 → 25, et les jointures du
+// poing se lisent toujours (KNK et KNL inchangés). Le code du sillon reste en place, prêt si un jour les P1 se
+// séparent de nouveau.
+const TEND=.11,VALL=.075,SILL=0;
 {// poignet : barycentre des 4 % de sommets les plus bas (la main pointe vers +y)
  let ymin=1e9,ymax=-1e9;for(let i=0;i<MN;i++){const y=MREST[3*i+1];if(y<ymin)ymin=y;if(y>ymax)ymax=y}
  const yc=ymin+.04*(ymax-ymin);let wx=0,wy=0,wz=0,n=0;
@@ -736,32 +817,50 @@ function ssd(p1,q1,p2,q2){const d1=q1.clone().sub(p1),d2=q2.clone().sub(p2),r=p1
   if(t<0){t=0;s=clamp(-c/a,0,1)}else if(t>1){t=1;s=clamp((b-c)/a,0,1)}
   return p1.clone().addScaledVector(d1,s).distanceTo(p2.clone().addScaledVector(d2,t))}
 const SOFT=12;
+// La pénétration rendue est celle du CONTACT LE PLUS PROFOND, pas la somme de tous les contacts. Avec la somme, le
+// budget du solveur (0,5 px) était un budget pour la main entière : dans les poses où un bout repose sur la paume
+// (poing : l'auriculaire demandé à 90° s'arrête à ≈ 76°, bout sur l'hypothénar, à 0,5 px par construction), il ne
+// restait RIEN pour le pouce ni pour un autre doigt — thumbReach rejetait tous ses pas, écarter l'auriculaire de
+// V (2) donnait −2° pour −8 demandés. La version précédente ne s'en apercevait pas parce que la grille de la paume
+// était un escalier (voir palmH) et que le hasard d'une cellule laissait 0,42 px. Deux contacts sont deux contacts :
+// chacun a son budget, et un bout posé sur la paume ne retire rien à la liberté du pouce.
 function penetration(f){
   const h=probe;applyPose(h,{f,q:[0,0,0,1],pos:[0,0,0]},true);
   const segs={};ALL.forEach(k=>segs[k]=HD.segs[k].map((_,i)=>segLocal(h,k,i)));
-  let pen=0;const tol=1.5/SC;
+  let mx=0;const tol=1.5/SC;const add=o=>{if(o>mx)mx=o};
   // 1. pas d'enfoncement dans la paume (tissus mous : un peu d'appui permis)
   ALL.forEach(k=>segs[k].forEach(([a,b],i)=>{
     if(k!=='pouce'&&i===0)return;const r=SEGW[k][i]*.85;
     [.25,.6,1].forEach(fr=>{const q=a.clone().lerp(b,fr),x=q.x*SC+CX,y=-q.y*SC+CY;
       if(k==='pouce'&&thenarW(x,y)>.6)return;
       const hh=palmH(x,y);if(!hh)return;const z=q.z*SC,rp=r*SC,front=(hh[0]-SOFT)-(z-rp),back=(z+rp)+hh[1]-SOFT;
-      if(front>0&&back>0)pen+=Math.min(front,back)})}));
+      if(front>0&&back>0)add(Math.min(front,back))})}));
   // la partie cachée de la 1re phalange (dans la paume) ne compte pas entre doigts
   const vis=k=>segs[k].map(([a,b],i)=>i?[a,b]:[a.clone().lerp(b,DEEP[k]/(DEEP[k]+HD.segs[k][0].len/SC)),b]);
   
   // 2. le pouce ne traverse pas les doigts
-  segs.pouce.forEach(([a,b],i)=>FING.forEach(k=>vis(k).forEach(([c,d],j)=>{const o=(SEGW.pouce[i]+SEGW[k][j])*.8-ssd(a,b,c,d)-tol;if(o>0)pen+=o*SC})));
+  segs.pouce.forEach(([a,b],i)=>FING.forEach(k=>vis(k).forEach(([c,d],j)=>{const o=(SEGW.pouce[i]+SEGW[k][j])*.8-ssd(a,b,c,d)-tol;if(o>0)add(o*SC)})));
   // 3. doigts voisins : ils peuvent se toucher, pas se traverser ; un doigt ne se replie pas dans lui-même
-  for(let n=0;n<3;n++){const A=vis(FING[n]),B=vis(FING[n+1]);A.forEach(([a,b],i)=>B.forEach(([c,d],j)=>{const o=(SEGW[FING[n]][i]+SEGW[FING[n+1]][j])*.68-ssd(a,b,c,d)-tol;if(o>0)pen+=o*SC}))}
-  FING.forEach(k=>{const [a,b]=segs[k][2],[c,d]=vis(k)[0];const o=(SEGW[k][2]+SEGW[k][0])*.8-ssd(a,b,c,d)-tol;if(o>0)pen+=o*SC});
+  for(let n=0;n<3;n++){const A=vis(FING[n]),B=vis(FING[n+1]);A.forEach(([a,b],i)=>B.forEach(([c,d],j)=>{const o=(SEGW[FING[n]][i]+SEGW[FING[n+1]][j])*.68-ssd(a,b,c,d)-tol;if(o>0)add(o*SC)}))}
+  FING.forEach(k=>{const [a,b]=segs[k][2],[c,d]=vis(k)[0];const o=(SEGW[k][2]+SEGW[k][0])*.8-ssd(a,b,c,d)-tol;if(o>0)add(o*SC)});
   // 4. posture du pouce : jamais le bout tourné vers le poignet
   const [ta,tb]=segs.pouce[1],[pa,pb]=segs.pouce[0],dd=tb.clone().sub(ta).normalize(),dp=pb.clone().sub(pa).normalize();
-  if(dd.y<-.45)pen+=(-.45-dd.y)*60;if(dp.y<-.2)pen+=(-.2-dp.y)*60;
-  return pen;
+  if(dd.y<-.45)add((-.45-dd.y)*60);if(dp.y<-.2)add((-.2-dp.y)*60);
+  return mx;
 }
+// Budget du solveur : PEN_MAX est le plafond d'un geste (ce qu'un mouvement peut ajouter d'un coup), PEN_SEAT le
+// niveau où une articulation BLOQUÉE vient s'asseoir. Les deux valaient 0,5 px : une pose résolue (un bout posé sur
+// la paume) était rangée AU PLAFOND, et le geste suivant sur le même doigt n'avait plus aucune marge — écarter
+// l'auriculaire replié de V (2) à −8° donnait −3,5 (son bout monte de 0,6 px sur le bord arrondi de l'hypothénar).
+// S'asseoir à la moitié du budget laisse l'autre moitié à la marionnette ; la différence sur l'angle est de 0,2°
+// (0,25 px = 0,06 mm sur la peau), invisible. Et un bout posé sur la paume GLISSE : quand une articulation du doigt
+// (ab, IPP, IPD) est bloquée par ce contact, la MCP du même doigt se relâche de ce qu'il faut (≤ SLIDE degrés, le
+// plus petit relâchement trouvé par dichotomie) pour que la commande passe entière, au lieu de s'arrêter à mi-chemin.
+// Mesuré : V (2) auriculaire ab −8 → −8 (MCP 76,1 → 75,2), annulaire ab 1,8 → 1,8 ; le poing et les autres tests
+// inchangés. On ne relâche jamais plus que SLIDE, et jamais le pouce (ses couplages sont dans constrain).
+const PEN_MAX=.5,PEN_SEAT=.25,SLIDE=4;
 function solve(fromF,toF){
-  const ref=Math.max(penetration(fromF)+.05,.5);
+  const p0=penetration(fromF),ref=Math.max(p0+.05,PEN_MAX),seat=Math.max(p0+.05,PEN_SEAT);
   if(penetration(toF)<=ref)return toF;
   // On ne recule JAMAIS sur toute la pose à la fois. L'ancien solveur commençait par ramener la pose entière en
   // arrière le long d'une interpolation globale : bouger « rapprocher » du pouce ramenait aussi « avancer » et sa
@@ -769,7 +868,6 @@ function solve(fromF,toF){
   // de départ et on pousse chaque articulation vers sa cible aussi loin que le contact le permet, la plus
   // sollicitée d'abord ; un second tour rattrape celles qu'un voisin bloquait au premier.
   let cur=clone(fromF);
-  const p0=penetration(fromF);
   const ch=[];for(const k in toF)for(const j in toF[k]){const d=Math.abs(toF[k][j]-fromF[k][j]);if(d<.5)continue;
     // ce que cette articulation seule ferait à l'encombrement : négatif = elle DÉGAGE de la place
     const t1=clone(fromF);t1[k][j]=toF[k][j];ch.push([k,j,d,penetration(t1)-p0])}
@@ -781,8 +879,15 @@ function solve(fromF,toF){
     if(Math.abs(toF[k][j]-cur[k][j])<.25)return true;
     const tgt=clone(cur);tgt[k][j]=toF[k][j];
     if(penetration(tgt)<=ref){cur=tgt;return true}
+    const lim=Math.max(seat,penetration(cur));   // jamais pire que la pose courante, sinon le siège
+    if(k!=='pouce'&&j!=='mcp'){                  // le bout glisse sur la paume : la MCP se relâche de ce qu'il faut
+      const m0=cur[k].mcp,sl=Math.min(SLIDE,m0-LIMF.mcp[0]);tgt[k].mcp=m0-sl;
+      if(sl>0&&penetration(tgt)<=lim){let a=0,b=1;
+        for(let i=0;i<6;i++){const m=(a+b)/2;tgt[k].mcp=m0-sl*m;if(penetration(tgt)<=lim)b=m;else a=m}
+        tgt[k].mcp=m0-sl*b;cur=tgt;return true}
+      tgt[k].mcp=m0}
     let a=0,b=1;const v0=cur[k][j];
-    for(let i=0;i<6;i++){const m=(a+b)/2;tgt[k][j]=v0+(toF[k][j]-v0)*m;if(penetration(tgt)<=ref)a=m;else b=m}
+    for(let i=0;i<6;i++){const m=(a+b)/2;tgt[k][j]=v0+(toF[k][j]-v0)*m;if(penetration(tgt)<=lim)a=m;else b=m}
     cur[k][j]=v0+(toF[k][j]-v0)*a;return a>.995};
   const reste=ch.filter(c=>!pousse(c));
   reste.forEach(pousse);
@@ -800,19 +905,17 @@ function thumbReach(f,targetFn){
   return cur;
 }
 const W3=()=>new THREE.Vector3();
-const XR=new THREE.Vector3(1,0,0);   // côté radial (pouce) dans le repère du modèle
 const REACH={
   'O':h=>h.joints.index.tip.getWorldPosition(W3()),
-  'Pince':h=>h.joints.index.tip.getWorldPosition(W3()),
-  // Poing serré : la pulpe du pouce se pose sur le FLANC RADIAL de la 2e phalange de l'index (photo 2357).
-  // L'ancienne cible — milieu de l'IPP de l'index et de l'IPD du majeur — est un point INTÉRIEUR à la masse des
-  // doigts repliés : le pouce ne pouvait pas l'atteindre, le solveur s'arrêtait au contact et le laissait à plat
-  // SOUS le poing, dépassant comme une palette. On vise maintenant un point qui est vraiment à la surface.
-  'Poing serré':h=>h.joints.index[1].getWorldPosition(W3()).lerp(h.joints.index[2].getWorldPosition(W3()),.5)
-      .addScaledVector(XR,1.05*hwOf(HD.segs.index[1])),
-  'Index (1)':h=>h.joints.majeur[1].getWorldPosition(W3()).lerp(h.joints.annulaire[2].getWorldPosition(W3()),.5),
-  'V (2)':h=>h.joints.annulaire[1].getWorldPosition(W3()).lerp(h.joints.auriculaire[2].getWorldPosition(W3()),.5)
+  'Pince':h=>h.joints.index.tip.getWorldPosition(W3())
 };   // pas de cible pour « 3 » : son pouce est TENDU, c'est le troisième doigt du chiffre, il ne se pose sur rien
+// Plus de cible pour V (2), Index (1) et Poing serré : leur pouce est celui du preset, validé par l'utilisateur
+// (Poing serré sur sa photo 2357). Mesuré en traçant thumbReach pas à pas : dans la version précédente il n'y
+// faisait RIEN — chacun de ses pas était rejeté (pénétration 0,77 > 0,5), parce que constrain() ramenait l'ab de
+// l'annulaire de −3,3 à −3,0 et que ce 0,3° faisait sauter le bout d'une cellule de la grille (escalier de palmH).
+// Les pouces « validés » étaient donc les valeurs brutes des presets. Une fois la grille continue et le budget par
+// contact, la montée reprenait et trouvait son optimum : V (2) 24,5/35/55/−8 (IP en hyperextension, coût 1,75
+// contre 3,05), Poing serré 11/1,5/39/80 (0,60 contre 1,29) — un pouce que l'utilisateur n'a jamais vu ni voulu.
 // passage d'une configuration à une autre : le pouce s'écarte d'abord (il ne bloque plus les doigts), puis chaque doigt,
 // puis le pouce rejoint sa place. Le résultat ne dépend donc pas de la pose précédente.
 function settle(fromF,toF){let cur=clone(fromF);
@@ -876,9 +979,18 @@ const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWr
       // au-delà de emax, la partie d'en face n'est pas « derrière » mais au fond d'une crevasse : rien à tracer
       return dn-d0<emax&&(dn-d0>thr||(fingers&&(dn-d0>.02||(abs(dn-d0)<=.02&&c.r<q.r))));}
     return c.g>.5&&dn-d0>.7&&dn-d0<emax;}                 // un doigt replié devant lui-même
-  void main(){vec4 c=texture2D(tId,vUv);if(c.a<.5)discard;float d0=lin(texture2D(tDepth,vUv).r);float e=0.;
+  // Un seul échantillon sur les douze suffisait à noircir le pixel : là où deux peaux se touchent ou se croisent
+  // (jointures repliées pressées l'une contre l'autre, racine d'un doigt replié contre la base d'un doigt tendu),
+  // l'écart de profondeur oscille autour du seuil d'une facette à l'autre et le trait se terminait en échardes
+  // (mesuré en dos34 de V (2), fenêtre des jointures, coque cachée : 41 fragments isolés). Un vrai bord traverse
+  // l'anneau et y laisse au moins trois échantillons d'affilée ; on en exige deux : les pointes isolées
+  // disparaissent, le trait garde sa largeur (0,9 r au lieu de r sur le côté extérieur). Hors pose du dessin
+  // seulement (gr > 0), comme mesh.dz et le rayon du trait : au repos, un seul échantillon suffit toujours et
+  // « Dessin » reste exact au pixel près (vérifié : à deux échantillons partout, 1 et 2 pixels changeaient).
+  void main(){vec4 c=texture2D(tId,vUv);if(c.a<.5)discard;float d0=lin(texture2D(tDepth,vUv).r);float e=0.,ns=0.;
     float gr=c.b,r=mix(rad,radmax,gr);                  // la part « hors pose » est celle de CETTE main (canal bleu)
-    for(int i=0;i<12;i++){float a=float(i)*.5235988;if(sep(c,d0,vUv+vec2(cos(a),sin(a))*r*texel))e=1.;}
+    for(int i=0;i<12;i++){float a=float(i)*.5235988;if(sep(c,d0,vUv+vec2(cos(a),sin(a))*r*texel))ns+=1.;}
+    if(ns>=(gr>.001?2.:1.))e=1.;
     if(e<.5&&gr>.001&&crv<100.){float pas=crad*wpx*d0,m=0.,sc=crv/gr;  // trois directions : un pli dans n'importe quel sens
       for(int i=0;i<3;i++){float a=float(i)*1.0471976;m=max(m,fold(d0,vec2(cos(a),sin(a))*crad*texel,pas));}
       if(m<sc)discard;e=1.;}
@@ -907,6 +1019,8 @@ function renderAll(){
   const hd=Math.max(camera.position.distanceTo(controls.target),1e-3),r0=1.6*renderer.getPixelRatio();
   const ppu=size.y/2/(hd*Math.tan(camera.fov*Math.PI/360));          // pixels de rendu par unité du modèle
   edgeMat.uniforms.rad.value=r0;edgeMat.uniforms.radmax.value=clamp(.4*HULL/SC*ppu,r0,5.5);
+  // trait des ongles : les 2,4 px du dessin en pixels d'écran à la distance de la cible (voir FS, nailPx)
+  const npx=HD.nail.lw*ppu/SC,pxk=size.y/2/Math.tan(camera.fov*Math.PI/360);SKINMATS.forEach(m=>{m.uniforms.nailPx.value=npx;m.uniforms.pxk.value=pxk});
   edgeMat.uniforms.emax.value=EDMAX;edgeMat.uniforms.cn.value=camera.near;edgeMat.uniforms.cf.value=camera.far;
   // plis : rayon fin et fixe (le trait d'un creux est plus fin qu'un contour), et seuil qui s'ouvre avec gR, pour
   // que la pose du dessin — une main à plat, sans aucun pli — reste exacte au pixel près.
@@ -1532,7 +1646,7 @@ function alphaBox(src){const W=src.width,H=src.height,d=src.getContext('2d').get
 
 window.__atelier={renderer,setPron:v=>{PRONA=v;for(const k in HAND)HAND[k].skin.key=''},setKnk:v=>{KNG=v;for(const k in HAND)HAND[k].skin.key=''},setEdmax:v=>{EDMAX=v;edgeMat.uniforms.emax.value=v},setCrv:v=>{CRV=v},setCrmax:v=>{CRMAX=v},S,refresh,main,HAND,handOf,act,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,curSet,mirror,constrain,solve,renderAll,drawOverlays,load,snapshot,
   // surface de mise au point (balayage anti-déformation, mesures) : rien de tout cela n'est utilisé par l'interface
-  applyPose,settle,lerpF,palmH,SC,HD,MN,NT,MREST,MINDEX,ALL,FING,SEGW,probe,thumbReach,REACH};
+  applyPose,settle,lerpF,palmH,SC,HD,MN,NT,MREST,MINDEX,ALL,FING,SEGW,probe,thumbReach,REACH,LEAN,setLean,edgeMat};
 refresh();
 })();
 </script>
