@@ -32,6 +32,10 @@ async def main():
         b = await p.chromium.launch()
         pg = await b.new_page(viewport={'width': 1400, 'height': 860})
         errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+        # confirmations (gabarit sur une planche pleine) : acceptées, et leur texte est gardé pour vérification
+        dialogues = []
+        async def accepte(d): dialogues.append(d.message); await d.accept()
+        pg.on('dialog', lambda d: asyncio.ensure_future(accepte(d)))
         await pg.goto(PAGE); await pg.wait_for_timeout(1200)
         shots = []
         async def shot(nom):
@@ -50,7 +54,7 @@ async def main():
         await pg.click('[data-outil=mainG]'); await pg.mouse.click(st[0] + 700, st[1] + 400)
         els = await pg.evaluate("()=>__plate.S.doc.elements.map(e=>({type:e.type,cote:e.cote,w:Math.round(e.w),h:Math.round(e.h)}))")
         check(len(els) == 2 and els[0]['cote'] == 'D' and els[1]['cote'] == 'G', f'2 mains D et G : {els}')
-        alpha = await pg.evaluate("()=>{const e=__plate.S.doc.elements[0];const c=__plate.mainCache(e,256,256);const d=c.getContext('2d').getImageData(0,0,256,256).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>8)n++;return n/(256*256)}")
+        alpha = await pg.evaluate("()=>{const e=__plate.S.doc.elements[0];const c=__plate.mainCache(e,256,256);const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i]>8)n++;return n/(c.width*c.height)}")
         check(0.15 < alpha < 0.8, f'couverture alpha du cache de la main D = {alpha:.2f} (silhouette, pas un bloc)')
         await shot('01_deux_mains')
 
@@ -150,7 +154,8 @@ async def main():
 
         # 9. gabarit A (bannière + colonne), nom de fichier = mot de la bannière
         print('9. gabarit A')
-        await pg.click('#bGabarits'); await pg.click('#gabarits button:has-text("Bannière")')
+        await pg.click('#bGabarits'); await pg.click('#gabarits button:has-text("Bannière")'); await pg.wait_for_timeout(100)
+        check(len(dialogues) == 1 and 'Ctrl+Z' in dialogues[0], f'planche pleine : confirmation avant de la remplacer ({dialogues[-1][:40] if dialogues else "aucune"}…)')
         g = await pg.evaluate("()=>({types:__plate.S.doc.elements.map(e=>e.type),w:__plate.S.doc.planche.w,nom:__plate.nomFichier()})")
         check(g['types'] == ['texte', 'texte', 'personnage', 'main', 'main'] and g['w'] == 1920 and g['nom'] == 'MOT', f'gabarit A : {g}')
         await shot('06_gabarit_A')

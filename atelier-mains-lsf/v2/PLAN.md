@@ -36,7 +36,7 @@ v2/
   hand/                   M1 — la main : pipeline Python (bpy, numpy) → assets
     build_hand.py         MakeHuman hm08 → coupe poignet → retaille (proportions utilisateur) → Catmull-Clark ×2 →
                           régions (ongles, palmures, éminences) → poids → export
-    hand_v2.glb           main GAUCHE skinnée (la droite = miroir à l'exécution)
+    hand_v2.glb           main DROITE skinnée (la gauche = miroir x → −x à l'exécution)
     hand_v2.json          métadonnées : os, centres, axes, butées, courbes de plis (barycentriques), régions
     checks/               rendus de contrôle (Cycles + planches), overlays sur les dessins
   engine/                 M2 — moteur 3D (Three.js r128) : chargement, pose, squelette 26 DDL, skinning (DQ), toon 4 passes,
@@ -60,7 +60,7 @@ Règles communes :
 
 ## Contrat M1 → M2 : les assets de la main
 
-`hand_v2.glb` : glTF 2.0 binaire, UNE SkinnedMesh (main gauche, poignet inclus sur ~3 cm d'avant-bras), unités =
+`hand_v2.glb` : glTF 2.0 binaire, UNE SkinnedMesh (main DROITE — le trièdre doigts +Y / paume +Z / pouce +X est celui d'une droite, comme le dessin paume.jpg ; la gauche = miroir x → −x à l'exécution ; poignet inclus sur ~3 cm d'avant-bras), unités =
 centimètres, repos = main ouverte à plat, doigts le long de +Y, paume vers +Z (la vue « Paume (face) » a la caméra en +Z),
 pouce vers +X, poignet à l'origine. 20 os, nommés exactement :
 
@@ -75,7 +75,7 @@ poignet
 Chaque os a son origine au CENTRE ARTICULAIRE (dans la tête de l'os proximal, décalé vers la paume : anatomie.md § 3),
 axe local +Y le long de l'os, +X vers le pouce (axe de flexion), +Z vers la paume. Poids : ≤ 4 os par sommet, normalisés.
 Attributs de sommet supplémentaires (glTF `_REGION` float ou `COLOR_0`) : 0 peau, 1 plaque d'ongle, 2 frange libre de
-l'ongle, 3 repli d'ongle, 4 palmure. Maillage lisse (Catmull-Clark ×2 ≈ 20–25 k sommets), normales lissées, 100 % triangles à l'export.
+l'ongle, 3 repli d'ongle, 4 palmure. Maillage lisse (Catmull-Clark ×2 ≈ 27 k sommets, 8 morph targets correctifs des jointures), normales lissées, 100 % triangles à l'export.
 
 `hand_v2.json` :
 ```

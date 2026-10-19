@@ -9,6 +9,8 @@
 <!-- le moteur M2 (engine.js) remplace stub_hand.js sans changer plate.js ; le personnage M4 (personnage.js) est
      facultatif : plate.js dessine un bouchon simple s'il est absent -->
 <script src="stub_hand.js"></script>
+<!-- personnage M4 s'il est là (sinon plate.js dessine son bouchon) -->
+<script src="../personnage/personnage.js" onerror="this.remove()"></script>
 </head>
 <body>
 <div class="app">
@@ -76,8 +78,10 @@
       <div class="block"><h3>Fichier</h3>
         <div class="actions"><button class="btn" id="bJsonExport">Exporter le projet (.json)</button><button class="btn" id="bBrouillon" hidden>Reprendre le brouillon</button></div>
         <p class="msg" id="projMsg"></p>
+        <div class="lib" id="brouillons"></div>
         <input type="file" id="fichierProjet" accept=".json,application/json,image/png" hidden>
         <input type="file" id="fichierImage" accept="image/*" multiple hidden>
+        <input type="file" id="fichierFond" accept="image/*" hidden>
       </div>
     </div>
   </aside>

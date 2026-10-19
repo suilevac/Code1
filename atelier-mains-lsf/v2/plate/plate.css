@@ -38,6 +38,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .zoom output{font-family:var(--f-mono);font-size:.8rem;min-width:52px;text-align:center}
 .msg{font-size:.82rem;color:var(--muted);margin:0;min-height:1.2em}
 .msg.err{color:var(--danger)}
+/* message de la barre haute : UNE ligne réservée, jamais plus (un message long qui passait sur deux lignes décalait
+   le plateau de ~30 px pendant un geste) ; le texte complet est dans l'infobulle */
+header.top .msg{flex-basis:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:1.2em}
 /* --- outils (gauche) : icône + libellé, tout en visuel --- */
 nav.outils{display:flex;flex-direction:column;gap:4px;padding:8px 6px;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
 nav.outils button{font:inherit;font-size:.62rem;font-weight:700;color:var(--muted);background:transparent;border:1.5px solid transparent;border-radius:10px;padding:6px 2px 4px;cursor:pointer;display:grid;justify-items:center;gap:2px;line-height:1.1}
@@ -136,9 +139,14 @@ dialog h2{font-family:var(--f-display);font-size:1.1rem;margin:0 0 8px}
 .progress{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
 .progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
 @media (max-width:900px){
-  .app{display:block;height:auto;overflow:auto}
+  /* une colonne : c'est la PAGE qui défile (relecture M3 : body{overflow:hidden} gardé ici laissait le panneau de droite
+     hors d'atteinte à 390 px — scrollHeight 1 060 pour 844 de fenêtre, scrollY 0 après la molette) */
+  html,body{height:auto;overflow:auto}
+  .app{display:block;height:auto;overflow:visible}
   nav.outils{flex-direction:row;border-right:0;border-bottom:1px solid var(--line)}
   .stage{height:62vh}
   aside{border-left:0;border-top:1px solid var(--line)}
   .pane{overflow:visible}
 }
+/* texte « titre » : 1re ligne en gras pendant l'édition, comme au canvas */
+#texte.titre::first-line{font-weight:700}

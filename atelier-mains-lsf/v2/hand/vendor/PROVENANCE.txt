@@ -1,0 +1,4 @@
+GLTFLoader.js — three.js r128, paquet npm three@0.128.0 (registry.npmjs.org), fichier examples/js/loaders/GLTFLoader.js,
+copié tel quel (licence MIT, celle de three.js). sha256 5c15967ba830918a9caea6338712c994c354bccd4edc4569bde411c3ec06a3e6,
+96 550 octets, 21 967 octets gzip. Même paquet que le three.min.js vendu (le paquet vendu n'avait que examples/js/controls/).
+Utilisé par test_three.py (et disponible pour v2/build.py).

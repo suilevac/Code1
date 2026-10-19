@@ -5,14 +5,19 @@
    proportions que anatomie.md : HL = 19 cm, paume 8,5 cm de large, doigts 7,5 / 8,3 / 7,7 / 6,0 cm), posée par
    les angles de la pose v2, tournée par le quaternion d'orientation, puis projetée orthographiquement et dessinée
    en aplat + contour + ongles. Rien d'anatomique : c'est un gabarit pour tester l'éditeur, qui doit avoir la
-   bonne BOÎTE, la bonne latéralité (gauche = miroir 3D, l'ombre reste du même côté) et le bon alpha. */
+   bonne BOÎTE, la bonne latéralité (gauche = miroir 3D, l'ombre reste du même côté) et le bon alpha.
+   Latéralité (relecture M3, 19 octobre) : le trièdre du contrat M1 — doigts +Y, paume vers +Z (vers la caméra), pouce
+   vers +X — est celui d'une main DROITE (paume tournée vers soi, doigts en haut : le pouce de la droite est à droite).
+   C'est le dessin paume de l'utilisateur (references/paume.jpg, « face élève » : pouce à DROITE de l'image) et ce que
+   M1 a livré (hand/JOURNAL.md : « main DROITE vue paume vers la caméra », la gauche = miroir x → −x). Le bouchon disait
+   l'inverse : sa « Main D » en vue paume avait le pouce à gauche (une main gauche). */
 (function(){
 'use strict';
 const HL=19;                                   // longueur de main en cm (PLAN.md « HL »)
 const D2R=Math.PI/180;
 const clone=o=>JSON.parse(JSON.stringify(o));
 const DOIGTS=['index','majeur','annulaire','auriculaire'];
-// géométrie de repos d'une main GAUCHE (pouce vers +X, doigts vers +Y, paume vers +Z, poignet à l'origine)
+// géométrie de repos d'une main DROITE (pouce vers +X, doigts vers +Y, paume vers +Z, poignet à l'origine)
 const G={
   paume:{w:8.6,l:10.0},                        // largeur aux têtes métacarpiennes, longueur poignet → MCP
   // x de la MCP, longueur des 3 phalanges (cm), rayon (cm) — d'après anatomie.md (index 4.0/2.5/2.0 …)
@@ -49,7 +54,7 @@ function constrain(p){p=norm(p);p.poignet.flex=clampB(p.poignet.flex,BUT.flex);p
   return p}
 /* ---------- chaîne cinématique → capsules 3D ---------- */
 function capsules(pose,cote){
-  const p=constrain(pose),C=[],m=cote==='G'?1:-1;    // droite = miroir en X de la gauche (contrat M1 : le GLB est la gauche)
+  const p=constrain(pose),C=[],m=cote==='G'?-1:1;    // gauche = miroir en X de la droite (le GLB de M1 est la droite, axes du contrat)
   const flexQ=(deg)=>qaxis([1,0,0],deg);               // flexion = rotation autour de +X local, vers la paume (+Z)
   // poignet : flexion puis déviation ; la paume part du poignet
   let q=qmul(qaxis([0,0,1],p.poignet.dev*m),flexQ(p.poignet.flex));
@@ -107,7 +112,9 @@ function render(o){
   ord.forEach(c=>{path(c,lw*2);x.strokeStyle=st.trait;x.stroke()});
   ord.forEach(c=>{path(c,0);x.fillStyle=st.peau;x.strokeStyle=st.peau;x.fill();if(c.poly){x.stroke();
       if(st.ombre){// ombre de la paume : bande le long du bord droit (lumière à gauche)
-        x.save();x.beginPath();x.rect(0,0,w,h);path(c,0);x.clip();x.fillStyle=dark;const q=c.poly.map(P);x.beginPath();x.moveTo(q[2][0]-c.r*s*.3,q[2][1]);x.lineTo(q[3][0]-c.r*s*.3,q[3][1]);x.lineTo(q[3][0]+c.r*s*1.5,q[3][1]);x.lineTo(q[2][0]+c.r*s*1.5,q[2][1]);x.closePath();x.fill();x.restore()}
+        x.save();x.beginPath();x.rect(0,0,w,h);path(c,0);x.clip();x.fillStyle=dark;// bord le plus à droite À L'ÉCRAN (après miroir 3D de la main droite) : la lumière est fixe, pas la main
+        const q=c.poly.map(P);let j=0,mx=-1e9;q.forEach((u,i)=>{const v2=q[(i+1)%q.length],m=(u[0]+v2[0])/2;if(m>mx){mx=m;j=i}});
+        const u=q[j],v2=q[(j+1)%q.length],R=c.r*s;x.beginPath();x.moveTo(u[0]-1.3*R,u[1]);x.lineTo(v2[0]-1.3*R,v2[1]);x.lineTo(v2[0]+R,v2[1]);x.lineTo(u[0]+R,u[1]);x.closePath();x.fill();x.restore()}
       return}
     const a=P(c.a),b=P(c.b),r=c.r*s;
     if(st.ombre){x.save();x.clip();x.fillStyle=dark;x.beginPath();const dx=b[0]-a[0],dy=b[1]-a[1],L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L;
