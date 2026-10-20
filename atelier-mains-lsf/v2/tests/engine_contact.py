@@ -35,7 +35,7 @@ PL = [('sa capture (« L » de dos)', 'L', 'sa capture', 40, None),
       ('', 'L', 'dos', 30, None), ('', 'Index (1)', 'dos', 30, None), ('', 'Poing serré', 'dos', 30, None), ('', 'V (2)', 'dos ¾', 30, None),
       ('×3', 'Poing serré', 'dos', 90, '_p1'), ('×3', 'Poing serré', 'dos ¾', 90, '_p1'), ('×3', 'L', 'dos', 90, '_p1'),
       ('×3', 'V (2)', 'dos ¾', 90, '_p1'), ('×3 doigts tendus collés', 'Main plate (B)', 'paume', 90, '_p2'),
-      ('×3 pouce contre l’index', 'Poing (A)', 'profil', 90, '_p1')]
+      ('×3 un doigt devant l’autre', 'Pince', 'profil', 90, '_p2')]
 
 
 def fenetre(im, joints, k, art, contour, s):

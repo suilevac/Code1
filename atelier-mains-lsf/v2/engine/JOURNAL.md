@@ -442,3 +442,107 @@ propre), `engine_tuiles_coutures.png` (coutures ×3 : contour continu), `engine_
   telle quelle (les 77 presets n'en sont pas touchés : max 2,96 mm, paire majeur/annulaire ou index/majeur).
 - Bord de la frange d'ongle en escalier au gros plan ×3 (masque par sommet) ; invisible à 30 px/cm.
 - Chiffres 6 à 10 : propositions dans `presetsAValider`, à valider par l'utilisateur avant d'en faire des presets.
+
+## 20 octobre 2026 — LE TRAIT DE CONTACT ENTRE DEUX DOIGTS (grief : « des doigts qui se fondent dans la main »)
+
+Grief de l'utilisateur, capture de la v2 publiée (« L » vu de dos) : *« La main manque de précision. Il y a des doigts
+qui se fondent dans la main, tu ne vois même plus les traits de chaque doigt. On a perdu beaucoup en précision. »*
+Rendus de contrôle (L, V (2), Index (1), Poing serré, Main ouverte (5), Quatre (4) × paume / dos / profil) : vus de DOS,
+les trois doigts repliés de L, d'Index (1) et de V (2) n'ont aucun trait entre eux — un gant. En v1, un trait de contact
+séparait toujours deux doigts différents (passe identité, seuil 0,02 entre deux doigts).
+
+### Diagnostic (mesuré, pas supposé)
+- **Ce n'était pas d'abord la porte de profondeur.** Passe identité lue sur la G-pass (`K/diag_id.py`, brouillon) : vu de
+  dos ou de dos ¾, TOUT ce qu'on voit d'un doigt replié — tête du métacarpien, palmure dorsale, base de la P1 — porte
+  l'identité PAUME (les poids de peau y sont dominés par mc2–mc5 ; seuls quelques pixels de P1 dépassent au sommet des
+  bosses). Aucune frontière doigt / doigt n'existait donc là, quel que soit le seuil. En v1 il n'y avait pas d'os
+  métacarpien : la peau de la jointure appartenait à la P1.
+- Fenêtre de mesure entre deux jointures voisines (disque de 0,4 × l'écart des deux MCP, remonté de 0,45 cm au-dessus de
+  leur milieu, hors de la bande du contour ; `tests/engine_contact.py`) : **0 pixel noir** à 30 px/cm dans les 16 vallées
+  de L, Index (1), V (2) et Poing serré vues de dos et de dos ¾ (1 et 14 sur deux d'entre elles : lisière de l'encoche) ;
+  à ×3, 0 en vue de dos, 22 à 72 en dos ¾ (bouts de lisière, épaisseur ≈ 3 px au lieu de 9,6).
+- Là où deux doigts différents se touchaient vraiment (B, doigts repliés vus de la paume), l'ancienne règle faisait
+  tracer UN côté choisi par la profondeur juste de part et d'autre de la frontière (porte 2,5 mm) : le long d'un contact
+  dont l'écart frôlait la porte, le trait sautait d'un côté à l'autre (B paume ×3 : contact majeur–annulaire hachuré et
+  cassé ; Pince dos ¾ : cinq échardes sur un seul contact).
+
+### Ce qui a été fait
+1. **Jointures à l'identité de leur doigt** (engine.js decoder « JOINTURES », shaders.js G-pass). Chaque sommet reçoit au
+   chargement, dans le repère de liaison, une coordonnée latérale CONTINUE entre les rayons (u = 0 sur l'axe de l'index …
+   3 sur celui de l'auriculaire ; k + ½ = ligne médiane entre deux rayons), sa position le long du rayon (t, 1 = centre
+   de la MCP) et un poids « dos ». Le nuanceur donne au fragment de peau dorsale (paume, et base des P1 à t < 1,35)
+   l'identité du doigt k = arrondi(u) au-delà d'un seuil en t piloté par la flexion de la MCP (30 → 75°) — du doigt OU
+   d'un voisin (la vallée existe dès qu'une des deux têtes sort : sans cela, dans sa capture de « L », rien ne séparait
+   la jointure du majeur replié de la base de l'index tendu). La frontière entre deux jointures est l'isoligne u = k + ½
+   d'un champ lisse : le fond de la vallée, sans l'escalier des triangles. Main à plat (MCP < 30°) : rien ne change.
+   Mesuré au repos : 1 637 des 1 659 sommets dorsaux des P1 sont à |u − k| < ½ de leur rayon (les 22 autres au bord
+   cubital de l'auriculaire) — la frontière ne coupe aucune P1.
+   Pièges rencontrés en le réglant, chacun vu en image :
+   - coordonnée écrite pour la paume seulement : les zéros des sommets « doigt » voisins, interpolés dans les triangles
+     mixtes, perçaient la jointure de trous de paume (tirets : Y de profil, O en dos ¾) → calculée pour tous les sommets ;
+   - frontière P1 (maillage) / jointure voisine en escalier (dents de 2 à 6 px à ×3) → la base dorsale des P1 suit
+     l'isoligne elle aussi ;
+   - palmure au fond de la commissure (n.z −0,2 à +0,2, 189 sommets) restée « paume » : blanc de 4 à 6 px (×3) entre le
+     trait et l'encoche du contour → la palmure compte comme dos jusqu'à n.z 0,2 ;
+   - la jointure est la même peau continue que la paume voisine : le veto de « continuité » de la marche de profondeur
+     (réservé à une même identité) et la porte paume / doigt la hachuraient en rasant → étendus aux pixels de jointure,
+     marqués dans le reste de l'alpha d'identité (≥ 0,1 / 8 : le décodage floor(a·8 + ½) rend la même identité) ;
+   - fin du trait : coupée carrée, puis fendue en deux pointes ou hérissée de dents (essais de pente 1,5 / 0,6 / 0,3 à
+     ×9) → l'alpha d'identité porte aussi un « effilement » sur les 0,06 derniers de t, et l'anneau du contact s'y
+     resserre jusqu'à ¼ : une pointe de plume (`K/tip_eff.png`).
+2. **Trait de contact CENTRÉ** entre deux doigts différents, pouce compris (shaders.js 4a) : chaque côté compte, sur un
+   anneau de rContact = ½ r (12 directions — 24 ne changent rien de visible, comparé à ×9), les échantillons d'un AUTRE
+   doigt, et trace sa moitié. Les deux moitiés sont symétriques par construction : le trait est continu, d'épaisseur
+   constante, et sa place ne dépend plus de la profondeur ni de l'ordre des identités. Garde-fous, tous vus en image :
+   - anti-lamelle : l'autre doigt doit être épais (pas moi à 2 × rC) et je ne suis pas moi-même une lamelle (à l'opposé,
+     pas ce même autre doigt) ;
+   - occlusion en FONDU : un doigt nettement devant l'autre (écart de profondeur 0,2 → 0,6 cm) trace son bord d'un seul
+     côté, sans le test symétrique de la marche (comme l'ancienne règle « doigt sur doigt ») ; l'autre moitié s'efface.
+     Seuil sec à 0,6 : trois échardes sur un contact de B vu en plongée (écart 4 à 8 mm) ; sans occlusion du tout : le
+     bord de l'annulaire devant l'auriculaire (Pince de profil, bande plus étroite que l'anneau) se cassait en tirets ;
+   - jour étroit : un échantillon tombé dans 1 à 2 px de fond entre deux doigts collés compte si l'autre doigt est juste
+     au-delà (B dos ¾ : le trait se pinçait à 2,1 px pour 3,2 à la transition jour / contact ; 2,9 après) ;
+   - essayé et retiré : atténuer le trait près de la paume (pour la fin des vallées) — inutile depuis l'effilement, et il
+     coupait le contact de Pince de profil au voisinage des dents de paume du maillage.
+   La porte paume / doigt (racine des doigts tendus) est INCHANGÉE (1,0 × seuil).
+
+### Relevé (main figée : la même copie de hand_v2.glb pour l'avant et l'après, l'autre chantier la remplaçait en cours)
+| mesure | avant | après |
+|---|---|---|
+| vallées entre jointures, 30 px/cm (L, Index (1), V (2), Poing serré ; dos, dos ¾) : pixels noirs | 0 (1 et 14 de lisière) | 61 à 145 par vallée |
+| épaisseur de ce trait, 30 / 90 px/cm (attendu 3,19 / 9,58) | — | 2,7–3,6 / 7,4–10,0 px |
+| contacts de B (dos, dos ¾, paume), 30 px/cm : épaisseur | 2,3–4,1 px | 2,2–4,1 px |
+| 12 presets × 4 vues (paume, dos, profil, dos ¾), 30 px/cm : fragments isolés / échardes | 0 / 18 | 0 / 14 |
+| contour médian, 12 × 4 vues | 4,83 px | 4,81 px |
+| engine_planches (8 poses × 13 vues) : fragments / échardes | 0 / 31 | 0 / 44 |
+| engine_planches : contour médian par pose | 4,73–4,92 px | 4,73–4,92 px (écarts ≤ 0,03) |
+| render() 470 × 660, médiane sur 20 (logiciel, deux tours alternés) | 774–790 / 882–957 ms | 816–861 / 890–967 ms (+1 à +11 %) |
+| erreurs JS | 0 | 0 |
+
+Relevé final des tests du dépôt, moteur final, sur la main livrée ensuite par l'autre chantier (hand_v2.glb a8077…) :
+`engine_planches.py` fragments 0, échardes 38 sur 104 vues, contour médian 4,74 à 4,90 px par pose (écart max 6,9 %,
+exigence ± 10 %), ombre au repos 18,4 / 16,7 %, 0 erreur JS ; `engine_fumee.py` code 0 ; `engine_tuiles.py` (fait en
+cours de chantier) 0 encre hors de la main ; `engine_contact.py` (nouveau) : vallées 65 à 176 pixels noirs à 30 px/cm,
+épaisseur 2,5 à 3,9 px, 0 erreur JS, planche `tests/out/engine_contact_avant_apres.png`.
+
+Les échardes de plus d'engine_planches (31 → 44, toutes rattachées, 2 à 5 px) sont pour l'essentiel des barbules sur des
+traits de contact qui N'EXISTAIENT PAS avant : poing et index vus en plongée ou par le bout (avant : aucun trait entre
+les P2 repliées ; après : un trait continu, avec une ou deux barbules), plus de petits « T » là où deux doigts ne se
+touchent que sur 2 à 4 px (V (2) vu du dessus). En face : Pince dos ¾ 5 → 1, B paume / profil 1 → 0, Poing serré et
+Index (1) de face 1 → 0.
+
+Images regardées : `tests/out/engine_contact_avant_apres.png` (sa capture de « L » : trois traits là où il n'y en avait
+aucun ; poing de dos : quatre jointures séparées par trois traits qui s'effilent ; dos ¾ : le trait suit le recouvrement
+des têtes ; B paume ×3 : contact continu au lieu d'hachuré ; Pince de profil ×3), les planches 12 × 4 avant / après
+(brouillon `K/vue48_0.png`, `K/vue48_1.png`), les gros plans de chaque écharde nouvelle (`K/ech4_crops.png`,
+`K/ech5.png`, `K/ech6.png`) et les débogages identité / arêtes (`K/dbg*.png`).
+
+### Ce qui reste
+- Barbules de 2 à 5 px sur certains des nouveaux traits de contact vus en plongée ou par le bout (poing, index) et petits
+  « T » de contact très court (V (2) vu du dessus) : 44 échardes sur 104 vues contre 31.
+- Au sommet des vallées, là où la frontière rejoint le contour au flanc de l'encoche, 2 à 3 dents de < 1 px à 30 px/cm
+  (visibles à ×5).
+- Les doigts tendus mais écartés (Quatre (4), Main ouverte (5)) n'ont pas de contact : rien à tracer ; les hachures du
+  profil de la main ouverte au pied des doigts (lamelles d'identité vues par la tranche) sont antérieures et inchangées.
+- (Vérifié) main gauche : mêmes traits en miroir — poing de dos, 2 pixels différents (> 60) entre D et G retournée sur
+  400 × 520 ; L de dos, 228, tous dans l'ombre (lumière fixe dans le repère caméra, voulu) ; `K/gauche.png`.

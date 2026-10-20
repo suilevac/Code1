@@ -2,8 +2,8 @@
  "export_x2": {
   "w": 3840,
   "h": 2160,
-  "octets": 524393,
-  "itxt_octets": 34444
+  "octets": 523182,
+  "itxt_octets": 34428
  },
  "export_transparent": {
   "w": 1920,
@@ -12,11 +12,11 @@
    0,
    0
   ],
-  "px_opaques": 1032020
+  "px_opaques": 1031976
  },
  "projet_json": {
   "nom_fichier": "cent.atelier.json",
-  "octets": 34444,
+  "octets": 34428,
   "elements": 5,
   "fond": "image",
   "assets": 1
@@ -27,20 +27,20 @@
  ],
  "erreurs": [],
  "temps": {
-  "ouvrir_page_pret_s": 1.61,
-  "main_posee_rendue_s": 1.41,
-  "preset_V2_rendu_s": 0.61,
-  "geste_marionnette_s": 2.38,
+  "ouvrir_page_pret_s": 3.58,
+  "main_posee_rendue_s": 2.39,
+  "preset_V2_rendu_s": 0.68,
+  "geste_marionnette_s": 2.85,
   "geste_marionnette_images": {
-   "images": 81,
-   "max_ms": 367,
-   "p95_ms": 50
+   "images": 72,
+   "max_ms": 533,
+   "p95_ms": 83
   },
-  "gabarit_A_rendu_s": 0.9,
-  "export_x2_s": 1.53,
-  "export_x1_transparent_s": 0.6,
-  "rechargement_pret_s": 0.75,
-  "reouverture_rendue_s": 0.44
+  "gabarit_A_rendu_s": 0.93,
+  "export_x2_s": 2.1,
+  "export_x1_transparent_s": 0.72,
+  "rechargement_pret_s": 1.3,
+  "reouverture_rendue_s": 0.7
  },
  "echecs": []
 }

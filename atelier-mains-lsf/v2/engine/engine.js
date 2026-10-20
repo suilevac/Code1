@@ -1003,23 +1003,30 @@ const RENDU = {
   // des commissures (le flanc du doigt contre la palmure : ≈ 10 échardes rouges par commissure en mode débogage) ; à
   // 1,0 elles disparaissent et le pouce devant la paume (B, 4), les doigts repliés devant la paume (poing) restent cernés
   porte: 1.0,
-  // cm : entre deux doigts, l'écart de profondeur JUSTE DE PART ET D'AUTRE de leur frontière (shaders.js, 4a) en deçà
-  // duquel c'est un contact (le doigt d'identité la plus basse trace, un seul trait) ; au-delà, le plus proche trace.
-  // 0,3 mm (v1 : 0,02 u) faisait basculer le trait d'un côté à l'autre le long d'un contact (deux doigts convergent :
-  // l'écart y vaut quelques dixièmes de mm) — trait déchiqueté ; à 2,5 mm il reste d'un seul côté (relecture adverse)
+  // PLUS UTILISÉ depuis le trait de contact centré (20 octobre, ci-dessous) ; gardé pour relire les anciens réglages.
+  // C'était l'écart de profondeur en deçà duquel le doigt d'identité la plus basse traçait seul le contact : le côté qui
+  // trace dépendait de la profondeur, et le trait sautait d'un côté de la frontière à l'autre le long d'un contact.
   porteDoigts: 0.25,
-  // TRAIT DE CONTACT entre deux doigts (pouce compris) : centré sur la frontière d'identité, tracé par les DEUX côtés
-  // sur un anneau de contactK × r (shaders.js 4a), sans aucune porte de profondeur. À RÉGLER : voir JOURNAL.md.
+  // TRAIT DE CONTACT entre deux doigts (pouce compris), shaders.js 4a : centré sur la frontière d'identité, chaque côté
+  // trace sa moitié sur un anneau de contactK × r. 0,5 : épaisseur égale au trait intérieur d'un seul côté (bande où le
+  // compte dépasse 1 à 3 sur 12 ≈ 0,84 × l'anneau, de chaque côté) — mesuré dans les vallées des jointures (fenêtres de
+  // tests/engine_contact.py) : 2,7 à 3,6 px à 30 px/cm et 7,4 à 10 px à 90 px/cm, pour 3,19 / 9,58 attendus.
   contactK: 0.5,
-  // cm : écart de profondeur entre deux doigts au-delà duquel l'un passe DEVANT l'autre (son bord, tracé d'un seul côté
-  // par la marche de profondeur) au lieu de le toucher (trait centré). À RÉGLER : voir JOURNAL.md.
-  occlDoigts: 0.6,
+  // cm : fondu de l'écart de profondeur entre deux doigts, du CONTACT (trait centré, x) à l'OCCLUSION (bord du doigt de
+  // devant, d'un seul côté, y). Pince de profil : l'annulaire devant l'auriculaire à 0,3–1 cm, trait continu à 0,3 et
+  // cassé à 3 ; seuil sec à 0,6 : trois échardes le long d'un contact de B vu en plongée (écart 4 à 8 mm, le trait
+  // sautait d'un côté à l'autre) ; en fondu 0,2 → 0,6 les deux sont continus (images dbgU, brouillon K)
+  occlDoigts: [0.2, 0.6],
   // jointures à l'identité de leur doigt (decoder, Pipeline.poser) : abscisse le long du rayon (1 = centre de la MCP) où
-  // s'arrête, MCP pliée à fond, le trait de la vallée entre deux têtes métacarpiennes. À RÉGLER : voir JOURNAL.md.
+  // s'arrête, MCP pliée à fond, le trait de la vallée entre deux têtes métacarpiennes. 0,88 : le trait descend
+  // d'≈ 0,85 cm sous le centre de la tête (métacarpien ≈ 7 cm), la hauteur d'une tête — la vallée d'un poing dessiné ;
+  // il ne court pas sur le dos de la main.
   jointureT: 0.88,
-  // fin EFFILÉE du trait de la vallée (shaders.js, 1) : la limite basse de la zone d'une jointure monte vers la ligne
-  // médiane (pente en t par unité de u, descente max au centre de la tête) ; sous la fin du trait, un coin de paume
-  // s'ouvre entre les deux jointures et le trait centré s'amincit jusqu'à rien. À RÉGLER : voir JOURNAL.md.
+  // fin EFFILÉE du trait de la vallée (shaders.js, 1) : limite basse de la zone légèrement bombée (pente 0,3 en t par
+  // unité de u, descente ≤ 0,15 au centre de la tête) et, sur les 0,06 derniers de t, anneau du contact resserré jusqu'à
+  // ¼ (pointe de plume). Mesuré à ×9 : avec un coin de paume ouvert sous le trait (pente 1,5) la pointe se fendait en
+  // deux (« queue de poisson ») ou se hérissait de dents ; 0,3 seul la coupait carrée ; 0,06 donne une pointe nette
+  // (0,03 trop courte, 0,1 trop longue — essais tip_eff, brouillon K)
   jointurePente: 0.3, jointureDescente: 0.15, jointureEffile: 0.06,
   decolle: 0.04,      // cm : rubans décollés de la peau (Spider-Verse)
   // réserve des plis devant une autre partie (shaders.js 4b, relecture M5 : pli de la paume qui « traverse » le pouce) :
@@ -1127,7 +1134,7 @@ function Pipeline(renderer) {
     pxPli: {value: 3}, plancher: {value: 1.25}, decolle: {value: RENDU.decolle}, coupeY: {value: RENDU.coupeY}, debug: {value: 0}, bandeOn: {value: 0},
     tL: {value: null}, voisinsMin: {value: 7.5}, cmPx: {value: 0.01}, continuite: {value: 1}, enveloppe: {value: 0.15}, presFond: {value: 1}, fonduFond: {value: 0}, masque: {value: 0},
     tCreux: {value: null}, creuxOn: {value: 0}, rCreux: {value: 1.2}, dCreux: {value: 0.5}, nCreux: {value: 6.5}, rOcc: {value: 0}, dOcc: {value: 0.3},
-    tJointure: {value: new THREE.Vector4(9, 9, 9, 9)}, occlDoigts: {value: 0.6}, finJointure: {value: new THREE.Vector3(0.3, 0.15, 0.06)}, rContact: {value: 2}
+    tJointure: {value: new THREE.Vector4(9, 9, 9, 9)}, occlDoigts: {value: new THREE.Vector2(0.2, 0.6)}, finJointure: {value: new THREE.Vector3(0.3, 0.15, 0.06)}, rContact: {value: 2}
   };
   const mat = (vs, fs, extra) => new THREE.ShaderMaterial(Object.assign({uniforms: u, vertexShader: vs, fragmentShader: fs, extensions: {derivatives: true}}, extra || {}));
   this.mG = mat(SH.gVertex, SH.gFragment);
@@ -1356,7 +1363,7 @@ Pipeline.prototype.dessiner = function (cam, W, H, st, px, sortie, rapide, netto
   u.continuite.value = RENDU.continuite; u.enveloppe.value = RENDU.enveloppe; u.presFond.value = RENDU.presFond; u.fonduFond.value = RENDU.fonduFond;
   u.px.value = px.contour; u.onglePx.value = px.ongle; u.plancherPx.value = px.plancher; u.plancher.value = px.plancher;
   u.r.value = px.interne / 0.85; u.pxPli.value = px.plis;
-  u.rContact.value = RENDU.contactK * u.r.value; u.occlDoigts.value = RENDU.occlDoigts;
+  u.rContact.value = RENDU.contactK * u.r.value; u.occlDoigts.value.set(RENDU.occlDoigts[0], RENDU.occlDoigts[1]);
   u.finJointure.value.set(RENDU.jointurePente, RENDU.jointureDescente, RENDU.jointureEffile);
   u.rOcc.value = (RENDU.reserveOcc || 0) * px.contour; u.dOcc.value = RENDU.dOcc;
   const rt = this.cible(W, H);

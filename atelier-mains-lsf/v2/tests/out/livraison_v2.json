@@ -1,6 +1,6 @@
 {
  "A3": {
-  "export_s": 49.7,
+  "export_s": 54.1,
   "messages": [
    "Rendu…",
    "Rendu des mains : 1 / 1…",
@@ -12,10 +12,10 @@
    4961
   ],
   "frange_pouce": {
-   "pixels": 317,
-   "longueur_px": 218.6,
-   "ecart_max_px": 1.26,
-   "rms_px": 0.46
+   "pixels": 257,
+   "longueur_px": 153.6,
+   "ecart_max_px": 1.16,
+   "rms_px": 0.5
   }
  },
  "poing_1800": {
@@ -23,13 +23,13 @@
    "jours": 0,
    "px": 0
   },
-  "seuil": 312.8389099101555,
+  "seuil": 320,
   "miettes": 5,
-  "ms": 5550
+  "ms": 6286
  },
  "erreurs": [],
  "taille": [
   2400,
-  4567
+  4565
  ]
 }

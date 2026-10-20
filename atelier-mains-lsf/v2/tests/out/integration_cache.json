@@ -1,60 +1,60 @@
 {
- "pret_s": 0.88,
- "D_attente_s": 1.17,
- "D_total_s": 1.19,
+ "pret_s": 1.01,
+ "D_attente_s": 1.44,
+ "D_total_s": 1.47,
  "D_rendus": 2,
  "D_images": {
   "images": 15,
-  "max_ms": 633,
-  "p95_ms": 333
+  "max_ms": 817,
+  "p95_ms": 433
  },
  "D_apercus": 1,
- "ms_par_Mpx": 2150,
+ "ms_par_Mpx": 2635,
  "coin": {
   "rendus_pendant": 0,
   "images_pendant": {
-   "images": 145,
-   "max_ms": 17,
+   "images": 144,
+   "max_ms": 33,
    "p95_ms": 17
   },
   "rendus_apres": 1,
   "images_apres": {
-   "images": 12,
+   "images": 13,
    "max_ms": 17,
    "p95_ms": 17
   },
   "attente_apres_s": 0.21,
-  "agrandi": 690
+  "agrandi": 697
  },
  "deplacer": {
   "rendus": 0,
   "images": {
-   "images": 137,
-   "max_ms": 17,
+   "images": 136,
+   "max_ms": 33,
    "p95_ms": 17
   }
  },
  "zoom": {
   "rendus_pendant": 0,
   "images_pendant": {
-   "images": 50,
-   "max_ms": 17,
-   "p95_ms": 17
+   "images": 40,
+   "max_ms": 33,
+   "p95_ms": 33
   },
   "zoom": 0.8560370679133837,
   "rendus_total": 1,
   "images_apres": {
    "images": 12,
-   "max_ms": 1567,
+   "max_ms": 1483,
    "p95_ms": 17
   },
-  "attente_apres_s": 1.78
+  "attente_apres_s": 1.7
  },
- "cache_Mo": 14.7,
+ "cache_Mo": 14.9,
  "dernier_rendu": {
-  "ms": 1546,
-  "w": 1418,
-  "h": 1670,
+  "ms": 1465,
+  "w": 1432,
+  "h": 1675,
   "ss": 1,
   "apercu": false
  },
