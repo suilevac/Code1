@@ -780,7 +780,9 @@ Nouvelle application dans `v2/`, publiée comme `dist/atelier-v2.html` ; la v1 (
   250 000 ; au-delà, les photos partent par la capacité `assets` (id `/_blob/<id>` dans la ligne, relu en data: à
   l'ouverture), sinon la planche est enregistrée sans elles avec un message. `invalid_argument` = ligne refusée (taille),
   jamais un problème de droits (db n'a pas de code « droits »).
-- **Publication v2** : republier `dist/atelier-v2.html` avec les capacités `db`, `user`, `downloads`, `assets`.
+- **Publication v2** : artifact claude.ai privé https://claude.ai/artifact/9qtVbSRonKSqLZke7xQ3PE (publié le 20 octobre 2026,
+  capacités `db`, `user`, `downloads`, `assets`) ; republier `dist/atelier-v2.html` sur cette URL. La v1 reste sur
+  https://claude.ai/artifact/JCRmoDxntwNdyWGePQvUq5.
 - **Ce qui reste (v2)** : voir `v2/PLAN.md` § « État d'avancement → Reste » — critique multi-regards puis publication,
   temps à remesurer sur GPU (tous mesurés en rendu logiciel), validations de l'utilisateur (expressions, chiffres 6–10,
   presets « à valider »), défauts résiduels du moteur listés dans `v2/engine/JOURNAL.md` et `v2/integration/JOURNAL.md`.
