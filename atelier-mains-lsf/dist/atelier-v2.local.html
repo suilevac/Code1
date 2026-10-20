@@ -4028,7 +4028,9 @@ void main(){
   demiMm = max(demiMm, 0.5 * plancherPx * fv);
   float bande = aB * (1.0 - smoothstep(demiMm - 0.5 * fv, demiMm + 0.5 * fv, abs(sd)));
   // pas de trait sur la frange : il s'éteint sur les 0,4 mm qui la précèdent (l'ancien masque interpolé s'éteignait sur
-  // un triangle, ≈ 0,6 mm ; 0,4 mm garde le « U » ouvert au bord libre sans couper ses bras plus tôt)
+  // un triangle, ≈ 0,6 mm ; 0,4 mm garde le « U » ouvert au bord libre sans couper ses bras plus tôt). Vu de dessus ou
+  // en plongée, le bras du « U » longe alors le contour jusqu'au coin de la frange : la mesure des échardes en compte
+  // 3 sur 104 vues (regardé ×6 : un filet d'ongle, pas un éclat ; 0,8 mm ne change rien au compte)
   bande *= 1.0 - smoothstep(-0.04, 0.0, vMasque.y);
   // le zéro de la distance signée n'est un bord d'ongle que près de l'ongle (masque interpolé ≈ 0,5 sur le bord) :
   // ailleurs le champ peut frôler 0 sur un flanc et laisser des points noirs de 1 à 3 px
@@ -4407,10 +4409,11 @@ void main(){
   float d0 = lin(texture2D(tD, vUv).r);
   float rpx = rCreux / (ortho > 0.5 ? cmPx : cmPx * d0);
   float fermes = 0.0;
-  // pas d'échantillonnage CONSTANT en pixels (≤ 10 px de cible, 3 à 12 pas) : avec 3 pas fixes, une main de 1 800 px
-  // (rpx ≈ 110) était sondée tous les 37 px, et des cloisons étroites passaient entre deux sondes — la décision
-  // changeait avec la taille de l'image (relecture M5 : plaques d'ombre déchirées aux grands rendus, absentes à l'écran)
-  float pas = clamp(ceil(rpx / 10.0), 3.0, 12.0);
+  // pas d'échantillonnage borné en pixels (≤ 24 px de cible, 3 à 8 pas) : avec 3 pas fixes, une main de 1 800 px
+  // (rpx ≈ 190 px de cible à ss 2) était sondée tous les 63 px, et des cloisons étroites passaient entre deux sondes — la
+  // décision changeait avec la taille de l'image (relecture M5 : plaques d'ombre déchirées aux grands rendus). Mesuré :
+  // à 10 px / 12 pas, le rendu de 2 600 px passait de 12 à 52 s (logiciel) ; 24 px / 8 pas garde la même image du poing
+  float pas = clamp(ceil(rpx / 24.0), 3.0, 8.0);
   // « plus proche » se juge contre le PLAN TANGENT du pixel, pas contre sa profondeur : une paume vue de ¾ (pente 35°)
   // remonte de 0,84 cm vers l'œil sur 1,2 cm — avec un seuil de 0,5 cm elle « fermait » à elle seule 3 à 4 directions,
   // et sous la rangée des bouts du poing (paume ¾) le creux s'allumait en plaques (relecture M5). Pente tirée de la
@@ -4422,7 +4425,7 @@ void main(){
     float a = float(i) * 0.7853982;
     vec2 u = vec2(cos(a), sin(a));
     float f = 0.0;
-    for (int k = 1; k <= 12; k++) {
+    for (int k = 1; k <= 8; k++) {
       if (float(k) > pas) break;
       float t = rpx * (float(k) / pas);
       vec2 uv = vUv + u * t * texel;
@@ -6057,7 +6060,8 @@ function render(o) {
   const hw = w / (2 * s), hh = h / (2 * s);
   const cam = new THREE.OrthographicCamera(cx - hw, cx + hw, cy + hh, cy - hh, near, far);
   cam.position.set(0, 0, zc); cam.updateMatrixWorld();
-  const ctx = out.getContext('2d'); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  // lu sur le processeur par le nettoyage et le bouchage des jours (3 lectures) : contexte prévu pour (sinon Chrome avertit)
+  const ctx = out.getContext('2d', {willReadFrequently: true}); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   // seuil des miettes PROPORTIONNEL à l'échelle : 20 px a été mesuré et vérifié à 30 px/cm (planches de contrôle,
   // tailles d'écran) ; une miette est une AIRE, elle grandit comme s². Relecture M5 : à 1 800 px (≈ 80 px/cm) les mêmes
   // éclats d'arête (fond d'un pli au poing paume ¾, gribouillis sous l'annulaire) faisaient 60 à 140 px et passaient le
@@ -6091,7 +6095,9 @@ function render(o) {
     // pixel entier de l'image finale, et elle est réduite AVEC sa marge puis découpée (clip) — le filtre de réduction voit
     // les mêmes voisins qu'en une seule tuile ; recadrée avant réduction, la tuile décalait le contour de 1 à 2 px à la
     // couture (relecture adverse : marche à y ≈ 1947 px sur Repos 2200 × 2600). Vérifié par v2/tests/engine_tuiles.py.
-    const marge = ss * Math.ceil((px.contour + px.interne * 2 + 8 + aMin / 2 + RENDU.rCreux * s * ss) / ss), pas = ss * Math.floor((T - 2 * marge) / ss);
+    // (miette : aMin pixels d'un trait de l'épaisseur d'un trait intérieur, au moins 2 px ; depuis que aMin suit l'échelle
+    // — relecture M5 —, aMin / 2 faisait des marges de 640 px à 3 000 px et 16 tuiles au lieu de 4)
+    const marge = ss * Math.ceil((px.contour + px.interne * 2 + 8 + aMin / Math.max(2, px.interne) + RENDU.rCreux * s * ss) / ss), pas = ss * Math.floor((T - 2 * marge) / ss);
     let nb = 0; out.coutures = {x: [], y: []};
     for (let k = pas; k < W; k += pas) out.coutures.x.push(k / ss);
     for (let k = pas; k < H; k += pas) out.coutures.y.push(k / ss);

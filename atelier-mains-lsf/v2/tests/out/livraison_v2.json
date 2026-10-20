@@ -1,7 +1,35 @@
 {
+ "A3": {
+  "export_s": 49.7,
+  "messages": [
+   "Rendu…",
+   "Rendu des mains : 1 / 1…",
+   "Composition…",
+   "Encodage…"
+  ],
+  "taille": [
+   3508,
+   4961
+  ],
+  "frange_pouce": {
+   "pixels": 317,
+   "longueur_px": 218.6,
+   "ecart_max_px": 1.26,
+   "rms_px": 0.46
+  }
+ },
+ "poing_1800": {
+  "jours": {
+   "jours": 0,
+   "px": 0
+  },
+  "seuil": 312.8389099101555,
+  "miettes": 5,
+  "ms": 5550
+ },
  "erreurs": [],
  "taille": [
   2400,
-  3566
+  4567
  ]
 }

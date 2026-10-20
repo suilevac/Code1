@@ -2,7 +2,7 @@
  "export_x2": {
   "w": 3840,
   "h": 2160,
-  "octets": 524021,
+  "octets": 524393,
   "itxt_octets": 34444
  },
  "export_transparent": {
@@ -27,20 +27,20 @@
  ],
  "erreurs": [],
  "temps": {
-  "ouvrir_page_pret_s": 0.99,
-  "main_posee_rendue_s": 1.6,
-  "preset_V2_rendu_s": 0.72,
-  "geste_marionnette_s": 3.06,
+  "ouvrir_page_pret_s": 1.61,
+  "main_posee_rendue_s": 1.41,
+  "preset_V2_rendu_s": 0.61,
+  "geste_marionnette_s": 2.38,
   "geste_marionnette_images": {
-   "images": 65,
-   "max_ms": 383,
-   "p95_ms": 100
+   "images": 81,
+   "max_ms": 367,
+   "p95_ms": 50
   },
-  "gabarit_A_rendu_s": 1.07,
-  "export_x2_s": 2.29,
-  "export_x1_transparent_s": 0.87,
-  "rechargement_pret_s": 1.16,
-  "reouverture_rendue_s": 0.88
+  "gabarit_A_rendu_s": 0.9,
+  "export_x2_s": 1.53,
+  "export_x1_transparent_s": 0.6,
+  "rechargement_pret_s": 0.75,
+  "reouverture_rendue_s": 0.44
  },
  "echecs": []
 }
