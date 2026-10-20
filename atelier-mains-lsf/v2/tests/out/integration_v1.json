@@ -1,0 +1,288 @@
+{
+ "cas_v1": [
+  {
+   "cas": "V (2) · face",
+   "vue_v1": {
+    "pos": [
+     0,
+     0,
+     52
+    ],
+    "cible": [
+     0,
+     0,
+     0
+    ]
+   },
+   "orientation_v2": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "iou_silhouette": 0.736,
+   "iou_si_retournee": 0.574,
+   "index_mcp_pip": [
+    0,
+    0
+   ]
+  },
+  {
+   "cas": "V (2) · signeur (dos)",
+   "vue_v1": {
+    "pos": [
+     0,
+     0,
+     -52
+    ],
+    "cible": [
+     0,
+     0,
+     0
+    ]
+   },
+   "orientation_v2": [
+    0,
+    -1,
+    0,
+    0
+   ],
+   "iou_silhouette": 0.742,
+   "iou_si_retournee": 0.574,
+   "index_mcp_pip": [
+    0,
+    0
+   ]
+  },
+  {
+   "cas": "V (2) · dos ¾",
+   "vue_v1": {
+    "pos": [
+     -30,
+     10,
+     -40
+    ],
+    "cible": [
+     0,
+     0,
+     0
+    ]
+   },
+   "orientation_v2": [
+    -0.0312,
+    -0.9441,
+    -0.0935,
+    -0.3147
+   ],
+   "iou_silhouette": 0.813,
+   "iou_si_retournee": 0.481,
+   "index_mcp_pip": [
+    0,
+    0
+   ]
+  },
+  {
+   "cas": "Poing serré · ¾",
+   "vue_v1": {
+    "pos": [
+     34,
+     14,
+     38
+    ],
+    "cible": [
+     0,
+     0,
+     0
+    ]
+   },
+   "orientation_v2": [
+    0.1248,
+    -0.3537,
+    -0.0477,
+    0.9258
+   ],
+   "iou_silhouette": 0.862,
+   "iou_si_retournee": 0.653,
+   "index_mcp_pip": [
+    90,
+    105
+   ]
+  }
+ ],
+ "erreurs_v1": [],
+ "json": {
+  "v6": {
+   "note": "",
+   "selection": 0,
+   "types": [
+    "main"
+   ],
+   "mains": [
+    {
+     "cote": "G",
+     "etapes": 0,
+     "fleches": null,
+     "q": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "x": 1121
+    }
+   ],
+   "fond": "transparent #ffffff"
+  },
+  "v7": {
+   "note": " Mouvement de 2 étapes : la main montre la dernière ; Propriétés → « Éclater en étapes » pour les poser côte à côte avec leurs flèches.",
+   "selection": 1,
+   "types": [
+    "main"
+   ],
+   "mains": [
+    {
+     "cote": "D",
+     "etapes": 2,
+     "fleches": [
+      null,
+      null
+     ],
+     "q": [
+      0,
+      0.383,
+      0,
+      0.924
+     ],
+     "x": 564
+    }
+   ],
+   "fond": "transparent #ffffff"
+  },
+  "v8_DG_3_etapes": {
+   "note": " Mouvement de 3 étapes : la main montre la dernière ; Propriétés → « Éclater en étapes » pour les poser côte à côte avec leurs flèches.",
+   "selection": 2,
+   "types": [
+    "personnage",
+    "main",
+    "main"
+   ],
+   "mains": [
+    {
+     "cote": "D",
+     "etapes": 3,
+     "fleches": [
+      "courbe",
+      "zigzag",
+      "zigzag"
+     ],
+     "q": [
+      0,
+      0.383,
+      0,
+      0.924
+     ],
+     "x": 564
+    },
+    {
+     "cote": "G",
+     "etapes": 3,
+     "fleches": [
+      "courbe",
+      "zigzag",
+      "zigzag"
+     ],
+     "q": [
+      0,
+      -0.383,
+      0,
+      0.924
+     ],
+     "x": 1101
+    }
+   ],
+   "fond": "uni #fff8e0"
+  }
+ },
+ "db_lourd": {
+  "photo_octets": 301124,
+  "avec_assets": {
+   "msg": "« photo avec assets » enregistré (images rangées à part dans la bibliothèque).",
+   "enregistre": true,
+   "octets_ligne": 764,
+   "images_ligne": 1,
+   "assets_ligne": [
+    "/_blob/"
+   ],
+   "blobs": 1,
+   "refus": [],
+   "projet_avant_octets": 502791,
+   "images_planche": 1,
+   "relu": {
+    "images": 1,
+    "data": "data:image/jpeg",
+    "decodee": "900x600"
+   }
+  },
+  "sans_assets": {
+   "msg": "« photo sans assets » enregistré sans ses images (trop lourdes pour la bibliothèque : 256 Ko par projet ; garde le .json).",
+   "enregistre": true,
+   "octets_ligne": 506,
+   "images_ligne": 0,
+   "assets_ligne": [],
+   "blobs": 1,
+   "refus": [],
+   "projet_avant_octets": 502791,
+   "images_planche": 1
+  }
+ },
+ "db": {
+  "bloc_v1": {
+   "visible": true,
+   "lignes": 2,
+   "texte": "V vu de dos\nOuvrir\ntest v1 · v1 · 9 oct. 2025\ndeux mains\nOuvrir\nv1 · 9 oct. 2025"
+  },
+  "ouvert": {
+   "nom": "V vu de dos",
+   "mains": 1,
+   "msg": "Configuration v1 « V vu de dos » ouverte : enregistre-la pour en faire un projet."
+  },
+  "ecritures": [
+   {
+    "nom": "projets",
+    "op": "add",
+    "octets": 1280
+   },
+   {
+    "nom": "projets",
+    "op": "add",
+    "octets": 764
+   },
+   {
+    "nom": "projets",
+    "op": "add",
+    "octets": 506
+   }
+  ],
+  "projets": [
+   {
+    "nom": "V vu de dos",
+    "elements": 1,
+    "version": 9
+   }
+  ],
+  "lib_v2": 3
+ },
+ "downloads": [
+  {
+   "filename": "photo-sans-assets.png",
+   "taille": 2400712,
+   "type": "image/png"
+  },
+  {
+   "filename": "photo sans assets.atelier.json",
+   "taille": 502791,
+   "type": "application/json"
+  }
+ ],
+ "erreurs": []
+}

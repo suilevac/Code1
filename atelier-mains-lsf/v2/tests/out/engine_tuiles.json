@@ -1,0 +1,566 @@
+{
+ "A_tuiles_forcees": {
+  "V (2)": {
+   "paume": {
+    "pixels_ecart": 36,
+    "dans_bande": 1,
+    "aire_bande": 12728,
+    "hors_bande": 35,
+    "aire_hors_bande": 116535,
+    "densite_bande_sur_ailleurs": 0.26,
+    "plus_grande_tache": 15,
+    "tuiles": 15
+   },
+   "dos": {
+    "pixels_ecart": 26,
+    "dans_bande": 5,
+    "aire_bande": 11548,
+    "hors_bande": 21,
+    "aire_hors_bande": 117722,
+    "densite_bande_sur_ailleurs": 2.43,
+    "plus_grande_tache": 5,
+    "tuiles": 15
+   },
+   "profil radial": {
+    "pixels_ecart": 40,
+    "dans_bande": 0,
+    "aire_bande": 8356,
+    "hors_bande": 40,
+    "aire_hors_bande": 89968,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 9,
+    "tuiles": 15
+   },
+   "profil cubital": {
+    "pixels_ecart": 43,
+    "dans_bande": 0,
+    "aire_bande": 8068,
+    "hors_bande": 43,
+    "aire_hors_bande": 90257,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 9,
+    "tuiles": 15
+   },
+   "paume ¾ radial": {
+    "pixels_ecart": 11,
+    "dans_bande": 0,
+    "aire_bande": 12075,
+    "hors_bande": 11,
+    "aire_hors_bande": 111043,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 4,
+    "tuiles": 15
+   },
+   "paume ¾ cubital": {
+    "pixels_ecart": 40,
+    "dans_bande": 2,
+    "aire_bande": 8969,
+    "hors_bande": 38,
+    "aire_hors_bande": 106571,
+    "densite_bande_sur_ailleurs": 0.63,
+    "plus_grande_tache": 7,
+    "tuiles": 15
+   },
+   "dos ¾ radial": {
+    "pixels_ecart": 38,
+    "dans_bande": 0,
+    "aire_bande": 10273,
+    "hors_bande": 38,
+    "aire_hors_bande": 103295,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 4,
+    "tuiles": 15
+   },
+   "dos ¾ cubital": {
+    "pixels_ecart": 23,
+    "dans_bande": 1,
+    "aire_bande": 10399,
+    "hors_bande": 22,
+    "aire_hors_bande": 111749,
+    "densite_bande_sur_ailleurs": 0.49,
+    "plus_grande_tache": 10,
+    "tuiles": 15
+   },
+   "plongée paume": {
+    "pixels_ecart": 26,
+    "dans_bande": 1,
+    "aire_bande": 11590,
+    "hors_bande": 25,
+    "aire_hors_bande": 102213,
+    "densite_bande_sur_ailleurs": 0.35,
+    "plus_grande_tache": 7,
+    "tuiles": 15
+   },
+   "contre-plongée paume": {
+    "pixels_ecart": 12,
+    "dans_bande": 1,
+    "aire_bande": 10716,
+    "hors_bande": 11,
+    "aire_hors_bande": 106154,
+    "densite_bande_sur_ailleurs": 0.9,
+    "plus_grande_tache": 3,
+    "tuiles": 15
+   },
+   "dessus (bouts)": {
+    "pixels_ecart": 10,
+    "dans_bande": 0,
+    "aire_bande": 6414,
+    "hors_bande": 10,
+    "aire_hors_bande": 62260,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 7,
+    "tuiles": 9
+   },
+   "dos plongée": {
+    "pixels_ecart": 21,
+    "dans_bande": 3,
+    "aire_bande": 10195,
+    "hors_bande": 18,
+    "aire_hors_bande": 106682,
+    "densite_bande_sur_ailleurs": 1.74,
+    "plus_grande_tache": 7,
+    "tuiles": 15
+   },
+   "dessous (poignet)": {
+    "pixels_ecart": 12,
+    "dans_bande": 1,
+    "aire_bande": 6039,
+    "hors_bande": 11,
+    "aire_hors_bande": 62636,
+    "densite_bande_sur_ailleurs": 0.94,
+    "plus_grande_tache": 4,
+    "tuiles": 9
+   }
+  },
+  "Repos": {
+   "paume": {
+    "pixels_ecart": 12,
+    "dans_bande": 4,
+    "aire_bande": 12871,
+    "hors_bande": 8,
+    "aire_hors_bande": 136692,
+    "densite_bande_sur_ailleurs": 5.31,
+    "plus_grande_tache": 5,
+    "tuiles": 15
+   },
+   "dos": {
+    "pixels_ecart": 14,
+    "dans_bande": 0,
+    "aire_bande": 14602,
+    "hors_bande": 14,
+    "aire_hors_bande": 134968,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 6,
+    "tuiles": 15
+   },
+   "profil radial": {
+    "pixels_ecart": 59,
+    "dans_bande": 4,
+    "aire_bande": 9805,
+    "hors_bande": 55,
+    "aire_hors_bande": 97390,
+    "densite_bande_sur_ailleurs": 0.72,
+    "plus_grande_tache": 11,
+    "tuiles": 15
+   },
+   "profil cubital": {
+    "pixels_ecart": 76,
+    "dans_bande": 3,
+    "aire_bande": 9671,
+    "hors_bande": 73,
+    "aire_hors_bande": 97544,
+    "densite_bande_sur_ailleurs": 0.41,
+    "plus_grande_tache": 16,
+    "tuiles": 15
+   },
+   "paume ¾ radial": {
+    "pixels_ecart": 29,
+    "dans_bande": 3,
+    "aire_bande": 12781,
+    "hors_bande": 26,
+    "aire_hors_bande": 116813,
+    "densite_bande_sur_ailleurs": 1.05,
+    "plus_grande_tache": 5,
+    "tuiles": 15
+   },
+   "paume ¾ cubital": {
+    "pixels_ecart": 22,
+    "dans_bande": 0,
+    "aire_bande": 11171,
+    "hors_bande": 22,
+    "aire_hors_bande": 118001,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 8,
+    "tuiles": 15
+   },
+   "dos ¾ radial": {
+    "pixels_ecart": 3,
+    "dans_bande": 0,
+    "aire_bande": 11235,
+    "hors_bande": 3,
+    "aire_hors_bande": 115996,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 1,
+    "tuiles": 15
+   },
+   "dos ¾ cubital": {
+    "pixels_ecart": 14,
+    "dans_bande": 0,
+    "aire_bande": 10874,
+    "hors_bande": 14,
+    "aire_hors_bande": 117158,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 3,
+    "tuiles": 15
+   },
+   "plongée paume": {
+    "pixels_ecart": 20,
+    "dans_bande": 0,
+    "aire_bande": 10588,
+    "hors_bande": 20,
+    "aire_hors_bande": 114298,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 14,
+    "tuiles": 12
+   },
+   "contre-plongée paume": {
+    "pixels_ecart": 1,
+    "dans_bande": 0,
+    "aire_bande": 11678,
+    "hors_bande": 1,
+    "aire_hors_bande": 129746,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 1,
+    "tuiles": 12
+   },
+   "dessus (bouts)": {
+    "pixels_ecart": 17,
+    "dans_bande": 0,
+    "aire_bande": 5274,
+    "hors_bande": 17,
+    "aire_hors_bande": 58588,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 13,
+    "tuiles": 9
+   },
+   "dos plongée": {
+    "pixels_ecart": 2,
+    "dans_bande": 0,
+    "aire_bande": 13159,
+    "hors_bande": 2,
+    "aire_hors_bande": 128258,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 1,
+    "tuiles": 12
+   },
+   "dessous (poignet)": {
+    "pixels_ecart": 2,
+    "dans_bande": 0,
+    "aire_bande": 5958,
+    "hors_bande": 2,
+    "aire_hors_bande": 57904,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 2,
+    "tuiles": 9
+   }
+  },
+  "Poing serré": {
+   "paume": {
+    "pixels_ecart": 17,
+    "dans_bande": 1,
+    "aire_bande": 7864,
+    "hors_bande": 16,
+    "aire_hors_bande": 88200,
+    "densite_bande_sur_ailleurs": 0.7,
+    "plus_grande_tache": 14,
+    "tuiles": 12
+   },
+   "dos": {
+    "pixels_ecart": 4,
+    "dans_bande": 0,
+    "aire_bande": 7984,
+    "hors_bande": 4,
+    "aire_hors_bande": 88070,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 4,
+    "tuiles": 12
+   },
+   "profil radial": {
+    "pixels_ecart": 7,
+    "dans_bande": 0,
+    "aire_bande": 7597,
+    "hors_bande": 7,
+    "aire_hors_bande": 77300,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 4,
+    "tuiles": 12
+   },
+   "profil cubital": {
+    "pixels_ecart": 16,
+    "dans_bande": 0,
+    "aire_bande": 6777,
+    "hors_bande": 16,
+    "aire_hors_bande": 78121,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 4,
+    "tuiles": 12
+   },
+   "paume ¾ radial": {
+    "pixels_ecart": 1,
+    "dans_bande": 0,
+    "aire_bande": 8966,
+    "hors_bande": 1,
+    "aire_hors_bande": 84186,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 1,
+    "tuiles": 12
+   },
+   "paume ¾ cubital": {
+    "pixels_ecart": 13,
+    "dans_bande": 2,
+    "aire_bande": 7867,
+    "hors_bande": 11,
+    "aire_hors_bande": 87203,
+    "densite_bande_sur_ailleurs": 2.02,
+    "plus_grande_tache": 3,
+    "tuiles": 12
+   },
+   "dos ¾ radial": {
+    "pixels_ecart": 5,
+    "dans_bande": 0,
+    "aire_bande": 8439,
+    "hors_bande": 5,
+    "aire_hors_bande": 82760,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 1,
+    "tuiles": 12
+   },
+   "dos ¾ cubital": {
+    "pixels_ecart": 11,
+    "dans_bande": 1,
+    "aire_bande": 7493,
+    "hors_bande": 10,
+    "aire_hors_bande": 85338,
+    "densite_bande_sur_ailleurs": 1.14,
+    "plus_grande_tache": 2,
+    "tuiles": 12
+   },
+   "plongée paume": {
+    "pixels_ecart": 12,
+    "dans_bande": 0,
+    "aire_bande": 7530,
+    "hors_bande": 12,
+    "aire_hors_bande": 79861,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 5,
+    "tuiles": 9
+   },
+   "contre-plongée paume": {
+    "pixels_ecart": 12,
+    "dans_bande": 1,
+    "aire_bande": 9171,
+    "hors_bande": 11,
+    "aire_hors_bande": 92159,
+    "densite_bande_sur_ailleurs": 0.91,
+    "plus_grande_tache": 4,
+    "tuiles": 12
+   },
+   "dessus (bouts)": {
+    "pixels_ecart": 42,
+    "dans_bande": 10,
+    "aire_bande": 6342,
+    "hors_bande": 32,
+    "aire_hors_bande": 66049,
+    "densite_bande_sur_ailleurs": 3.25,
+    "plus_grande_tache": 8,
+    "tuiles": 9
+   },
+   "dos plongée": {
+    "pixels_ecart": 3,
+    "dans_bande": 0,
+    "aire_bande": 9593,
+    "hors_bande": 3,
+    "aire_hors_bande": 91736,
+    "densite_bande_sur_ailleurs": 0.0,
+    "plus_grande_tache": 2,
+    "tuiles": 12
+   },
+   "dessous (poignet)": {
+    "pixels_ecart": 26,
+    "dans_bande": 7,
+    "aire_bande": 6593,
+    "hors_bande": 19,
+    "aire_hors_bande": 65796,
+    "densite_bande_sur_ailleurs": 3.68,
+    "plus_grande_tache": 9,
+    "tuiles": 9
+   }
+  }
+ },
+ "B_exact_vraie_taille": {
+  "Repos paume 2200×2600": {
+   "pixels_ecart": 0,
+   "dans_bande": 0,
+   "aire_bande": 16982,
+   "hors_bande": 0,
+   "aire_hors_bande": 2500927,
+   "densite_bande_sur_ailleurs": 0.0,
+   "plus_grande_tache": 0,
+   "tuiles": 4,
+   "encre_hors_main": 0,
+   "ms_tuiles": 22874,
+   "ms_une": 21336
+  },
+  "V (2) dos ¾ cubital 2600×2600": {
+   "pixels_ecart": 0,
+   "dans_bande": 0,
+   "aire_bande": 13485,
+   "hors_bande": 0,
+   "aire_hors_bande": 1773966,
+   "densite_bande_sur_ailleurs": 0.0,
+   "plus_grande_tache": 0,
+   "tuiles": 4,
+   "encre_hors_main": 0,
+   "ms_tuiles": 20760,
+   "ms_une": 21755
+  }
+ },
+ "C_12_orientations": {
+  "2400 paume": {
+   "tuiles": 4,
+   "ms": 19373,
+   "encre_hors_main": 0
+  },
+  "2400 dos": {
+   "tuiles": 4,
+   "ms": 10697,
+   "encre_hors_main": 0
+  },
+  "2400 profil radial": {
+   "tuiles": 4,
+   "ms": 10296,
+   "encre_hors_main": 0
+  },
+  "2400 profil cubital": {
+   "tuiles": 4,
+   "ms": 13080,
+   "encre_hors_main": 0
+  },
+  "2400 paume ¾ radial": {
+   "tuiles": 4,
+   "ms": 15684,
+   "encre_hors_main": 0
+  },
+  "2400 paume ¾ cubital": {
+   "tuiles": 4,
+   "ms": 11930,
+   "encre_hors_main": 0
+  },
+  "2400 dos ¾ radial": {
+   "tuiles": 4,
+   "ms": 12100,
+   "encre_hors_main": 0
+  },
+  "2400 dos ¾ cubital": {
+   "tuiles": 4,
+   "ms": 10476,
+   "encre_hors_main": 0
+  },
+  "2400 plongée paume": {
+   "tuiles": 4,
+   "ms": 12001,
+   "encre_hors_main": 0
+  },
+  "2400 contre-plongée paume": {
+   "tuiles": 4,
+   "ms": 12244,
+   "encre_hors_main": 0
+  },
+  "2400 dessus (bouts)": {
+   "tuiles": 4,
+   "ms": 18719,
+   "encre_hors_main": 0
+  },
+  "2400 dos plongée": {
+   "tuiles": 4,
+   "ms": 12892,
+   "encre_hors_main": 0
+  },
+  "2400 dessous (poignet)": {
+   "tuiles": 4,
+   "ms": 15456,
+   "encre_hors_main": 0
+  },
+  "3000 paume": {
+   "tuiles": 4,
+   "ms": 18252,
+   "encre_hors_main": 0
+  },
+  "3000 dos": {
+   "tuiles": 4,
+   "ms": 18863,
+   "encre_hors_main": 0
+  },
+  "3000 profil radial": {
+   "tuiles": 4,
+   "ms": 17318,
+   "encre_hors_main": 0
+  },
+  "3000 profil cubital": {
+   "tuiles": 4,
+   "ms": 16435,
+   "encre_hors_main": 0
+  },
+  "3000 paume ¾ radial": {
+   "tuiles": 4,
+   "ms": 18584,
+   "encre_hors_main": 0
+  },
+  "3000 paume ¾ cubital": {
+   "tuiles": 4,
+   "ms": 17972,
+   "encre_hors_main": 0
+  },
+  "3000 dos ¾ radial": {
+   "tuiles": 4,
+   "ms": 18050,
+   "encre_hors_main": 0
+  },
+  "3000 dos ¾ cubital": {
+   "tuiles": 4,
+   "ms": 18130,
+   "encre_hors_main": 0
+  },
+  "3000 plongée paume": {
+   "tuiles": 4,
+   "ms": 19329,
+   "encre_hors_main": 0
+  },
+  "3000 contre-plongée paume": {
+   "tuiles": 4,
+   "ms": 19842,
+   "encre_hors_main": 0
+  },
+  "3000 dessus (bouts)": {
+   "tuiles": 9,
+   "ms": 39141,
+   "encre_hors_main": 0
+  },
+  "3000 dos plongée": {
+   "tuiles": 4,
+   "ms": 20242,
+   "encre_hors_main": 0
+  },
+  "3000 dessous (poignet)": {
+   "tuiles": 9,
+   "ms": 32619,
+   "encre_hors_main": 0
+  }
+ },
+ "A_densite_bande_sur_ailleurs": 0.72,
+ "A_pixels_ecart_total": 778,
+ "A_pire_tache": 16,
+ "C_pire_hors_main": 0,
+ "B_pire_hors_main": 0,
+ "erreurs_js": []
+}

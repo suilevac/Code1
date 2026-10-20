@@ -1,0 +1,4 @@
+three.min.js — three.js r128, paquet npm three@0.128.0 (registry.npmjs.org), fichier build/three.min.js, copié tel quel
+(licence MIT). sha256 9274bbcec8d96168626c732b5d31c775aa8cfb7eaa0599bec0c175908a2c1ce2, 603 445 octets.
+Même paquet que v2/hand/vendor/GLTFLoader.js (examples/js/loaders/GLTFLoader.js). Utilisé par v2/engine/test.html et
+par les tests v2/tests/engine_*.py (servi localement : pas de CDN) ; v2/build.py l'embarquera dans dist/atelier-v2.html.

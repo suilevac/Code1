@@ -99,3 +99,26 @@ plate_correctifs.py 34 — tous verts. Captures dans v2/tests/out/plate_*.png.
   main DROITE : à corriger par l'orchestrateur ; le moteur M2 doit rendre « D » sans miroir.
 - Chemins claude.ai (db, downloads) non testables ici.
 - Non mesuré ici : Safari (HEIC décodable, limite 16,8 Mpx annoncée dans le dialogue d'export).
+
+## Intégration du moteur M2 (19 octobre, correction après relecture adverse du chantier M2)
+Retouches minimales faites par le chantier M2 pour que la marionnette soit EN PLACE (contrat M2 → M3) :
+- `placeOverlays` : #puppet posé exactement sur le cadre de l'objet (`transformCSS(e)`, e.w·zoom × e.h·zoom) ; en mode
+  marionnette la barre contextuelle (#ctx) reste visible au-dessus de l'objet et accueille la barre du moteur
+  (`S.puppetBarre`, vues / poignet / inclinaison / pronation / arc) ;
+- `DESSINE.main` : la main en marionnette n'est pas peinte (le canevas 3D la montre) — `drawDoc(…, {puppetId})` ;
+- `marionnette()` : puppet(host, e, onChange, {onFin, barreHote, boutonFin:false}) ; l'orientation rendue par
+  onChange est recopiée ;
+- plate.css #puppet : ni marge, ni bordure, ni fond, overflow visible (le cadre en pointillé seul) ;
+- défauts du style de la main alignés sur le moteur : largeurTrait 0,8 (% de HL), ongle #96dcd6 (PLAN.md tranché).
+Mesuré (v2/tests/engine_integration_planche.py) : cadre du canevas = cadre de l'objet à 0 px près, barre visible,
+curseur pronation appliqué, Échap termine, 0 erreur JS.
+
+## Retouches du chantier M5 (intégration, 19 octobre) — détail et mesures dans v2/integration/JOURNAL.md
+- Cache des mains au vrai coût du moteur : estimation ms/Mpx (départ 400), RENDU_LENT = 50 ms (jamais pendant un geste,
+  une main par image au repos), aperçu d'abord pour une main sans image (entrée `apercu`, jamais « juste », jetée quand
+  l'image juste arrive), ss 1 à l'écran pour dpr ≥ 1,75. `__plate.salesRestantes()`, `__plate.coutMpx()`.
+- `convertitV1` : vue caméra v1 → orientation (vueV1 / qV1) ; poses par `AtelierHand.depuisV1`.
+- Bibliothèque : collection « configurations » de la v1 en lecture seule (#libV1Bloc dans index.html).
+- Configurations rangées par famille (details.famille), `data-preset` sur chaque bouton.
+- Gabarit F « Étapes avec référent » (un référent par étape, expression réglable).
+Non-régression : plate_scenario, plate_projet, plate_edition, plate_correctifs verts après ces retouches.

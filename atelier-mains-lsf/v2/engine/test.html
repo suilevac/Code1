@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Moteur de main v2 — essai</title>
+<!-- Page d'essai du moteur M2, SANS l'éditeur de planche : charge hand_v2.glb et hand_v2.json par URL (servir le dossier
+     v2/ par http ; en file:// le navigateur refuse fetch, la page propose alors de choisir les deux fichiers), affiche une
+     main posable en marionnette, les presets, les quatre vues, et exporte une image par AtelierHand.render(). -->
+<style>
+:root{--vert:#00a19a;--encre:#14201f;--fond:#f4f7f6;--panneau:#fff;--bord:#cfdedc}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--encre);background:var(--fond)}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;padding:10px 16px;background:var(--panneau);border-bottom:1px solid var(--bord)}
+header h1{font-size:16px;margin:0;color:var(--vert)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;padding:16px}
+@media (max-width:860px){main{grid-template-columns:1fr}}
+#scene{position:relative;background:var(--panneau);border:1px solid var(--bord);border-radius:10px;min-height:560px;display:flex;align-items:flex-start;justify-content:center;padding:16px 16px 120px}
+#cadre{position:relative;width:420px;height:520px}
+aside{background:var(--panneau);border:1px solid var(--bord);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 100px);overflow:auto}
+aside h2{font-size:13px;margin:0 0 4px;text-transform:uppercase;letter-spacing:.04em;color:#4b6764}
+.liste{display:flex;flex-wrap:wrap;gap:4px}
+button{font:13px system-ui,sans-serif;padding:4px 8px;border:1px solid var(--bord);border-radius:6px;background:#fff;cursor:pointer;color:var(--encre)}
+button:hover{border-color:var(--vert)}
+button.on{background:var(--vert);color:#fff;border-color:var(--vert)}
+select,input{font:13px system-ui,sans-serif}
+#msg{font-size:12px;color:#4b6764;min-height:1.3em}
+#apercu{max-width:100%;border:1px dashed var(--bord);background:repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/16px 16px}
+#note{font-size:12px;color:#8a4b00}
+</style>
+<script src="vendor/three.min.js"></script>
+<script src="../hand/vendor/GLTFLoader.js"></script>
+<script src="shaders.js"></script>
+<script src="engine.js"></script>
+</head>
+<body>
+<header>
+  <h1>Moteur de main v2</h1>
+  <label>Main <select id="cote"><option value="D">droite</option><option value="G">gauche</option></select></label>
+  <span id="vues"></span>
+  <span id="msg" aria-live="polite">Chargement des assets…</span>
+</header>
+<main>
+  <section id="scene"><div id="cadre"></div></section>
+  <aside>
+    <div><h2>Configurations</h2><select id="famille"></select><div class="liste" id="presets"></div><p id="note"></p></div>
+    <div><h2>Image (render)</h2>
+      <label>taille <select id="taille"><option>330</option><option selected>660</option><option>1320</option></select> px</label>
+      <label>trait <input id="trait" type="number" min="0" max="4" step="0.1" value="0.8" style="width:56px"> % HL</label>
+      <label><input id="ombre" type="checkbox" checked> ombre</label>
+      <button id="exporter">Rendre l’image</button>
+      <p id="infoRendu"></p><img id="apercu" alt="aperçu du rendu" hidden>
+    </div>
+    <div><h2>Gestes</h2><p style="font-size:12px;margin:0">Tirer le bout d’un doigt : tout le doigt se plie · le milieu : base + milieu · la base : pivot et écartement · Maj : une seule articulation · clic droit : verrou · double clic : tendre · Alt : les quatre doigts · paume : tourner (Maj : déplacer).</p></div>
+  </aside>
+</main>
+<script>
+(async function(){
+'use strict';
+const H = window.AtelierHand, $ = id => document.getElementById(id);
+const msg = t => $('msg').textContent = t;
+const el = {type:'main', cote:'D', pose:{}, orientation:[0,0,0,1], style:{peau:'#00a19a', ongle:'#96dcd6', trait:'#111111', largeurTrait:0.8, ombre:true}};
+let marionnette = null;
+// chargement par URL ; en file:// (fetch refusé) on propose de choisir les deux fichiers
+try { await H.charger('../hand/hand_v2.glb', '../hand/hand_v2.json'); }
+catch (e) {
+  msg('Assets non trouvés par URL (' + e.message + ') : choisissez hand_v2.glb puis hand_v2.json.');
+  const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true; inp.accept = '.glb,.json';
+  document.querySelector('header').appendChild(inp);
+  await new Promise(ok => inp.onchange = async () => {
+    const fs = Array.from(inp.files), g = fs.find(f => /\.glb$/i.test(f.name)), j = fs.find(f => /\.json$/i.test(f.name));
+    if (!g || !j) { msg('Il faut les deux fichiers.'); return; }
+    await H.init({glb: await g.arrayBuffer(), json: await j.text()}); ok();
+  });
+}
+el.pose = JSON.parse(JSON.stringify(H.presets['Dessin']));
+msg('Prêt : ' + Object.keys(H.presets).length + ' configurations.');
+const cadre = $('cadre');
+function demarrer(){
+  if (marionnette) marionnette.stop();
+  // le cadre prend les proportions de la boîte de la main (comme l'objet de la planche)
+  const b = H.bounds(el), h = 520, w = Math.round(h * b.w / b.h);
+  cadre.style.width = Math.min(w, 760) + 'px'; cadre.style.height = h + 'px';
+  marionnette = H.puppet(cadre, el, (pose, extra) => { el.pose = pose; if (extra && extra.orientation) el.orientation = extra.orientation;
+    const n = H.diagnostic(pose); $('note').textContent = n.join(' ; '); }, {onFin: () => msg('Marionnette : Terminer (Échap / Entrée) — la pose est dans l’élément.')});
+  window.marionnette = marionnette;
+}
+// vues
+const VUES = {face:[0,0,0,1], dos:[0,1,0,0], profil:[0,-Math.SQRT1_2,0,Math.SQRT1_2], dessus:[Math.SQRT1_2,0,0,Math.SQRT1_2]};
+Object.keys(VUES).forEach(n => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { el.orientation = VUES[n].slice(); demarrer(); }; $('vues').appendChild(b); });
+$('cote').onchange = () => { el.cote = $('cote').value; demarrer(); };
+// presets par famille
+const fam = n => /^Lettre /.test(n) ? 'Alphabet' : /^Chiffre /.test(n) ? 'Chiffres' : ['Dessin','Repos','Main plate (B)','Poing (A)','Poing serré','Index (1)','V (2)','Trois (3)','Quatre (4)','Main ouverte (5)','L','Y','C','O','Pince'].includes(n) ? 'Atelier v1' : 'Formes de base';
+// « À valider » : les chiffres au-delà de 5 ne sont pas devinés (CLAUDE.md) — propositions à juger, hors des presets
+const familles = ['Atelier v1', 'Alphabet', 'Chiffres', 'Formes de base', 'À valider (chiffres 6–10)'];
+familles.forEach(f => { const o = document.createElement('option'); o.textContent = f; $('famille').appendChild(o); });
+function liste(){
+  const box = $('presets'); box.innerHTML = '';
+  const aValider = $('famille').value.startsWith('À valider'), src = aValider ? H.presetsAValider : H.presets;
+  Object.keys(src).filter(n => aValider || fam(n) === $('famille').value).forEach(n => {
+    const b = document.createElement('button'); b.textContent = n.replace(/^(Lettre|Chiffre) /, '');
+    b.title = n + (src[n].note ? ' — ' + src[n].note : '');
+    b.onclick = () => { el.pose = JSON.parse(JSON.stringify(src[n])); $('note').textContent = src[n].note || ''; demarrer(); };
+    box.appendChild(b);
+  });
+}
+$('famille').onchange = liste; liste();
+// export : render() à la taille choisie (proportions de la boîte de la main)
+$('exporter').onclick = () => {
+  const b = H.bounds(el), T = +$('taille').value, w = b.w > b.h ? T : Math.round(T * b.w / b.h), h = b.w > b.h ? Math.round(T * b.h / b.w) : T;
+  const st = Object.assign({}, el.style, {largeurTrait: +$('trait').value, ombre: $('ombre').checked});
+  const c = H.render({pose: el.pose, cote: el.cote, orientation: el.orientation, w, h, style: st});
+  $('apercu').src = c.toDataURL('image/png'); $('apercu').hidden = false;
+  $('infoRendu').textContent = w + ' × ' + h + ' px, ' + Math.round(c.dureeRendu) + ' ms';
+};
+demarrer();
+window.pret = true;
+})().catch(e => { document.getElementById('msg').textContent = 'Erreur : ' + e.message; window.pret = String(e.stack || e); });
+</script>
+</body>
+</html>

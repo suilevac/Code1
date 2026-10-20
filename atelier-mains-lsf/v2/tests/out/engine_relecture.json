@@ -1,0 +1,88 @@
+{
+ "1_tuiles": {
+  "encre_hors_main": 0,
+  "ms": 13617
+ },
+ "2_dessus_dessous_fragments_echardes": {
+  "Main plate (B) dessus": [
+   0,
+   0
+  ],
+  "Main plate (B) dessous": [
+   0,
+   0
+  ],
+  "Main ouverte (5) dessus": [
+   0,
+   3
+  ],
+  "Main ouverte (5) dessous": [
+   0,
+   0
+  ],
+  "V (2) dessus": [
+   0,
+   0
+  ],
+  "V (2) dessous": [
+   0,
+   0
+  ],
+  "Pince dessus": [
+   0,
+   3
+  ],
+  "Pince dessous": [
+   0,
+   0
+  ],
+  "Poing serré dessus": [
+   0,
+   0
+  ],
+  "Poing serré dessous": [
+   0,
+   0
+  ]
+ },
+ "3_poing_MCP": {
+  "Poing (A)": "90/88/90/88",
+  "Poing serré": "90/88/90/88",
+  "Lettre S": "90/88/90/88",
+  "Pouce levé": "90/88/90/88",
+  "Poing pouce dedans": "85/85/85/85",
+  "Y": "90/88/90/0",
+  "Lettre I": "90/88/90/0",
+  "Lettre A": "90/88/90/88",
+  "solve depuis Main ouverte (5)": "90/90/90/90 (capsules 3.21 mm)",
+  "solve depuis Repos": "90/90/90/90 (capsules 3.21 mm)",
+  "solve depuis Dessin": "90/90/90/90 (capsules 3.21 mm)",
+  "solve depuis L": "90/90/90/90 (capsules 3.21 mm)",
+  "solve depuis Main plate (B)": "74/55/90/86 (capsules 2.62 mm)",
+  "solve depuis Quatre (4)": "90/72/58/83 (capsules 2.16 mm)"
+ },
+ "6_cle_ecart_pulpe_flanc_cm": 0.024,
+ "7_couleur_illisible_peau_mediane": [
+  0,
+  161,
+  154
+ ],
+ "7_ipd_ipp": {
+  "IPP 90 IPD 0": {
+   "constrain": 15.8,
+   "geste": 54,
+   "geste_Maj": 15.8
+  },
+  "IPP 90 IPD 90": {
+   "constrain": 83.5,
+   "geste": 69.3,
+   "geste_Maj": 83.5
+  },
+  "IPP 60 IPD 10": {
+   "constrain": 10,
+   "geste": 36,
+   "geste_Maj": 10
+  }
+ },
+ "erreurs_js": []
+}

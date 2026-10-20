@@ -749,3 +749,38 @@ python3 tests/balayage.py          # balayage anti-déformation (≈170 poses) �
 
 ## Publication
 La version en ligne est un artifact claude.ai privé, publié depuis Claude. Pour le mettre à jour, republier `dist/atelier-mains-lsf.html` (sans doctype : claude.ai l'ajoute) avec les capacités `db`, `user`, `downloads`.
+
+## v2 (palier « atelier de conception », octobre 2026) — lire `v2/PLAN.md` d'abord
+
+Nouvelle application dans `v2/`, publiée comme `dist/atelier-v2.html` ; la v1 (`source/`, `build.py`, `tests/`,
+`dist/atelier-mains-lsf*.html`) n'est PAS modifiée et reste la référence de ce qui précède dans ce fichier.
+
+- **Contrat** : `v2/PLAN.md` (assets M1 → moteur M2 → éditeur M3, personnage M4, intégration M5) ; un journal par
+  chantier (`v2/hand`, `v2/engine`, `v2/plate`, `v2/personnage`, `v2/integration` : `JOURNAL.md`), chaque réglage avec
+  sa mesure. Lire le journal du chantier avant d'y toucher.
+- **Main** : `v2/hand/hand_v2.glb` est une main DROITE (doigts +Y, paume +Z vers la caméra, pouce +X) ; la gauche est
+  le miroir x → −x à l'exécution, orientation [x, −y, −z, w], MÊME lumière (fixe dans le repère caméra : l'ombre ne se
+  reflète pas). Vérifié : pouce à droite en vue paume pour la D, IoU G / D retournée = 1,000.
+- **Construire** : `python3 v2/build.py` → un fichier de ≈ 5 Mo (three.js r128 et GLTFLoader vendus, GLB en base64 dans
+  `window.ATELIER_HAND_ASSETS`, polices OFL en base64), `node --check` de chaque script, refus de toute balise externe.
+- **Cache des mains** (plate.js) : rendu par le moteur dans un cache d'images ; estimation du coût en ms par mégapixel ;
+  un rendu prévu > 50 ms ne se fait jamais pendant un geste et un seul par image au repos ; une main sans image reçoit
+  d'abord un aperçu ; à dpr ≥ 1,75 l'écran est rendu sans sur-échantillonnage (÷ 2,6), l'export avec.
+- **Reprise v1** : `convertitV1` porte la caméra de la v1 (`vue: {pos, cible}`) dans l'orientation de la main
+  (q2 = Qcam⁻¹ · q1) — sans cela une configuration enregistrée « vue signeur » se rouvrait de face. La collection db
+  « configurations » de la v1 est lue (jamais écrite) ; la v2 écrit dans « projets ».
+- **Expression par étape** : le visage est un paramètre du signe qui change en cours de signe ; gabarit F = un référent
+  par étape, chacun son expression.
+- **Vérifier** : `v2/tests/integration_*.py` sur la page construite ; toujours regarder
+  `v2/tests/out/livraison_v2.png` (gabarit A à deux vraies mains, V (2) v1 / v2 face et dos ¾, poing, pince, ongles,
+  D et G côte à côte, gabarit F) avant de livrer.
+- **Architecture v2** : l'arbre des dossiers (hand, engine, plate, personnage, integration, tests, build.py) est dans
+  `README.md` § « v2 → Architecture » et dans `v2/PLAN.md` § « Architecture » ; chaque dossier a son `JOURNAL.md`.
+- **Bibliothèque db v2** : une ligne fait au plus 256 Kio sérialisés (contrat db 0.2.76) ; mesuré en OCTETS (Blob), seuil
+  250 000 ; au-delà, les photos partent par la capacité `assets` (id `/_blob/<id>` dans la ligne, relu en data: à
+  l'ouverture), sinon la planche est enregistrée sans elles avec un message. `invalid_argument` = ligne refusée (taille),
+  jamais un problème de droits (db n'a pas de code « droits »).
+- **Publication v2** : republier `dist/atelier-v2.html` avec les capacités `db`, `user`, `downloads`, `assets`.
+- **Ce qui reste (v2)** : voir `v2/PLAN.md` § « État d'avancement → Reste » — critique multi-regards puis publication,
+  temps à remesurer sur GPU (tous mesurés en rendu logiciel), validations de l'utilisateur (expressions, chiffres 6–10,
+  presets « à valider »), défauts résiduels du moteur listés dans `v2/engine/JOURNAL.md` et `v2/integration/JOURNAL.md`.

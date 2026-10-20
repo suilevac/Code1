@@ -62,10 +62,15 @@ function docNeuf(format){const f=FORMATS[format]?format:'16:9',[w,h]=FORMATS[f];
     theme:{couleur:INJS,police:'Atkinson Hyperlegible',corps:48},elements:[],assets:{}}}
 const fondDefaut=()=>({type:'uni',col:'#ffffff',col2:'#cceeec',angle:180,src:null,mode:'couvrir',ax:.5,ay:.5,opacite:1,voile:{col:'#000000',a:0},flou:0});
 const AH=()=>window.AtelierHand;
+const V1_PRESETS=['Dessin','Repos','Main plate (B)','Poing (A)','Poing serré','Index (1)','V (2)','Trois (3)','Quatre (4)','Main ouverte (5)','L','Y','C','O','Pince'];
+const famillePreset=n=>/^Lettre /.test(n)?'Alphabet':/^Chiffre /.test(n)?'Chiffres':V1_PRESETS.includes(n)?'Atelier v1':'Formes de base';
+const FAMILLES_PRESETS=[['Atelier v1',true],['Alphabet',false],['Chiffres',false],['Formes de base',false]];
 const poseDessin=()=>{const p=AH()&&AH().presets&&AH().presets['Dessin'];return p?clone(p):{}};
 const BASE=()=>({id:uid(),x:0,y:0,w:100,h:100,rot:0,flipH:false,flipV:false,opacite:1,verrou:false,visible:true,nom:'',groupes:[]});
 const DEFAUT={
-  main:()=>({cote:'D',pose:poseDessin(),orientation:[0,0,0,1],style:{peau:INJS,ongle:'#d6f2ee',trait:'#111111',largeurTrait:1.2,ombre:true},mouvement:null}),
+  // style de la main : les défauts du MOTEUR (M2, relecture adverse : ils divergeaient) — ongle #96DCD6 (aplat du brief),
+  // trait 0,8 % de la longueur de la main HL (≈ 1,5 mm sur la main réelle, unité tranchée dans PLAN.md)
+  main:()=>({cote:'D',pose:poseDessin(),orientation:[0,0,0,1],style:{peau:INJS,ongle:'#96dcd6',trait:'#111111',largeurTrait:0.8,ombre:true},mouvement:null}),
   texte:()=>({texte:'Texte',police:S.doc.theme.police,corps:S.doc.theme.corps,gras:false,couleur:'#1e1e1e',fond:null,align:'gauche',surlignages:[],contour:null,interligne:1.25,rayon:0,marge:12,surligneur:'#fff176'}),
   image:()=>({asset:null,rayon:0}),
   personnage:()=>({expression:'neutre',vue:'face',style:'A',couleurs:{peau:'#9fd8a8',vetement:'#5e4b8b',cape:'#f4f1ea',trait:'#14201f'}}),
@@ -163,15 +168,39 @@ function tailleCache(pxW,pxH,marge){let s=marge;const L=Math.max(pxW,pxH)*s;if(L
   return[Math.max(2,Math.round(pxW*s)),Math.max(2,Math.round(pxH*s))]}
 // le meilleur cache existant pour cette taille affichée (null si aucun ne convient) ; tous=true : n'importe lequel de l'identité
 function trouveCache(e,pxW,pxH,geste,tous){const L=HC.get(mainIdent(e));if(!L||!L.length)return null;const r0=pxW/pxH,need=Math.max(pxW,pxH);
-  let best=null,bs=1e9;L.forEach(en=>{if(Math.abs(en.w/en.h/r0-1)>.02)return;const r=need/Math.max(en.w,en.h);
+  let best=null,bs=1e9;L.forEach(en=>{if(Math.abs(en.w/en.h/r0-1)>.02||(en.apercu&&!tous))return;const r=need/Math.max(en.w,en.h);
     const plafond=Math.max(en.w,en.h)>=CACHE_MAX-1&&r>1;   // déjà au plafond : on ne fera pas mieux
     const ok=plafond||(r<=(geste?CACHE_GESTE:CACHE_REPOS)&&r>=1/CACHE_REDUIT);
     const score=(ok?0:100)+Math.abs(Math.log(r*CACHE_MARGE));if((ok||tous)&&score<bs){bs=score;best=en}});
   if(best)best.t=++hcT;return best}
-function rendCache(e,pxW,pxH){const A=AH();if(!A)return null;const[w,h]=tailleCache(pxW,pxH,CACHE_MARGE);
-  let c;try{c=A.render({pose:e.pose,cote:e.cote,orientation:e.orientation,w,h,scale:w/Math.max(1,e.w),style:e.style})}catch(err){console.warn('rendu main',err);return null}
-  if(!c)return null;S.rendus=(S.rendus||0)+1;const id=mainIdent(e),en={c,w:c.width,h:c.height,o:c.width*c.height*4,t:++hcT};
-  if(!HC.has(id))HC.set(id,[]);HC.get(id).push(en);hcOctets+=en.o;
+/* Coût réel du moteur (intégration M5, mesuré dans dist/atelier-v2.local.html, rendu logiciel, dpr 2) : 2 060 ms pour UNE
+   main de cache d'écran (≈ 330 × 470 px CSS × dpr 2 × 1,2 de marge, sur-échantillonnée ×2 dans le moteur) ; 3 980 ms de
+   gel après un zoom ; 1 200 ms au gabarit D. Le coût suit les pixels rendus (outil.md § 4.2), d'où une estimation en
+   ms par mégapixel (w · h · ss²), moyenne glissante, qui décide AVANT de rendre :
+   - au-delà de RENDU_LENT = 50 ms prévus (outil.md § 4.4), le rendu est « asynchrone » : jamais pendant un geste, une
+     seule main par image au repos (la planche est repeinte entre deux rendus, la page répond) ;
+   - une main qui n'a encore AUCUNE image reçoit d'abord un aperçu rendu en ≤ 50 ms prévus (taille réduite, ss 1), montré
+     tout de suite ; l'image juste suit à l'image suivante, puis l'aperçu est jeté ;
+   - à l'écran, dpr ≥ 1,75 : le moteur rend sans sur-échantillonnage (ss 1) — chaque pixel CSS a déjà 4 pixels physiques,
+     et le cache est réduit de 1,2 au dessin. Mesuré (V (2), 600 × 840) : 330 ms contre 870 (÷ 2,6), crénelage du contour
+     invisible à dpr 2 (gros plan ×2 regardé). L'export garde le sur-échantillonnage du moteur (ss 2). */
+const RENDU_LENT=50;
+// ms par mégapixel rendu (w · h · ss²). Valeur de départ PESSIMISTE (400 : entre le GPU, ≈ 150, et le rendu logiciel
+// mesuré ici, 1 430) : la toute première main reçoit un aperçu au lieu de geler la page ; la mesure corrige dès le 1er rendu
+let coutMpx=400;
+let coutMesure=false;function notaCout(ms,mpx){if(!(mpx>0))return;const k=ms/mpx;coutMpx=coutMesure?coutMpx*.7+k*.3:k;coutMesure=true}
+const ssEcran=()=>dpr()>=1.75?1:2;
+const prevoit=(w,h,ss)=>coutMpx*w*h*ss*ss/1e6;
+function rendCache(e,pxW,pxH,apercu){const A=AH();if(!A)return null;let[w,h]=tailleCache(pxW,pxH,CACHE_MARGE),ss=ssEcran();
+  if(apercu){const f=clamp(Math.sqrt(RENDU_LENT/Math.max(1e-6,prevoit(w,h,1))),.2,1);w=Math.max(2,Math.round(w*f));h=Math.max(2,Math.round(h*f));ss=1}
+  let c;const t0=performance.now();try{c=A.render({pose:e.pose,cote:e.cote,orientation:e.orientation,w,h,ss,scale:w/Math.max(1,e.w),style:e.style})}catch(err){console.warn('rendu main',err);return null}
+  if(!c)return null;const dt=performance.now()-t0;notaCout(dt,w*h*ss*ss/1e6);S.rendus=(S.rendus||0)+1;if(apercu)S.apercus=(S.apercus||0)+1;
+  S.dernierRendu={ms:Math.round(dt),w,h,ss,apercu:!!apercu};
+  const id=mainIdent(e),en={c,w:c.width,h:c.height,o:c.width*c.height*4,t:++hcT,apercu:!!apercu};
+  if(!HC.has(id))HC.set(id,[]);
+  // l'image juste remplace l'aperçu de la même main
+  if(!apercu){const L=HC.get(id);for(let i=L.length-1;i>=0;i--)if(L[i].apercu){hcOctets-=L[i].o;L.splice(i,1)}}
+  HC.get(id).push(en);hcOctets+=en.o;
   while(hcOctets>CACHE_OCTETS){let vk=null,vi=-1,vt=1e18;HC.forEach((l,k)=>l.forEach((x,i)=>{if(x!==en&&x.t<vt){vt=x.t;vk=k;vi=i}}));if(vk===null)break;
     const l=HC.get(vk);hcOctets-=l[vi].o;l.splice(vi,1);if(!l.length)HC.delete(vk)}
   return en}
@@ -179,9 +208,17 @@ function rendCache(e,pxW,pxH){const A=AH();if(!A)return null;const[w,h]=tailleCa
 function cacheAffiche(e,pxW,pxH){const en=trouveCache(e,pxW,pxH,true,true)||DERNIER.get(e.id);return en?en.c:null}
 const enGeste=()=>!!S.drag||S.mode==='marionnette'||performance.now()-(S.gesteT||0)<250;
 // rend les mains sales notées par drawDoc : une seule pendant un geste, toutes au repos ; vrai si quelque chose a changé
+// rend les mains sales notées par drawDoc. Un rendu prévu au-delà de RENDU_LENT ne se fait jamais pendant un geste (sauf
+// l'aperçu d'une main qui n'a encore rien à montrer) et au plus un par image au repos ; un rendu rapide : un par image
+// pendant un geste, tous au repos. Vrai si quelque chose a changé.
 function rendSales(){if(!SALES.size)return false;const geste=enGeste();let n=0;
-  for(const[id,s]of Array.from(SALES)){if(geste&&n>=1)break;SALES.delete(id);const e=parId(id);if(!e||e.type!=='main')continue;
-    if(trouveCache(e,s.w,s.h,geste))continue;if(rendCache(e,s.w,s.h))n++;else RATES.add(mainIdent(e))}
+  for(const[id,s]of Array.from(SALES)){const e=parId(id);if(!e||e.type!=='main'){SALES.delete(id);continue}
+    if(trouveCache(e,s.w,s.h,geste)){SALES.delete(id);continue}
+    const[w,h]=tailleCache(s.w,s.h,CACHE_MARGE),lourd=prevoit(w,h,ssEcran())>RENDU_LENT;
+    if(n>=1&&(geste||lourd))break;
+    if(lourd&&!cacheAffiche(e,s.w,s.h)){if(rendCache(e,s.w,s.h,true))n++;else{SALES.delete(id);RATES.add(mainIdent(e))}break}
+    if(lourd&&geste)continue;
+    SALES.delete(id);if(rendCache(e,s.w,s.h))n++;else RATES.add(mainIdent(e))}
   return n>0}
 // API (tests, outils) : exact = rendu à la taille exacte sans cache (export) ; sinon le cache d'écran, rendu au besoin
 function mainCache(e,pxW,pxH,exact){const A=AH();if(!A)return null;
@@ -229,7 +266,8 @@ function rrect(ctx,x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();if(r<=0){ctx
   ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
 const DESSINE={
   main(ctx,e,k,opts){const W=e.w*k,H=e.h*k;let c=null;
-    if(opts.export)c=mainCache(e,W,H,true);
+    if(opts.puppetId===e.id)return;                     // en marionnette, le canevas 3D posé sur l'objet la montre (M2)
+    if(opts.export)c=(opts.prerendus&&opts.prerendus.get(e.id))||mainCache(e,W,H,true);
     else{const pix=opts.pix||1,pw=W*pix,ph=H*pix,en=trouveCache(e,pw,ph,enGeste());
       if(en){c=en.c;DERNIER.set(e.id,en)}else{if(AH()&&!RATES.has(mainIdent(e)))SALES.set(e.id,{w:pw,h:ph});c=cacheAffiche(e,pw,ph)}}
     // le cache est dessiné « contenu » dans la boîte, à SES proportions : jamais d'étirement (écran = export)
@@ -351,7 +389,7 @@ function peint(){if(!S.doc)return;tailleCanvas();const r=dpr(),w=stage.clientWid
     ctx.save();ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=18;ctx.shadowOffsetY=4;ctx.fillStyle='#fff';ctx.fillRect(x,y,W,H);ctx.restore();
     if(P.fond.type==='transparent'){ctx.save();ctx.beginPath();ctx.rect(x,y,W,H);ctx.clip();ctx.fillStyle='#e6e6e6';ctx.fillRect(x,y,W,H);ctx.fillStyle='#c8c8c8';
       for(let j=0;j*8<H;j++)for(let i=0;i*8<W;i++)if((i+j)%2===0)ctx.fillRect(x+i*8,y+j*8,8,8);ctx.restore()}
-    const fond=()=>{ctx.save();ctx.translate(x,y);drawDoc(ctx,S.doc,S.zoom,{pix:r,editId:S.editId});ctx.restore()};
+    const fond=()=>{ctx.save();ctx.translate(x,y);drawDoc(ctx,S.doc,S.zoom,{pix:r,editId:S.editId,puppetId:S.mode==='marionnette'?S.puppetId:null});ctx.restore()};
     fond();S.dirty=false;
     // mains sales : rendues APRÈS le dessin (une par image pendant un geste, toutes au repos), puis la planche est repeinte
     if(rendSales()){ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cvP.width,cvP.height);ctx.setTransform(r,0,0,r,0,0);
@@ -400,6 +438,10 @@ function placeOverlays(){const c=cadre(),bar=$('ctx');
   if(c&&S.mode==='planche'&&!S.drag){const H=poignees(c);let x0=1e9,y0=1e9,x1=-1e9;H.slice(0,8).forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x)});
     bar.hidden=false;const bw=bar.offsetWidth,bh=bar.offsetHeight;
     bar.style.left=clamp((x0+x1)/2-bw/2,8,Math.max(8,stage.clientWidth-bw-8))+'px';bar.style.top=clamp(y0-bh-ROT_OFF-14,8,stage.clientHeight-bh-8)+'px'}
+  else if(S.mode==='marionnette'&&S.puppetId&&parId(S.puppetId)){const e=parId(S.puppetId),H=poignees({cx:e.x+e.w/2,cy:e.y+e.h/2,w:e.w,h:e.h,rot:e.rot});
+    let x0=1e9,y0=1e9,x1=-1e9;H.slice(0,8).forEach(p=>{x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x)});
+    bar.hidden=false;const bw=bar.offsetWidth,bh=bar.offsetHeight;
+    bar.style.left=clamp((x0+x1)/2-bw/2,8,Math.max(8,stage.clientWidth-bw-8))+'px';bar.style.top=clamp(y0-bh-14,8,Math.max(8,stage.clientHeight-bh-8))+'px'}
   else if(S.mode!=='texte')bar.hidden=true;
   const ed=$('texte');if(S.mode==='texte'&&S.editId){const e=parId(S.editId);if(e){ed.style.transform=transformCSS(e);ed.style.width=e.w*S.zoom+'px';ed.style.minHeight=e.h*S.zoom+'px';
     ed.classList.toggle('titre',!!e.titre);ed.style.fontSize=e.corps*S.zoom+'px';ed.style.fontFamily='"'+e.police+'", "Atkinson Hyperlegible", sans-serif';ed.style.fontWeight=e.gras?700:400;ed.style.color=e.couleur;
@@ -408,7 +450,10 @@ function placeOverlays(){const c=cadre(),bar=$('ctx');
     const hl=hauteurTexte(e)-2*e.marge;ed.style.display='block';ed.style.height=e.fond?e.h*S.zoom+'px':'auto';ed.style.paddingTop=y0Texte(e,e.h,e.marge,hl)*S.zoom+'px';
     ed.style.webkitTextStroke=e.contour?(e.corps*S.zoom*.05)+'px '+e.contour:'';
     const bar2=$('ctx');bar2.hidden=false;const[sx,sy]=ecran(e.x,e.y);bar2.style.left=clamp(sx,8,stage.clientWidth-bar2.offsetWidth-8)+'px';bar2.style.top=clamp(sy-bar2.offsetHeight-12,8,stage.clientHeight-40)+'px'}}
-  const pp=$('puppet');if(S.mode==='marionnette'&&S.puppetId){const e=parId(S.puppetId);if(e){const[sx,sy]=ecran(e.x,e.y);pp.style.left=Math.round(Math.min(sx+e.w*S.zoom+8,stage.clientWidth-270))+'px';pp.style.top=Math.round(clamp(sy,8,stage.clientHeight-220))+'px'}}}
+  // marionnette EN PLACE (contrat M2 → M3) : l'hôte couvre exactement le cadre de l'objet, avec sa rotation et son miroir
+  // (comme l'éditeur de texte) ; la marionnette lit le pointeur en coordonnées locales (offsetX)
+  const pp=$('puppet');if(S.mode==='marionnette'&&S.puppetId){const e=parId(S.puppetId);if(e){pp.style.left='0px';pp.style.top='0px';
+    pp.style.transform=transformCSS(e);pp.style.width=e.w*S.zoom+'px';pp.style.height=e.h*S.zoom+'px'}}}
 function quitteModes(){if(S.mode==='texte')finTexte();if(S.mode==='marionnette')finMarionnette();S.mode='planche'}
 
 /* ======================================================================
@@ -654,9 +699,11 @@ function surligne(couleur){const e=parId(S.editId);if(!e)return;let o=offsetsSel
    ====================================================================== */
 function marionnette(id){const e=parId(id);if(!e||e.type!=='main'||e.verrou)return;const A=AH();if(!A||!A.puppet){message('Moteur de main absent.',true);return}
   quitteModes();S.mode='marionnette';S.puppetId=id;hist.begin();const host=$('puppet');host.hidden=false;
-  S.puppet=A.puppet(host,e,pose=>{const el=parId(S.puppetId);if(!el)return;el.pose=pose;ajusteProportionMain(el);S.dirty=true;S.dirtyUI=true;demande()});
+  S.puppetBarre=S.puppetBarre||h('div',{className:'puppet-barre'});panneaux();placeOverlays();   // l'hôte prend le cadre AVANT la marionnette
+  S.puppet=A.puppet(host,e,(pose,extra)=>{const el=parId(S.puppetId);if(!el)return;el.pose=pose;if(extra&&extra.orientation)el.orientation=extra.orientation;
+    ajusteProportionMain(el);S.dirty=true;S.dirtyUI=true;demande()},{onFin:()=>{finMarionnette();invalide()},barreHote:S.puppetBarre,boutonFin:false});
   host.onpointerup=()=>{hist.commit();hist.begin()};panneaux();placeOverlays()}
-function finMarionnette(){try{if(S.puppet&&S.puppet.stop)S.puppet.stop()}catch(e){}S.puppet=null;$('puppet').hidden=true;$('puppet').onpointerup=null;S.mode='planche';S.puppetId=null;hist.commit();invalide();panneaux()}
+function finMarionnette(){try{if(S.puppet&&S.puppet.stop)S.puppet.stop()}catch(e){}S.puppet=null;$('puppet').hidden=true;$('puppet').style.transform='';$('puppet').onpointerup=null;S.mode='planche';S.puppetId=null;hist.commit();invalide();panneaux()}
 
 /* ======================================================================
    Clavier (hors champs de saisie et contenteditable)
@@ -792,7 +839,13 @@ const PROPS={
     B.appendChild(h('div',{className:'field'},h('span',{className:'label'},'Côté'),seg([['D','Droite'],['G','Gauche']],e.cote,v=>{if(v!==e.cote){S.sel=[e.id];convertitCote()}})));
     B.appendChild(h('p',{className:'note'},'« Gauche » est le miroir 3D de la droite (même lumière) ; le bouton Miroir ⇄ ne fait qu\'un miroir d\'image.'));
     B.appendChild(h('div',{className:'actions'},h('button',{className:'btn primary',on:{click:()=>marionnette(e.id)}},'Modifier la pose…'),h('button',{className:'btn',on:{click:copiePose}},'Copier la pose'),h('button',{className:'btn',disabled:!posePP,on:{click:collePose}},'Coller la pose')));
-    if(A&&A.presets){const pr=h('div',{className:'presets'});Object.keys(A.presets).forEach(n=>pr.appendChild(h('button',{on:{click:()=>act(()=>{e.pose=clone(A.presets[n]);ajusteProportionMain(e)})}},n)));
+    // 77 configurations du moteur (intégration M5) : rangées par famille comme dans engine/test.html — en une seule liste,
+    // les 15 de la v1 se perdaient parmi l'alphabet et les formes de base. Le titre de chaque bouton porte la note
+    // « à valider par l'utilisateur » du moteur (presetsInfo) ; les chiffres 6–10 restent hors de la planche (CLAUDE.md).
+    if(A&&A.presets){const pr=h('div',{});const info=A.presetsInfo||{};
+      FAMILLES_PRESETS.forEach(([fam,ouvert])=>{const noms=Object.keys(A.presets).filter(n=>famillePreset(n)===fam);if(!noms.length)return;
+        const box=h('div',{className:'presets'});noms.forEach(n=>{const b=h('button',{title:n+(info[n]&&info[n].note?' — '+info[n].note:''),on:{click:()=>act(()=>{e.pose=clone(A.presets[n]);ajusteProportionMain(e)})}},n.replace(/^(Lettre|Chiffre) /,''));b.dataset.preset=n;box.appendChild(b)});
+        const d=h('details',{className:'famille'},h('summary',{},fam+' ('+noms.length+')'),box);if(ouvert)d.open=true;pr.appendChild(d)});
       B.appendChild(h('div',{className:'field'},h('span',{className:'label'},'Configuration de départ'),pr))}
     // orientation : 4 vues (quaternions autour de Y / X) + libre par curseurs
     const Q={face:[0,0,0,1],dos:[0,1,0,0],profil:[0,Math.SQRT1_2,0,Math.SQRT1_2],dessus:[Math.SQRT1_2,0,0,Math.SQRT1_2]};
@@ -887,7 +940,7 @@ function ctxBar(){const b=$('ctx');b.innerHTML='';const els=selection();
       h('button',{className:'btn',title:'Surligner la sélection',on:{mousedown:ev=>ev.preventDefault(),click:()=>surligne(e.surligneur)}},'Surligner'),h('button',{className:'btn',on:{mousedown:ev=>ev.preventDefault(),click:()=>surligne(null)}},'Ôter'),
       ...[['gauche','⇤'],['centre','↔'],['droite','⇥']].map(([m,l])=>h('button',{className:'btn',on:{mousedown:ev=>ev.preventDefault(),click:()=>{e.align=m;invalide();placeOverlays()}}},l)),
       h('button',{className:'btn primary',on:{mousedown:ev=>ev.preventDefault(),click:()=>{quitteModes();invalide()}}},'Terminer'));return}
-  if(S.mode==='marionnette'){b.append(h('button',{className:'btn primary',on:{click:()=>{quitteModes();invalide()}}},'Terminer la pose'));return}
+  if(S.mode==='marionnette'){if(S.puppetBarre)b.append(S.puppetBarre);b.append(h('button',{className:'btn primary',on:{click:()=>{quitteModes();invalide()}}},'Terminer la pose'));return}
   if(!els.length)return;const e=els[0],multi=els.length>1;
   if(!multi&&e.type==='main')b.append(h('button',{className:'btn primary',on:{click:()=>marionnette(e.id)}},'Modifier la pose…'),h('button',{className:'btn',on:{click:convertitCote}},'→ main '+(e.cote==='D'?'gauche':'droite')),h('button',{className:'btn',disabled:!posePP,on:{click:collePose}},'Coller la pose'));
   if(!multi&&e.type==='texte')b.append(h('button',{className:'btn',on:{click:()=>editeTexte(e.id)}},'Modifier le texte'),h('button',{className:'btn',on:{click:()=>act(()=>{e.gras=!e.gras;ajusteTexte(e)})}},'G'));
@@ -939,6 +992,22 @@ const GABARITS={
       L.push(texteGab({texte:'Image « sens » (glisse une image ici)',invite:'Image « sens » (glisse une image ici)',cadre:true,valign:'bas',x:m,y:H*.58,w:W*.46,h:H-H*.58-m,corps:th.corps*.6,align:'centre',fond:'#f3f6f5',rayon:14,theme:{corps:.6},nom:'Sens'}));
       L.push(texteGab({texte:'SIGNE',x:W*.54,y:m,w:W-W*.54-m,h:H*.14,corps:th.corps*1.5,gras:true,align:'centre',fond:mixe(th.couleur,.8),rayon:16,theme:{corps:1.5,fond:'accent'},nom:'Signe'}));
       L.push(mainGab('D',W*.77,H*.14+2*m,H*.6));return L}},
+  // F : le visage est un paramètre du signe et il CHANGE en cours de signe (personnage.md § 4.5 : « réglable par étape
+  // clé, pas global ») — un référent par étape, chacun avec son expression (Propriétés → Visage), sa main posée à l'ancre
+  // des mains du personnage (+1,00 HL sous le creux du cou, côté droit du signeur = gauche de l'image). 3 cases : à 4, le
+  // référent tombait sous 160 px de buste à l'écran (repli en style B, personnage.md § 4.6).
+  F:{nom:'F · Étapes avec référent',format:'16:9',desc:'bandeau mot, 3 étapes : un référent par étape (expression réglable), sa main et une flèche',
+    cree(d){const W=d.planche.w,H=d.planche.h,m=W*.04,th=d.theme,L=[],B=persHL();
+      L.push(texteGab({texte:'MOT',x:m,y:m,w:W-2*m,h:H*.14,corps:th.corps*1.5,gras:true,align:'centre',fond:mixe(th.couleur,.8),rayon:16,theme:{corps:1.5,fond:'accent'},nom:'Bannière'}));
+      const y0=H*.14+2*m,hc=H-y0-m,gap=m*.9,wc=(W-2*m-2*gap)/3,EXPR=['neutre','neutre','neutre'];
+      for(let i=0;i<3;i++){const x=m+i*(wc+gap),g='g'+uid();
+        const case_=texteGab({texte:String(i+1),x,y:y0,w:wc,h:hc,corps:th.corps*.8,gras:true,align:'gauche',fond:'#f3f6f5',valign:'haut',rayon:14,theme:{corps:.8},nom:'Étape '+(i+1),couleur:th.couleur});case_.groupes=[g];
+        const HL=Math.min(wc*.9/B.w,hc*.94/B.h),p=nouvelElement('personnage',{expression:EXPR[i]});p.h=HL*B.h;p.w=HL*B.w;p.x=x+(wc-p.w)/2;p.y=y0+hc-p.h-hc*.02;
+        p.nom='Référent étape '+(i+1);p.groupes=[g];
+        const cx=p.x+p.w/2+(B.cx-B.w/2)*HL,cou=p.y+B.cou*HL,mn=mainGab('D',cx-.45*HL,cou+.3*HL,1.6*HL);mn.nom='Main étape '+(i+1);mn.groupes=[g];
+        L.push(case_,p,mn);
+        if(i<2){const f=nouvelElement('fleche',{couleur:th.couleur,theme:{couleur:'accent'},nom:'Flèche '+(i+1)});f.x=x+wc-gap*.3;f.y=y0+hc*.45;f.w=gap*1.6;f.h=hc*.06;L.push(f)}}
+      return L}},
 };
 function gabarit(k){const G=GABARITS[k];if(!G)return;quitteModes();if(S.doc.elements.length)brouillonSauve();act(()=>{const th=clone(S.doc.theme),assets=S.doc.assets;const d=docNeuf(G.format);d.theme=th;d.assets=assets;d.nom=S.doc.nom;S.doc=d;S.doc.elements=G.cree(d);S.gabaritNom=k});
   selectionne([]);ajuste();message('Gabarit '+k+' posé : chaque objet reste modifiable. Ctrl+Z ramène la planche d\'avant.')}
@@ -948,6 +1017,7 @@ function gabaritsPane(){const G=$('gabarits');G.innerHTML='';for(const k in GABA
        k==='B'?'<ellipse cx="50%" cy="36%" rx="22%" ry="30%" fill="#00a19a"/><rect x="4%" y="72%" width="92%" height="24%" fill="#cceeec"/>':
        k==='C'?'<rect x="4%" y="4%" width="62%" height="9%" fill="#cceeec"/><ellipse cx="27%" cy="30%" rx="14%" ry="15%" fill="#00a19a"/><rect x="54%" y="18%" width="42%" height="34%" fill="#eef2f1"/><rect x="4%" y="60%" width="92%" height="36%" fill="#f3f6f5"/>':
        k==='D'?'<rect x="4%" y="4%" width="92%" height="14%" fill="#cceeec"/>'+[0,1,2,3].map(i=>'<rect x="'+(4+i*23.5)+'%" y="24%" width="21%" height="72%" fill="#eef2f1"/><ellipse cx="'+(14.5+i*23.5)+'%" cy="62%" rx="7%" ry="25%" fill="#00a19a"/>').join(''):
+       k==='F'?'<rect x="4%" y="4%" width="92%" height="14%" fill="#cceeec"/>'+[0,1,2].map(i=>'<rect x="'+(4+i*31.3)+'%" y="24%" width="29.4%" height="72%" fill="#eef2f1"/><rect x="'+(10+i*31.3)+'%" y="52%" width="17%" height="42%" rx="3%" fill="#5e4b8b"/><circle cx="'+(18.6+i*31.3)+'%" cy="40%" r="5%" fill="#9fd8a8"/><ellipse cx="'+(15+i*31.3)+'%" cy="66%" rx="3.5%" ry="11%" fill="#00a19a"/>').join(''):
        '<rect x="4%" y="4%" width="46%" height="14%" fill="#cceeec"/><rect x="4%" y="26%" width="46%" height="30%" fill="#eef2f1"/><rect x="4%" y="58%" width="46%" height="38%" fill="#f3f6f5"/><rect x="54%" y="4%" width="42%" height="14%" fill="#cceeec"/><ellipse cx="77%" cy="60%" rx="14%" ry="30%" fill="#00a19a"/>')+'</svg>';
     // relecture M3 : un clic remplaçait sans prévenir une planche pleine (texte « mon travail » perdu)
     G.appendChild(h('button',{title:g.desc,on:{click:()=>{if(S.doc.elements.length&&!confirm('Remplacer la planche par le gabarit « '+g.nom+' » ?\n\nCtrl+Z ramène la planche actuelle, et son brouillon reste dans l\'onglet Projet.'))return;gabarit(k)}}},h('div',{html:svg}),h('b',{},g.nom),h('small',{},FORMATS[g.format][2])))}}
@@ -979,9 +1049,17 @@ async function exporte(o){o=o||{};const k0=Math.min(o.k||expK,echelleMax());cons
   const k=echelleExport(k0,P);if(!k)throw new Error('planche trop grande pour ce navigateur');
   if(k<k0)m.textContent='Ce navigateur ne peut pas produire '+Math.round(P.w*k0)+' × '+Math.round(P.h*k0)+' ; export à ×'+k;
   const W=Math.round(P.w*k),H=Math.round(P.h*k);
-  prog.style.width='15%';m.textContent='Rendu…';await FONTS_PRETES;await document.fonts.ready;
+  prog.style.width='5%';m.textContent='Rendu…';await FONTS_PRETES;await document.fonts.ready;
+  // mains rendues UNE PAR UNE avant la composition, la barre et le message avançant entre deux (relecture M5 : un export A3
+  // bloquait la page 35 s en rendu logiciel sans rien dire ; chaque main reste un bloc synchrone — WebGL sur le fil
+  // principal — mais l'utilisateur voit « main 2 / 3 » et la barre bouger)
+  const mains=S.doc.elements.filter(e=>e.visible&&e.type==='main'),pre=new Map();
+  for(let i=0;i<mains.length;i++){m.textContent='Rendu des mains : '+(i+1)+' / '+mains.length+'…';prog.style.width=Math.round(5+45*i/mains.length)+'%';
+    await new Promise(r=>setTimeout(r,20));const e=mains[i];   // une tâche de 20 ms : le navigateur repeint (pas de rAF : onglet caché = export figé)
+    pre.set(e.id,mainCache(e,e.w*k,e.h*k,true))}
+  prog.style.width='50%';m.textContent='Composition…';await new Promise(r=>setTimeout(r,0));
   const c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d',{colorSpace:'srgb'});ctx.imageSmoothingQuality='high';
-  drawDoc(ctx,S.doc,k,{export:true,transparent:!!o.transparent});
+  drawDoc(ctx,S.doc,k,{export:true,transparent:!!o.transparent,prerendus:pre});
   prog.style.width='55%';m.textContent='Encodage…';await new Promise(r=>setTimeout(r,10));
   let blob=await new Promise(r=>c.toBlob(r,o.webp?'image/webp':'image/png',.92));if(!blob)throw new Error('encodage impossible');
   if(!o.webp&&o.embarque!==false){blob=await pngAvecProjet(blob)}
@@ -1033,7 +1111,7 @@ function valideElement(o,assets){if(!o||typeof o!=='object'||!DEFAUT[o.type])ret
   switch(o.type){
     case'main':e.cote=vIn(o.cote,['D','G'],'D');if(!POSE_OK(o.pose))return null;e.pose=vPose(o.pose);
       e.orientation=Array.isArray(o.orientation)&&o.orientation.length===4&&o.orientation.every(v=>typeof v==='number'&&isFinite(v))?o.orientation.slice():[0,0,0,1];
-      const st=o.style||{};e.style={peau:vHex(st.peau,INJS),ongle:vHex(st.ongle,'#d6f2ee'),trait:vHex(st.trait,'#111111'),largeurTrait:vNum(st.largeurTrait,0,4,1.2),ombre:vBool(st.ombre,true)};
+      const st=o.style||{};e.style={peau:vHex(st.peau,INJS),ongle:vHex(st.ongle,'#96dcd6'),trait:vHex(st.trait,'#111111'),largeurTrait:vNum(st.largeurTrait,0,4,0.8),ombre:vBool(st.ombre,true)};
       e.mouvement=o.mouvement&&Array.isArray(o.mouvement.cles)?{cles:o.mouvement.cles.slice(0,12).filter(c=>c&&POSE_OK(c.pose)).map(c=>({pose:vPose(c.pose),orientation:Array.isArray(c.orientation)&&c.orientation.length===4&&c.orientation.every(v=>typeof v==='number'&&isFinite(v))?c.orientation.slice():[0,0,0,1],fl:c.fl&&typeof c.fl==='object'?{style:vIn(c.fl.style,FL_STYLES,'droite'),sens:c.fl.sens<0?-1:1,double:vBool(c.fl.double,false),couleur:vHex(c.fl.couleur,'#1e1e1e')}:undefined}))}:null;break;
     case'texte':e.texte=vStr(o.texte,5000,'');e.police=vStr(o.police,60,e.police);e.corps=vNum(o.corps,6,400,e.corps);e.gras=vBool(o.gras,false);e.couleur=vHex(o.couleur,'#1e1e1e');
       e.fond=typeof o.fond==='string'&&/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(o.fond)?o.fond:null;e.align=vIn(o.align,['gauche','centre','droite'],'gauche');
@@ -1050,17 +1128,30 @@ function valideElement(o,assets){if(!o||typeof o!=='object'||!DEFAUT[o.type])ret
 const FL_STYLES=['droite','courbe','demi','vague','zigzag','boucle'];
 function flV1(f){if(!f||typeof f!=='object')return undefined;const st=f.style==='arc'?'courbe':vIn(f.style,FL_STYLES,'droite');
   return{style:st,sens:f.sens<0?-1:1,double:vBool(f.double,false),couleur:vHex(f.col||f.couleur,'#1e1e1e')}}
-function poseV1(p){const f=p.f||{};const o={pouce:Object.assign({av:0,rap:0,mcp:0,ip:0},f.pouce||{})};['index','majeur','annulaire','auriculaire'].forEach(k=>o[k]=Object.assign({mcp:0,pip:0,dip:0,ab:0},f[k]||{}));return vPose(o)}
-function convertitV1(o){const d=docNeuf('16:9');const P=d.planche;const mains=o.version<8?[o.gauche?'G':'D']:(o.mains==='DG'?['D','G']:[vIn(o.mains,['D','G'],'D')]);
+function poseV1(p){const A=AH();if(A&&A.depuisV1)try{return vPose(A.depuisV1(p).pose)}catch(e){}const f=p.f||{};const o={pouce:Object.assign({av:0,rap:0,mcp:0,ip:0},f.pouce||{})};['index','majeur','annulaire','auriculaire'].forEach(k=>o[k]=Object.assign({mcp:0,pip:0,dip:0,ab:0},f[k]||{}));return vPose(o)}
+// v1 : la CAMÉRA tournait autour de la main (o.vue = {pos, cible}, OrbitControls, haut +Y) et l'orientation de la main
+// (pose.q) restait dans le repère du monde ; la v2 garde une caméra fixe de face (+Z) et porte tout dans l'orientation de
+// la main : q2 = Qcam⁻¹ · q1 (Qcam = lookAt(pos → cible)). Même repère de main dans les deux versions (doigts +Y, paume
+// +Z, pouce +X pour la droite ; gauche = miroir x → −x, quaternion [x, −y, −z, w]). Vérifié en image par
+// tests/integration_v1.py : une configuration enregistrée en v1 vue « signeur » ou de ¾ se rouvre sous le même angle.
+function vueV1(o){const V=o&&o.vue,T=window.THREE;if(!V||!T||!Array.isArray(V.pos)||V.pos.length!==3)return null;
+  const n=v=>Array.isArray(v)&&v.length===3&&v.every(x=>typeof x==='number'&&isFinite(x));if(!n(V.pos))return null;
+  const eye=new T.Vector3(V.pos[0],V.pos[1],V.pos[2]),cible=n(V.cible)?new T.Vector3(V.cible[0],V.cible[1],V.cible[2]):new T.Vector3();
+  if(!(eye.distanceTo(cible)>1e-6))return null;
+  return new T.Quaternion().setFromRotationMatrix(new T.Matrix4().lookAt(eye,cible,new T.Vector3(0,1,0))).invert()}
+function qV1(qc,q){q=Array.isArray(q)&&q.length===4&&q.every(v=>typeof v==='number'&&isFinite(v))?q.slice(0,4):[0,0,0,1];if(!qc)return q;
+  const r=qc.clone().multiply(new window.THREE.Quaternion(q[0],q[1],q[2],q[3]));return[r.x,r.y,r.z,r.w]}
+function convertitV1(o){const d=docNeuf('16:9');const QC=vueV1(o);const P=d.planche;const mains=o.version<8?[o.gauche?'G':'D']:(o.mains==='DG'?['D','G']:[vIn(o.mains,['D','G'],'D')]);
   const D=o.decor||{},F=D.fond||{},R=D.ref||{};
   if(F.type==='uni'||F.type==='degrade'){P.fond.type=F.type;P.fond.col=vHex(F.col,'#ffffff');P.fond.col2=mixe(P.fond.col,.55)}else P.fond.type='transparent';
   if(R.style&&R.style!=='aucun'){const p=nouvelElement('personnage');p.h=P.h*.92*vNum(R.t,.6,1.7,1);p.w=p.h*persHL().w/persHL().h;p.x=(P.w-p.w)/2+vNum(R.x,-60,60,0)*P.w/200;p.y=P.h*.04+vNum(R.h,-60,60,0)*P.h/200;d.elements.push(p)}
   mains.forEach((c,i)=>{let pose,cles=null;
     if(o.version<8){if(o.mode==='mouvement'&&o.debut&&o.fin){cles=[o.debut,o.fin];pose=o.fin}else pose=o.pose}
     else{const set=o.pose||{};pose=set[c];if(Array.isArray(o.cles)&&o.cles.length>1){cles=o.cles.map(s=>s[c]).filter(Boolean);if(!pose)pose=cles[cles.length-1]}}
-    if(!pose||!pose.f)return;const e=nouvelElement('main',{cote:c});e.pose=poseV1(pose);e.orientation=Array.isArray(pose.q)&&pose.q.length===4?pose.q.slice():[0,0,0,1];
-    if(cles&&cles.length>1)e.mouvement={cles:cles.map((k,j)=>({pose:poseV1(k),orientation:Array.isArray(k.q)?k.q.slice(0,4):[0,0,0,1],fl:flV1((o.cles&&o.cles[j]&&o.cles[j].fl)||o.fl)}))};   // segFl(i) de la v1 : la flèche du segment i → i+1 est portée par la clé i
-    e.h=P.h*.38;e.w=e.h*mainBoite(e).w/mainBoite(e).h;e.x=P.w/2+(c==='D'?-1:1)*P.w*.14-e.w/2+(i?0:0);e.y=P.h*.42;d.elements.push(e)});
+    if(!pose||!pose.f)return;const e=nouvelElement('main',{cote:c});e.pose=poseV1(pose);e.orientation=qV1(QC,pose.q);
+    if(cles&&cles.length>1)e.mouvement={cles:cles.map((k,j)=>({pose:poseV1(k),orientation:qV1(QC,k.q),fl:flV1((o.cles&&o.cles[j]&&o.cles[j].fl)||o.fl)}))};   // segFl(i) de la v1 : la flèche du segment i → i+1 est portée par la clé i
+    let sg=c==='D'?-1:1;if(QC&&Array.isArray(pose.pos)&&pose.pos.length===3){const v=new window.THREE.Vector3(pose.pos[0],pose.pos[1],pose.pos[2]).applyQuaternion(QC);if(mains.length>1&&Math.abs(v.x)>.5)sg=Math.sign(v.x)}
+    e.h=P.h*.38;e.w=e.h*mainBoite(e).w/mainBoite(e).h;e.x=P.w/2+sg*P.w*.14-e.w/2;e.y=P.h*.42;d.elements.push(e)});
   d.nom=vStr(o.nom,80,'');return d}
 function charge(o){if(!o||typeof o!=='object')throw new Error('JSON illisible');const rejets=[];let d;
   if([6,7,8].indexOf(o.version)>=0){d=convertitV1(o)}
@@ -1077,9 +1168,17 @@ function charge(o){if(!o||typeof o!=='object')throw new Error('JSON illisible');
   // tout est validé : on écrit
   quitteModes();S.doc=d;IMG.clear();videCache();for(const k in d.assets)chargeAsset(k,d.assets[k]);$('nom').value=d.nom||'';hist.undo.length=0;hist.redo.length=0;hist.pending=null;
   selectionne([]);ajuste();panneaux();renderBrouillons();
+  // mouvement v1 (JSON v7 / v8 à étapes) : rangé dans la main (e.mouvement), qui montre sa dernière étape ; la relecture M5
+  // l'a jugé caché (« la planche ne signale pas qu'un mouvement est caché »). Les mains concernées sont sélectionnées —
+  // le panneau Propriétés montre alors « Éclater en étapes » avec le nombre d'étapes importé — et noteMouvement() le dit.
+  const mv=d.elements.filter(e=>e.type==='main'&&e.mouvement&&e.mouvement.cles&&e.mouvement.cles.length>1);
+  if(mv.length)selectionne(mv.map(e=>e.id));
   if(rejets.length)message(rejets.length+' élément(s) invalide(s) écarté(s) : '+rejets.join(', '),true);return d}
+function noteMouvement(d){const mv=(d&&d.elements||[]).filter(e=>e.type==='main'&&e.mouvement&&e.mouvement.cles&&e.mouvement.cles.length>1);
+  if(!mv.length)return'';const n=Math.max(...mv.map(e=>e.mouvement.cles.length));
+  return' Mouvement de '+n+' étapes : la main montre la dernière ; Propriétés → « Éclater en étapes » pour les poser côte à côte avec leurs flèches.'}
 async function ouvreFichier(file){if(S.doc.elements.length)await brouillonSauve();try{if(/\.png$/i.test(file.name)||file.type==='image/png'){const o=projetDuPng(await file.arrayBuffer());if(o){charge(o);message('Projet rouvert depuis le PNG.');return}importeImages([file]);return}
-    const o=JSON.parse(await file.text());charge(o);message('Projet chargé.')}catch(e){message('Impossible d\'ouvrir : '+(e.message||'format inattendu'),true)}}
+    const o=JSON.parse(await file.text());const d=charge(o);message('Projet chargé.'+noteMouvement(d))}catch(e){message('Impossible d\'ouvrir : '+(e.message||'format inattendu'),true)}}
 $('fichierProjet').onchange=()=>{const f=$('fichierProjet').files[0];if(f)ouvreFichier(f);$('fichierProjet').value=''};
 $('bOuvrir').onclick=()=>$('fichierProjet').click();
 $('bJsonExport').onclick=async()=>{const d=serialise();const blob=new Blob([JSON.stringify(d)],{type:'application/json'});const nom=(d.nom||nomFichier())+'.atelier.json';
@@ -1118,19 +1217,58 @@ async function renderBrouillons(){const box=$('brouillons');if(!box)return;const
 $('bBrouillon').onclick=async()=>reprendBrouillon(await brouillonLit(true));
 let db=null,items=[];
 (async()=>{try{if(!window.claude||!window.claude.use)throw 0;db=await window.claude.use('db');if(!db)throw 0;$('libNote').textContent='Projets partagés avec ceux qui ouvrent cet atelier.';
-  db.collection('projets').orderBy('modifieLe','desc').onSnapshot(s=>{items=s.docs;renderLib()},e=>{$('lib').innerHTML='<div class="empty">La bibliothèque ne répond plus ('+esc(e.code||'')+'). Recharge la page.</div>'})}
+  db.collection('projets').orderBy('modifieLe','desc').onSnapshot(s=>{items=s.docs;renderLib()},e=>{$('lib').innerHTML='<div class="empty">La bibliothèque ne répond plus ('+esc(e.code||'')+'). Recharge la page.</div>'});
+  // la bibliothèque de la v1 (même artifact republié : même base db) : collection « configurations », lignes
+  // {nom, note, etat: JSON v6–v8, creeLe} ; lue seulement — on n'y écrit ni n'y efface rien
+  db.collection('configurations').orderBy('creeLe','desc').onSnapshot(s=>{itemsV1=s.docs;renderLibV1()},()=>{itemsV1=[];renderLibV1()})}
   catch(e){db=null;$('libNote').textContent='Bibliothèque indisponible hors claude.ai : utilise « Exporter le projet (.json) » et « Ouvrir… ».';$('lib').innerHTML='<div class="empty">Hors claude.ai, le brouillon local et les fichiers .json gardent ton travail.</div>'}})();
+let itemsV1=[];
+function renderLibV1(){const L=$('libV1');if(!L)return;$('libV1Bloc').hidden=!itemsV1.length;if(!itemsV1.length){L.innerHTML='';return}
+  L.innerHTML=itemsV1.map(d=>{const v=d.data()||{},date=v.creeLe?new Date(v.creeLe).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}):'';
+    return'<div class="item"><b>'+esc(v.nom||'Sans nom')+'</b><div class="actions"><button class="btn small" data-v1="'+esc(d.id)+'">Ouvrir</button></div><small>'+esc((v.note?v.note+' · ':'')+'v1'+(date?' · '+date:''))+'</small></div>'}).join('');
+  L.querySelectorAll('[data-v1]').forEach(b=>b.onclick=async()=>{const d=itemsV1.find(x=>x.id===b.dataset.v1);if(!d)return;const v=d.data()||{};
+    if(S.doc.elements.length)await brouillonSauve();try{const d=charge(v.etat);S.dbId=null;$('nom').value=String(v.nom||'').slice(0,80);message('Configuration v1 « '+(v.nom||'')+' » ouverte : enregistre-la pour en faire un projet.'+noteMouvement(d))}catch(e){message('Configuration v1 illisible : '+e.message,true)}})}
 function renderLib(){const L=$('lib');if(!items.length){L.innerHTML='<div class="empty">Aucun projet enregistré. Donne un nom à la planche et clique sur « Enregistrer ».</div>';return}
   L.innerHTML=items.map(d=>{const v=d.data(),date=v.modifieLe?new Date(v.modifieLe).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'';
     return'<div class="item"><b>'+esc(v.nom||'Sans nom')+'</b><div class="actions"><button class="btn small" data-load="'+d.id+'">Charger</button><button class="btn small danger" data-del="'+d.id+'">Suppr.</button></div><small>'+esc((v.etat&&v.etat.elements?v.etat.elements.length:0)+' objets')+(date?' · '+date:'')+'</small></div>'}).join('');
-  L.querySelectorAll('[data-load]').forEach(b=>b.onclick=async()=>{const d=items.find(x=>x.id===b.dataset.load);if(S.doc.elements.length)await brouillonSauve();try{charge(d.data().etat);S.dbId=d.id;message('Projet chargé.')}catch(e){message('Impossible de charger : '+e.message,true)}});
+  L.querySelectorAll('[data-load]').forEach(b=>b.onclick=async()=>{const d=items.find(x=>x.id===b.dataset.load);if(S.doc.elements.length)await brouillonSauve();try{charge(await etatDeDb(d.data().etat));S.dbId=d.id;message('Projet chargé.')}catch(e){message('Impossible de charger : '+e.message,true)}});
   L.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Confirmer';setTimeout(()=>{b.dataset.armed='';b.textContent='Suppr.'},3000);return}
     b.disabled=true;try{await db.collection('projets').doc(b.dataset.del).delete()}catch(e){b.disabled=false;message('Suppression impossible.',true)}})}
+// Limite de la plateforme (contrat db 0.2.76, db.d.ts « DOCUMENT BODIES … at most 256 KiB serialized ») : une ligne de
+// plus de 262 144 OCTETS est refusée (invalid_argument). Mesurée en octets UTF-8 (Blob), pas en caractères ; marge de
+// 12 144 octets pour l'enveloppe de la plateforme → seuil 250 000. Relecture M5 : une photo JPEG de 301 Ko collée donnait
+// une ligne de 502 844 octets, refusée, avec un faux message de droits.
+const DB_MAX=250000,octets=o=>new Blob([JSON.stringify(o)]).size;
+// images envoyées par la capability assets : id d'asset de la planche → id d'asset claude.ai (une image n'est envoyée
+// qu'une fois par visite : la clé d'un asset de la planche ne change jamais de contenu)
+const ENVOYES=new Map();
+function blobDeData(u){const m=/^data:([^;,]+);base64,(.*)$/.exec(u);if(!m)return null;const b=atob(m[2]),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new Blob([a],{type:m[1]})}
+// → {etat, note} : la ligne tient sous DB_MAX ; d'abord les images par la capability assets (si accordée), sinon sans elles
+async function etatPourDb(nom){const etat=serialise();if(octets({nom,etat,modifieLe:0})<=DB_MAX)return{etat,note:''};
+  let assets=null;try{assets=window.claude&&window.claude.use?await window.claude.use('assets'):null}catch(e){assets=null}
+  if(assets){try{for(const k in etat.assets){const v=etat.assets[k];if(!/^data:/.test(v))continue;
+        if(!ENVOYES.has(k)){const bl=blobDeData(v);if(!bl)continue;const r=await assets.upload(bl,{type:bl.type});ENVOYES.set(k,r.id)}
+        etat.assets[k]='/_blob/'+ENVOYES.get(k)}
+      if(octets({nom,etat,modifieLe:0})<=DB_MAX)return{etat,note:' (images rangées à part dans la bibliothèque)'}}
+    catch(e){/* envoi refusé (quota, type) : repli ci-dessous */}}
+  const sans=serialise();sans.assets={};sans.elements=sans.elements.filter(e=>e.type!=='image');if(sans.planche.fond.type==='image'){sans.planche.fond.type='uni';sans.planche.fond.src=null}
+  if(octets({nom,etat:sans,modifieLe:0})>DB_MAX)return{etat:null,note:''};
+  return{etat:sans,note:' sans ses images (trop lourdes pour la bibliothèque : 256 Ko par projet ; garde le .json)'}}
+// relit une ligne : les images rangées par assets (« /_blob/<id> ») redeviennent des data: — le document de la planche
+// (export, .json, brouillon) reste autoporteur
+async function etatDeDb(etat){if(!etat||!etat.assets)return etat;const o=Object.assign({},etat,{assets:Object.assign({},etat.assets)});let manque=0;
+  for(const k in o.assets){const v=o.assets[k];if(typeof v!=='string'||!/^\/_blob\/[0-9a-f]{32}$/.test(v))continue;
+    try{const r=await fetch(v);if(!r.ok)throw 0;const bl=await r.blob();o.assets[k]=await new Promise((ok,ko)=>{const f=new FileReader();f.onload=()=>ok(f.result);f.onerror=ko;f.readAsDataURL(bl)});ENVOYES.set(k,v.slice(7))}
+    catch(e){delete o.assets[k];manque++}}
+  if(manque)message(manque+' image(s) de ce projet ne sont pas disponibles ici.',true);return o}
 async function enregistreDb(){const nom=$('nom').value.trim();if(!nom){message('Donne un nom au projet (en haut).',true);$('nom').focus();return}
   if(!db){await brouillonSauve();message('Hors claude.ai : brouillon local enregistré ; exporte le .json pour le garder.');return}
-  const etat=serialise();let txt=JSON.stringify(etat);if(txt.length>900000){etat.assets={};etat.elements=etat.elements.filter(e=>e.type!=='image');if(etat.planche.fond.type==='image'){etat.planche.fond.type='uni';etat.planche.fond.src=null}message('Images trop lourdes pour la bibliothèque : enregistrées sans elles (garde le .json).',true)}
-  try{const col=db.collection('projets');const row={nom,etat,modifieLe:Date.now()};if(S.dbId)await col.doc(S.dbId).set(row);else{const r=await col.add(row);S.dbId=r&&r.id}message('« '+nom+' » enregistré.')}
-  catch(e){message(e&&e.code==='invalid_argument'?'Tu n\'as pas les droits d\'écriture sur cette bibliothèque.':'Enregistrement impossible, réessaie.',true)}}
+  const{etat,note}=await etatPourDb(nom);
+  if(!etat){message('Projet trop lourd pour la bibliothèque (256 Ko au plus) : exporte-le en .json.',true);return}
+  try{const col=db.collection('projets');const row={nom,etat,modifieLe:Date.now()};if(S.dbId)await col.doc(S.dbId).set(row);else{const r=await col.add(row);S.dbId=r&&r.id}message('« '+nom+' » enregistré'+note+'.',!!note&&/sans/.test(note))}
+  // codes du contrat db 0.2.76 : pas de code « droits » (db.d.ts : « deliberately NO permission-denied ») ;
+  // invalid_argument = ligne refusée (taille, profondeur), quota_exceeded = bibliothèque pleine
+  catch(e){const c=e&&e.code;message(c==='invalid_argument'?'Projet refusé par la bibliothèque (trop lourd ou trop imbriqué) : exporte-le en .json.':c==='quota_exceeded'?'La bibliothèque est pleine : supprime d\'anciens projets ou exporte celui-ci en .json.':c==='resource_exhausted'?'Bibliothèque occupée : réessaie dans un instant.':'Enregistrement impossible, réessaie.',true)}}
 $('bEnregistrer').onclick=enregistreDb;
 
 /* ======================================================================
@@ -1153,5 +1291,5 @@ window.addEventListener('resize',()=>invalide());
 // surface de mise au point et de test (scripts Playwright v2/tests/plate_*.py) : rien de tout cela n'est utilisé par l'interface
 window.__plate={S,doc:()=>S.doc,ajoute,selectionne,parId,hist,act,drawDoc,exporte,charge,serialise,docNeuf,gabarit,duplique,miroir,convertitCote,copiePose,collePose,eclate,supprime,ordre,groupe,degroupe,aligne,verrou,
   ajusteBoiteFleche,flechePts,poigneesFleche,decaleSurlignages,persHL,depose,echelleMax,collePresse,editeTexte,finTexte,surligne,marionnette,finMarionnette,importeImages,definirFond,detacherFond,ajuste,zoomVers,invalide,peint,mainCache,lignesTexte,projetDuPng,pngAvecProjet,brouillonSauve,brouillonLit,appliqueTheme,
-  nouveau,brouillonsListe,reprendBrouillon,ecran,planche,bbox,FORMATS,sonde,echelleExport,GABARITS,poseV1,convertitV1,nomFichier,IMG,HC,cacheOctets:()=>hcOctets,videCache};
+  nouveau,brouillonsListe,reprendBrouillon,renderLibV1,setItemsV1:L=>{itemsV1=L;renderLibV1()},ecran,planche,bbox,FORMATS,sonde,echelleExport,GABARITS,poseV1,convertitV1,noteMouvement,nomFichier,IMG,HC,cacheOctets:()=>hcOctets,videCache,salesRestantes:()=>SALES.size,coutMpx:()=>coutMpx,RENDU_LENT};
 })();

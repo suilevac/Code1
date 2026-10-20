@@ -110,3 +110,54 @@ régler chaque constante. Plusieurs « évidences » y sont démenties par la me
 
 Vert INJS `#00a19a`, relevé sur le logo de lsfdico.injs-metz.fr. C'est la seule chose qui
 change par rapport aux dessins d'origine.
+
+---
+
+## v2 — l'atelier de conception (en cours de validation)
+
+La v2 est une application NOUVELLE, construite à côté de la v1 (dans `v2/`), qui ne touche à rien de la v1.
+Une page autonome : `dist/atelier-v2.html` (pour claude.ai) et `dist/atelier-v2.local.html` (à ouvrir dans un navigateur).
+
+![planche de livraison v2](v2/tests/out/livraison_v2.png)
+
+**Ce qui change** : la main est un volume anatomique (maillage MakeHuman CC0 retaillé aux proportions de l'auteur,
+26 610 sommets, ongles mesurés), rendue en 3D (aplat vert INJS, ombre franche, contour noir, ongles clairs), 77
+configurations (les 15 de la v1, l'alphabet, les chiffres 0–5, des formes de base) ; et autour d'elle un éditeur de
+planche « comme Canva » : plusieurs mains (droites ou gauches, miroir 3D), textes surlignés, images de l'ordinateur en
+objet ou en fond, flèches, un référent (buste sans bras, quatre expressions), gabarits (A bannière + définitions,
+B carte, C fiche A4, D 4 étapes, E bilingue, F étapes avec un référent par étape), export PNG ×1/×2/×3 à fond
+transparent possible, projet JSON (aussi caché dans le PNG), brouillon local, bibliothèque claude.ai.
+
+### Architecture
+```
+v2/
+  hand/        M1 — la main : pipeline Python (MakeHuman → retaille → Catmull-Clark → ongles → poids) → hand_v2.glb + .json
+  engine/      M2 — moteur Three.js r128 : pose, skinning DQ + correctifs, toon 4 passes, marionnette, contacts, presets
+  plate/       M3 — éditeur de planche (document v9, calques, texte, images, gabarits, export, projet, bibliothèque)
+  personnage/  M4 — le référent (chemins SVG → Path2D, expressions, vue de dos)
+  build.py     assemble la page unique (three.js vendu, GLB en base64, polices OFL en base64 : aucun CDN)
+  tests/       Playwright : engine_*, plate_*, personnage, integration_* ; images dans tests/out/
+  */JOURNAL.md chaque chantier : ce qui a été mesuré, essayé, écarté
+```
+
+### Construire et vérifier
+```bash
+python3 v2/build.py                                   # → dist/atelier-v2.html + .local.html (≈ 5 Mo), node --check
+python3 <run_rendu.py> v2/tests/integration_parcours.py   # parcours complet sur la page construite
+python3 <run_rendu.py> v2/tests/integration_lateralite.py # main D/G, miroir 3D, orientation
+python3 <run_rendu.py> v2/tests/integration_v1.py         # reprise des configurations v1, db, downloads
+python3 <run_rendu.py> v2/tests/integration_cache.py      # cache des mains au vrai coût de rendu
+python3 <run_rendu.py> v2/tests/integration_livraison.py  # → v2/tests/out/livraison_v2.png
+```
+(`run_rendu.py` sert three.js en local pour la page v1 ; les tests v2 n'en ont besoin que pour les captures v1.)
+
+### Publier
+Republier `dist/atelier-v2.html` (sans doctype : claude.ai l'ajoute) avec les capacités `db`, `user`, `downloads` et
+`assets`. Republiée sur l'artifact de la v1, la v2 lit ses « configurations » (onglet Projet → « Configurations de la
+v1 ») et enregistre ses planches dans « projets ». Une ligne de la bibliothèque ne peut pas dépasser 256 Kio (contrat
+`db`) : une planche plus lourde envoie ses photos par `assets` et ne garde dans la ligne que leur identifiant ; sans
+`assets` (personne qui ne peut pas modifier l'artifact), elle est enregistrée sans ses photos, et la page le dit.
+
+### Ce qui reste
+Voir `v2/PLAN.md` § « État d'avancement » : critique multi-regards, validation par l'utilisateur (expressions,
+chiffres 6–10, presets « à valider »), temps à remesurer sur sa machine (mesurés en rendu logiciel).

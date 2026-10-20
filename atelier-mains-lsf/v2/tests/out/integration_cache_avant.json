@@ -1,0 +1,54 @@
+{
+ "pret_s": 1.11,
+ "D_attente_s": 1.41,
+ "D_total_s": 1.43,
+ "D_rendus": 1,
+ "D_images": {
+  "images": 14,
+  "max_ms": 1200,
+  "p95_ms": 33
+ },
+ "cout_rendu_ms": 2059,
+ "coin": {
+  "rendus_pendant": 0,
+  "images_pendant": {
+   "images": 144,
+   "max_ms": 50,
+   "p95_ms": 17
+  },
+  "rendus_apres": 1,
+  "images_apres": {
+   "images": 11,
+   "max_ms": 17,
+   "p95_ms": 17
+  },
+  "attente_apres_s": 0.21,
+  "agrandi": 690
+ },
+ "deplacer": {
+  "rendus": 0,
+  "images": {
+   "images": 138,
+   "max_ms": 33,
+   "p95_ms": 17
+  }
+ },
+ "zoom": {
+  "rendus_pendant": 0,
+  "images_pendant": {
+   "images": 46,
+   "max_ms": 33,
+   "p95_ms": 17
+  },
+  "zoom": 0.8560370679133837,
+  "rendus_total": 1,
+  "images_apres": {
+   "images": 13,
+   "max_ms": 3983,
+   "p95_ms": 17
+  },
+  "attente_apres_s": 4.2
+ },
+ "cache_Mo": 14.7,
+ "erreurs": []
+}

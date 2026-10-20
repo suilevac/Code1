@@ -57,7 +57,12 @@ nav.outils hr{width:100%;border:0;border-top:1px solid var(--line);margin:4px 0}
 #texte{position:absolute;z-index:3;left:0;top:0;transform-origin:0 0;outline:none;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;caret-color:var(--accent);box-shadow:0 0 0 2px var(--accent);background:transparent;margin:0;line-height:1.25}
 #texte[hidden]{display:none}
 #texte mark{color:inherit}
-#puppet{position:absolute;z-index:4;left:0;top:0;transform-origin:0 0;background:color-mix(in srgb,var(--panel) 94%,transparent);border:2px solid var(--accent);border-radius:10px;padding:8px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+/* hôte de la marionnette du moteur (M2) : posé EXACTEMENT sur le cadre de la main (taille et transformation données par
+   placeOverlays), sans marge ni bordure ni fond ; la barre de la marionnette va dans la barre contextuelle (#ctx) */
+#puppet{position:absolute;z-index:4;left:0;top:0;transform-origin:0 0;padding:0;border:0;background:none;overflow:visible;outline:1px dashed color-mix(in srgb,var(--accent) 60%,transparent)}
+#ctx .puppet-barre{display:contents}
+/* le bouchon (stub_hand.js, tests de M3 sans moteur) remplit l'hôte de curseurs : il garde son panneau */
+#puppet.stub-puppet{background:color-mix(in srgb,var(--panel) 94%,transparent);border:2px solid var(--accent);border-radius:10px;padding:8px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.25);min-width:260px;min-height:200px}
 #puppet[hidden]{display:none}
 .stub-puppet-title{font-size:.72rem;font-weight:700;color:var(--accent);margin-bottom:4px}
 .stub-puppet-grid{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:.7rem;color:var(--muted);align-items:center}
@@ -150,3 +155,8 @@ dialog h2{font-family:var(--f-display);font-size:1.1rem;margin:0 0 8px}
 }
 /* texte « titre » : 1re ligne en gras pendant l'édition, comme au canvas */
 #texte.titre::first-line{font-weight:700}
+
+/* familles de configurations (intégration M5) */
+details.famille{margin:4px 0}
+details.famille summary{cursor:pointer;font-weight:700;font-size:.85rem;color:var(--muted);padding:3px 0}
+details.famille[open] summary{color:var(--ink)}

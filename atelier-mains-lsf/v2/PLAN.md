@@ -33,6 +33,7 @@ toon v2, démo `rendu/demo_v2.py`), `modeles.md` (MakeHuman hm08, bpy, pipeline 
 v2/
   PLAN.md                 ce fichier
   build.py                assemble dist/atelier-v2.html (three.js r128 vendu + engine + plate + personnage + assets b64)
+  integration/JOURNAL.md  M5 — intégration : mesures du build, du cache, de la latéralité, de la reprise v1, du parcours
   hand/                   M1 — la main : pipeline Python (bpy, numpy) → assets
     build_hand.py         MakeHuman hm08 → coupe poignet → retaille (proportions utilisateur) → Catmull-Clark ×2 →
                           régions (ongles, palmures, éminences) → poids → export
@@ -95,10 +96,16 @@ AtelierHand.ready : Promise<void>                       // assets chargés, shad
 AtelierHand.render({pose, cote:'D'|'G', orientation:[qx,qy,qz,qw], w, h, scale, style}) → HTMLCanvasElement
       // image RGBA transparente de w×h px : la main posée, vue par une caméra orthographique de face (la rotation
       // est portée par `orientation`), rendue en aplat + ombre + contour + traits + ongles ; `style` = {peau, ongle,
-      // trait, largeurTrait (en % de la hauteur), ombre:boolean}
+      // trait, largeurTrait, ombre:boolean, plis:boolean}
+      // Tranché au chantier M2 (relecture adverse) : `largeurTrait` est en % de HL, la longueur de la main (19 cm) —
+      // indépendant du cadrage ; défaut 0,8 (≈ 1,5 mm sur la main réelle) ; ongle par défaut #96DCD6 ; plate.js prend les
+      // mêmes défauts. `scale` est facultatif et ignoré : la main remplit w × h selon bounds() (l'échelle vient de w, h).
+      // Au-delà de 4096 px de cible (w·2 ou h·2), rendu par tuiles, identique au rendu d'une seule tuile.
 AtelierHand.bounds({pose, cote, orientation}) → {w, h} en cm   // boîte de la main posée, pour dimensionner l'objet
-AtelierHand.puppet(canvasHost, element, onChange)   // mode marionnette EN PLACE sur un élément de la planche
-AtelierHand.presets : { nom → pose }                 // au moins les 15 de la v1 + l'alphabet et les chiffres LSF
+AtelierHand.puppet(canvasHost, element, onChange, options)   // mode marionnette EN PLACE sur un élément de la planche :
+      // l'hôte couvre le cadre de l'objet (e.w·zoom × e.h·zoom, transformé comme lui) ; options {onFin, barreHote, boutonFin}
+AtelierHand.presets : { nom → pose }                 // au moins les 15 de la v1 + l'alphabet et les chiffres LSF 0–5
+      // (au-delà de 5, CLAUDE.md : les formes ne sont PAS devinées — propositions dans AtelierHand.presetsAValider)
 AtelierHand.solve(poseDepart, poseCible) → pose      // contacts (pas d'interpénétration), butées, couplages
 AtelierHand.mirror(pose) → pose
 ```
@@ -139,3 +146,35 @@ crâne nu, pas de bras, pas de turban/taches/crocs), B comme style simple et rep
 M1 main (assets) et M3 éditeur et M4 personnage en parallèle → M2 moteur (dès qu'un premier GLB existe) → intégration
 (`v2/build.py`, `dist/atelier-v2.html`) → critique multi-regards → publication. Chaque jalon laisse des fichiers sur
 disque et une planche de contrôle ; l'orchestrateur commet après chaque jalon.
+
+## État d'avancement (19 octobre 2026, fin du chantier M5 — intégration)
+
+### Fait
+| jalon | livrable | preuve |
+|---|---|---|
+| M1 main | hand_v2.glb (droite, 20 os, 26 610 sommets, 8 correctifs) + hand_v2.json | hand/JOURNAL.md, checks/ |
+| M2 moteur | engine.js + shaders.js : render (tuiles), bounds, puppet en place, 77 presets, solve, mirror, depuisV1 | engine/JOURNAL.md (11 tests verts) |
+| M3 éditeur | plate.js / plate.css / index.html : calques, texte surligné, images, fonds, gabarits A–F, export ×1–×3, projet v9, brouillons, db | plate/JOURNAL.md (4 tests verts) |
+| M4 personnage | personnage.js : direction A/B, 4 expressions, vue dos, ancres | personnage/JOURNAL.md |
+| M5 intégration | `v2/build.py` → `dist/atelier-v2.html` (artifact, sans doctype) et `dist/atelier-v2.local.html` : **5,10 Mo**, 8 scripts `node --check` OK, aucun CDN | integration/JOURNAL.md |
+| M5 | bouchon remplacé par le moteur ; cache des mains au vrai coût (rendus > 50 ms jamais pendant un geste, un par image au repos, aperçu d'abord ; gel après zoom 3 983 → 1 000 ms en logiciel) | tests/integration_cache.py |
+| M5 | latéralité (D = GLB sans miroir, pouce à droite en vue paume), miroir 3D (IoU 1,000), même lumière | tests/integration_lateralite.py |
+| M5 | reprise v1 : JSON v6–v8 (vue caméra v1 portée dans l'orientation), collection db « configurations » lue, downloads | tests/integration_v1.py |
+| M5 | expression du référent par étape : gabarit F (un référent par étape) | tests/out/livraison_v2.png § 6 |
+| M5 | parcours complet sur la page construite (20 contrôles, 0 erreur JS, temps mesurés) | tests/integration_parcours.py |
+| M5 | planche de livraison regardée | tests/out/livraison_v2.png |
+| M5 correction | relecture adverse : bibliothèque db à la limite réelle de 256 Kio (octets, photos par `assets`, messages par code) ; frange d'ongle en champ continu (escalier 10,0 → 1,3 px à 4 600 px) ; creux fermés jugés contre le plan tangent (plus de plaques d'ombre déchirées) ; miettes au seuil proportionnel à l'échelle, petits jours bouchés ; coupe de l'avant-bras fermée d'un trait dans toutes les vues ; plis arrêtés avant une partie posée devant eux et sans crochet ; mouvement v1 signalé ; poing serré au pouce couché sur les P2 ; progression de l'export | integration/JOURNAL.md « correction après relecture adverse » |
+
+### Reste
+- **Critique multi-regards puis publication** (jalons suivants) : republier `dist/atelier-v2.html` comme artifact claude.ai
+  avec les capacités `db`, `user`, `downloads` (comme la v1) et `assets` (photos des planches de plus de 256 Kio). Si c'est le MÊME artifact que la v1, la bibliothèque v1
+  (« configurations ») reste lisible ; un nouvel artifact a une base vide.
+- Temps mesurés en rendu LOGICIEL seulement (swiftshader) : un rendu de main d'écran à dpr 2 bloque encore ≈ 1,1 s une
+  fois le geste fini (≈ 0,1–0,4 s attendus sur GPU) ; à remesurer sur la machine de l'utilisateur.
+- À faire valider par l'utilisateur : fonction des sourcils levés / froncés, antennes, chiffres 6–10 (`presetsAValider`),
+  20 presets notés « à valider », la planche de livraison.
+- Défauts résiduels du moteur (engine/JOURNAL.md « Ce qui reste », integration/JOURNAL.md) : échardes rattachées (≈ 30
+  sur 104 vues, rien de détaché), tunnel du poing de profil (trait du pli thénar), petite plaque d'ombre d'un repli de
+  peau sur la P2 de l'auriculaire replié (poing vu de ¾ paume, visible aux grands rendus). Un rendu de main reste un
+  bloc synchrone (WebGL sur le fil principal) : l'export montre sa progression main par main, sans découpage en tuiles
+  sur plusieurs images.

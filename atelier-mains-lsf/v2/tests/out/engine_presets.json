@@ -1,0 +1,3812 @@
+{
+ "Dessin": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 7,
+    "rap": 6,
+    "mcp": -2,
+    "ip": -14,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 9.000000341676447,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -9.299999908428637,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -41.79999856103815,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.0,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 0,
+  "paire_capsules": ""
+ },
+ "Repos": {
+  "pose": {
+   "poignet": {
+    "flex": -15,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 25,
+    "rap": 10,
+    "mcp": 10,
+    "ip": 15,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 18,
+    "pip": 28,
+    "dip": 14,
+    "ab": 5,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 22,
+    "pip": 33,
+    "dip": 16,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 27,
+    "pip": 38,
+    "dip": 18,
+    "ab": -3,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 32,
+    "pip": 42,
+    "dip": 20,
+    "ab": -8,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.0,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 0,
+  "paire_capsules": ""
+ },
+ "Main plate (B)": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 24.5,
+    "rap": 35,
+    "mcp": 30,
+    "ip": 10,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -4.394801110029221,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": -1.9375,
+    "pip": 0,
+    "dip": 0,
+    "ab": 5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 6.583179473876953,
+    "rot": 0
+   }
+  },
+  "peau_mm": 1.7,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 1.75,
+  "paire_capsules": "index/majeur"
+ },
+ "Poing (A)": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 25.5,
+    "rap": 31.1932373046875,
+    "mcp": 10,
+    "ip": 5,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.98310208320618,
+    "pip": 104.98028576374054,
+    "dip": 69.98685717582703,
+    "ab": -5.498967349529266,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.831771850585938,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.87,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.92,
+  "paire_capsules": "index/majeur"
+ },
+ "Poing serré": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 29,
+    "rap": 30,
+    "mcp": 29,
+    "ip": 28.5,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.98310208320618,
+    "pip": 104.98028576374054,
+    "dip": 69.98685717582703,
+    "ab": -5.498967349529266,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.831771850585938,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.87,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.92,
+  "paire_capsules": "index/majeur"
+ },
+ "Index (1)": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 34.5,
+    "rap": 36,
+    "mcp": 31.5,
+    "ip": 31,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "V (2)": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 35,
+    "rap": 45,
+    "mcp": 38.5,
+    "ip": 12.5,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 18,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -18,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Trois (3)": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 14,
+    "rap": 2,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -4.3953857421875,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.98228669166565,
+    "pip": 104.97933447360992,
+    "dip": 69.98622298240662,
+    "ab": -5.498917520046234,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.823654174804688,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.4,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Quatre (4)": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 30,
+    "rap": 42,
+    "mcp": 45,
+    "ip": 30,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 12,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -10,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -30,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.0,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 0,
+  "paire_capsules": ""
+ },
+ "Main ouverte (5)": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 8,
+    "rap": -12,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 14,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -10,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -32,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.0,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 0,
+  "paire_capsules": ""
+ },
+ "L": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": -28,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Y": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": -28,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 90,
+    "pip": 104,
+    "dip": 70,
+    "ab": -5.5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -30,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.96,
+  "paire_peau": "majeur/annulaire",
+  "capsules_mm": 2.92,
+  "paire_capsules": "index/majeur"
+ },
+ "C": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0.4,
+   "pouce": {
+    "av": 45,
+    "rap": 5,
+    "mcp": 10,
+    "ip": 10,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 35,
+    "pip": 45,
+    "dip": 30,
+    "ab": -4.180499754846096,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 31.82423185557127,
+    "pip": 45,
+    "dip": 30,
+    "ab": -2,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 35,
+    "pip": 45,
+    "dip": 30,
+    "ab": 6,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 35,
+    "pip": 45,
+    "dip": 30,
+    "ab": 4.85000050363665,
+    "rot": 0
+   }
+  },
+  "peau_mm": 1.75,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 1.48,
+  "paire_capsules": "index/majeur"
+ },
+ "O": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0.6,
+   "pouce": {
+    "av": 38,
+    "rap": 15.5,
+    "mcp": 33.5,
+    "ip": 16,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 62,
+    "pip": 62,
+    "dip": 25,
+    "ab": -2,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 57,
+    "pip": 62,
+    "dip": 42,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 60,
+    "pip": 64,
+    "dip": 42,
+    "ab": 2,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 62,
+    "pip": 66,
+    "dip": 44,
+    "ab": -2.9799991078436516,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.24,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 1.92,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Pince": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 45,
+    "rap": 9,
+    "mcp": 47.5,
+    "ip": 16,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 66,
+    "pip": 63,
+    "dip": 15,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": -1.9375,
+    "pip": 0,
+    "dip": 0,
+    "ab": 4,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 6.583179473876953,
+    "rot": 0
+   }
+  },
+  "peau_mm": 1.53,
+  "paire_peau": "annulaire/auriculaire",
+  "capsules_mm": 1.91,
+  "paire_capsules": "annulaire/auriculaire"
+ },
+ "Main plate": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": 0,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -4.394801110029221,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": -4.9375,
+    "pip": 0,
+    "dip": 0,
+    "ab": 5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 5.583179473876953,
+    "rot": 0
+   }
+  },
+  "peau_mm": 1.83,
+  "paire_peau": "annulaire/auriculaire",
+  "capsules_mm": 1.98,
+  "paire_capsules": "annulaire/auriculaire"
+ },
+ "Main plate hyperétendue": {
+  "pose": {
+   "poignet": {
+    "flex": -45,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": 0,
+    "mcp": 0,
+    "ip": -10,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": -20,
+    "pip": 0,
+    "dip": 0,
+    "ab": -6,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": -20,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": -20,
+    "pip": 0,
+    "dip": 0,
+    "ab": 6,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": -25,
+    "pip": 0,
+    "dip": 0,
+    "ab": 6,
+    "rot": 0
+   }
+  },
+  "peau_mm": 1.16,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 1.74,
+  "paire_capsules": "annulaire/auriculaire"
+ },
+ "Moufle": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 15,
+    "rap": -15,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -4.394801110029221,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": -4.9375,
+    "pip": 0,
+    "dip": 0,
+    "ab": 5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 5.583179473876953,
+    "rot": 0
+   }
+  },
+  "peau_mm": 1.83,
+  "paire_peau": "annulaire/auriculaire",
+  "capsules_mm": 1.98,
+  "paire_capsules": "annulaire/auriculaire"
+ },
+ "Angle droit": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": 0,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 0,
+    "dip": 0,
+    "ab": 2.400000307508803,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 90,
+    "pip": 0,
+    "dip": 0,
+    "ab": -3.449999917585773,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 90,
+    "pip": 0,
+    "dip": 0,
+    "ab": -11.099998704934332,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.58,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.87,
+  "paire_capsules": "index/majeur"
+ },
+ "Bec de canard fermé": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 30.4,
+    "rap": 42,
+    "mcp": 6,
+    "ip": -15,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 87,
+    "pip": 5,
+    "dip": 0,
+    "ab": 1.9200002972585097,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 83,
+    "pip": 5,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 80,
+    "pip": 5,
+    "dip": 0,
+    "ab": -1.3999999267429102,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 80,
+    "pip": 5,
+    "dip": 0,
+    "ab": -8.199998848830518,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.16,
+  "paire_peau": "majeur/annulaire",
+  "capsules_mm": 2.74,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Bec de canard ouvert": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 45,
+    "rap": 10,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 65,
+    "pip": 10,
+    "dip": 5,
+    "ab": -1.5999997779103081,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 65,
+    "pip": 10,
+    "dip": 5,
+    "ab": -2,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 65,
+    "pip": 10,
+    "dip": 5,
+    "ab": 1.6750000595213859,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 65,
+    "pip": 10,
+    "dip": 5,
+    "ab": -3.8499990646747957,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.25,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.33,
+  "paire_capsules": "index/majeur"
+ },
+ "Bec de canard rond": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0.6,
+   "pouce": {
+    "av": 45,
+    "rap": 20,
+    "mcp": 20,
+    "ip": 25,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 50,
+    "pip": 50,
+    "dip": 35,
+    "ab": -3.9999998291617755,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 47.442641109228134,
+    "pip": 50,
+    "dip": 35,
+    "ab": -3,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 50,
+    "pip": 50,
+    "dip": 35,
+    "ab": 4,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 50,
+    "pip": 50,
+    "dip": 35,
+    "ab": 0.5000007194809264,
+    "rot": 0
+   }
+  },
+  "peau_mm": 1.86,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 1.57,
+  "paire_capsules": "index/majeur"
+ },
+ "Cône": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 1,
+   "pouce": {
+    "av": 45,
+    "rap": 30,
+    "mcp": 20,
+    "ip": 20,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 60,
+    "pip": 50,
+    "dip": 30,
+    "ab": -2.2948812431822496,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 58.105536923976615,
+    "pip": 50,
+    "dip": 30,
+    "ab": -2,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 60,
+    "pip": 50,
+    "dip": 30,
+    "ab": 2.7000000549428185,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 60,
+    "pip": 50,
+    "dip": 30,
+    "ab": -2.3999991366228883,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.1,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 1.88,
+  "paire_capsules": "index/majeur"
+ },
+ "Bec d’oie fermé": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 31,
+    "rap": 42,
+    "mcp": 5,
+    "ip": -11,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 0,
+    "dip": 0,
+    "ab": 2.400000307508803,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.98310208320618,
+    "pip": 104.98028576374054,
+    "dip": 69.98685717582703,
+    "ab": -5.498967349529266,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.831771850585938,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.58,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.87,
+  "paire_capsules": "index/majeur"
+ },
+ "Bec d’oie ouvert": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 45,
+    "rap": 10,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 60,
+    "pip": 20,
+    "dip": 10,
+    "ab": -2.2948812431822496,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 58.105536923976615,
+    "pip": 20,
+    "dip": 10,
+    "ab": -2,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.98315818957053,
+    "pip": 104.98035122116562,
+    "dip": 69.98690081411041,
+    "ab": -5.4989707782515325,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.832330420613289,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Bec d’oiseau fermé": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 24.5,
+    "rap": 28.5,
+    "mcp": 16.5,
+    "ip": -7,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 58,
+    "pip": 40,
+    "dip": 37,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Bec d’oiseau ouvert": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 10,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 50,
+    "pip": 20,
+    "dip": 10,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Bec d’oiseau rond": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 37.8671875,
+    "rap": 18.27734375,
+    "mcp": 28.27734375,
+    "ip": 16.37109375,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 64,
+    "pip": 58,
+    "dip": 22,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Pince fermée": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 20.5,
+    "rap": 24,
+    "mcp": 15,
+    "ip": -3,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 55,
+    "pip": 55,
+    "dip": 28,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -6,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -16,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.08,
+  "paire_peau": "pouce/index",
+  "capsules_mm": 1.51,
+  "paire_capsules": "index/pouce"
+ },
+ "Pince ouverte": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 10,
+    "mcp": 5,
+    "ip": 5,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 30,
+    "pip": 20,
+    "dip": 5,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -6,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -16,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.0,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 0,
+  "paire_capsules": ""
+ },
+ "Pince ronde (F)": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 38,
+    "rap": 11.220614433288574,
+    "mcp": 43.251298904418945,
+    "ip": 3.375030517578125,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 61,
+    "pip": 66,
+    "dip": 20,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -10,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -24,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.39,
+  "paire_peau": "pouce/index",
+  "capsules_mm": 1.56,
+  "paire_capsules": "index/pouce"
+ },
+ "Index plié": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 35,
+    "mcp": 40,
+    "ip": 40,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 10,
+    "pip": 90,
+    "dip": 65,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Majeur": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 35,
+    "mcp": 40,
+    "ip": 40,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Majeur pouce": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 32,
+    "rap": 29,
+    "mcp": 25,
+    "ip": 18,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 10,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 58,
+    "pip": 68.5,
+    "dip": 18.5,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -8,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -22,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.03,
+  "paire_peau": "pouce/majeur",
+  "capsules_mm": 1.95,
+  "paire_capsules": "majeur/pouce"
+ },
+ "Pouce levé": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": -28,
+    "mcp": 0,
+    "ip": -10,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.98310208320618,
+    "pip": 104.98028576374054,
+    "dip": 69.98685717582703,
+    "ab": -5.498967349529266,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.831771850585938,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.87,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.92,
+  "paire_capsules": "index/majeur"
+ },
+ "U pouce": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": -25,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -3,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Clé": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 12.5,
+    "rap": 13.5,
+    "mcp": 21,
+    "ip": 23.5,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 70,
+    "pip": 75,
+    "dip": 35,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Griffe": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 0,
+    "mcp": 20,
+    "ip": 40,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 30,
+    "pip": 80,
+    "dip": 55,
+    "ab": 12,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 30,
+    "pip": 80,
+    "dip": 55,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 30,
+    "pip": 80,
+    "dip": 55,
+    "ab": -8,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 30,
+    "pip": 80,
+    "dip": 55,
+    "ab": -20,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.0,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 0,
+  "paire_capsules": ""
+ },
+ "Cornes": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 35,
+    "mcp": 40,
+    "ip": 40,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 10,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 90,
+    "pip": 104,
+    "dip": 70,
+    "ab": -5.5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -35,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.52,
+  "paire_peau": "majeur/annulaire",
+  "capsules_mm": 3.0,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Cornes et pouce": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": -25,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 10,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 90,
+    "pip": 104,
+    "dip": 70,
+    "ab": -5.5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -35,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.96,
+  "paire_peau": "majeur/annulaire",
+  "capsules_mm": 2.91,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "V plié": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 35,
+    "mcp": 40,
+    "ip": 40,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 40,
+    "pip": 60,
+    "dip": 40,
+    "ab": 8,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 40,
+    "pip": 60,
+    "dip": 40,
+    "ab": -8,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "V serré (U)": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 35,
+    "mcp": 40,
+    "ip": 40,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -3,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "V écarté": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 35,
+    "mcp": 40,
+    "ip": 40,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 18,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -18,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Pince annulaire": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0.7,
+   "pouce": {
+    "av": 42,
+    "rap": 38,
+    "mcp": 25,
+    "ip": 20,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 16,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -14,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 52,
+    "pip": 62,
+    "dip": 22,
+    "ab": -5.5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 72,
+    "pip": 88,
+    "dip": 48,
+    "ab": -14,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.0,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 0,
+  "paire_capsules": ""
+ },
+ "Poing pouce dedans": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 28,
+    "rap": 20.43310546875,
+    "mcp": 24.002914428710938,
+    "ip": 20,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 85,
+    "pip": 85,
+    "dip": 40,
+    "ab": 1.6000002904249806,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 85,
+    "pip": 85,
+    "dip": 40,
+    "ab": -1,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 85,
+    "pip": 85,
+    "dip": 40,
+    "ab": -2.424999922164341,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 85,
+    "pip": 90,
+    "dip": 45,
+    "ab": -9.649998776882423,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.79,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.94,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Lettre A": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 25.5,
+    "rap": 31.1932373046875,
+    "mcp": 10,
+    "ip": 5,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.98310208320618,
+    "pip": 104.98028576374054,
+    "dip": 69.98685717582703,
+    "ab": -5.498967349529266,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.831771850585938,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.87,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.92,
+  "paire_capsules": "index/majeur"
+ },
+ "Lettre B": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 24.5,
+    "rap": 35,
+    "mcp": 30,
+    "ip": 10,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -4.394801110029221,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": -1.9375,
+    "pip": 0,
+    "dip": 0,
+    "ab": 5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 6.583179473876953,
+    "rot": 0
+   }
+  },
+  "peau_mm": 1.7,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 1.75,
+  "paire_capsules": "index/majeur"
+ },
+ "Lettre C": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0.4,
+   "pouce": {
+    "av": 45,
+    "rap": 5,
+    "mcp": 10,
+    "ip": 10,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 35,
+    "pip": 45,
+    "dip": 30,
+    "ab": -4.180499754846096,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 31.82423185557127,
+    "pip": 45,
+    "dip": 30,
+    "ab": -2,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 35,
+    "pip": 45,
+    "dip": 30,
+    "ab": 6,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 35,
+    "pip": 45,
+    "dip": 30,
+    "ab": 4.85000050363665,
+    "rot": 0
+   }
+  },
+  "peau_mm": 1.75,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 1.48,
+  "paire_capsules": "index/majeur"
+ },
+ "Lettre D": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 32,
+    "rap": 43,
+    "mcp": 39,
+    "ip": 28,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 61,
+    "pip": 81,
+    "dip": 40,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 61,
+    "pip": 60,
+    "dip": 40,
+    "ab": -5.5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 90,
+    "pip": 85,
+    "dip": 40,
+    "ab": -11.099998704934332,
+    "rot": 0
+   },
+   "note": "D : index tendu, majeur, annulaire et auriculaire repliés, leurs bouts contre la pulpe du pouce — à valider par l’utilisateur"
+  },
+  "peau_mm": 0.57,
+  "paire_peau": "majeur/annulaire",
+  "capsules_mm": 1.7,
+  "paire_capsules": "annulaire/pouce"
+ },
+ "Lettre E": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 28,
+    "rap": 24.565185546875,
+    "mcp": 28.515625,
+    "ip": 17.2100830078125,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 65,
+    "pip": 90,
+    "dip": 60,
+    "ab": 0.4000002220896919,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 65,
+    "pip": 65,
+    "dip": 60,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 65,
+    "pip": 90,
+    "dip": 60,
+    "ab": -0.32499994047861414,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 65,
+    "pip": 90,
+    "dip": 60,
+    "ab": -3.8499990646747957,
+    "rot": 0
+   },
+   "note": "E en griffe : bouts des doigts contre le dos du pouce replié à plat (sources : Wikipedia FR/EN) — à valider par l’utilisateur"
+  },
+  "peau_mm": 2.48,
+  "paire_peau": "majeur/annulaire",
+  "capsules_mm": 2.46,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Lettre F": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 38,
+    "rap": 11.220614433288574,
+    "mcp": 43.251298904418945,
+    "ip": 3.375030517578125,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 61,
+    "pip": 66,
+    "dip": 20,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -10,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -24,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.39,
+  "paire_peau": "pouce/index",
+  "capsules_mm": 1.56,
+  "paire_capsules": "index/pouce"
+ },
+ "Lettre G": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": 0,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   },
+   "note": "G : index et pouce tendus parallèles ; pointés vers le haut ou à l’horizontale selon les sources (orientation de la main) — à valider par l’utilisateur"
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Lettre H": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 32,
+    "rap": 29,
+    "mcp": 25,
+    "ip": 18,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 10,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 58,
+    "pip": 68.5,
+    "dip": 18.5,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -8,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -22,
+    "rot": 0
+   },
+   "note": "H : forme « majeur–pouce » (Wikipedia EN, Wikisign) ; d’autres tableaux montrent index et majeur tendus à l’horizontale — à trancher par l’utilisateur"
+  },
+  "peau_mm": 2.03,
+  "paire_peau": "pouce/majeur",
+  "capsules_mm": 1.95,
+  "paire_capsules": "majeur/pouce"
+ },
+ "Lettre I": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 26,
+    "rap": 25.65338134765625,
+    "mcp": 23.7890625,
+    "ip": 50,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 90,
+    "pip": 104,
+    "dip": 70,
+    "ab": -5.5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -10,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.87,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.92,
+  "paire_capsules": "index/majeur"
+ },
+ "Lettre J": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": -28,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 90,
+    "pip": 104,
+    "dip": 70,
+    "ab": -5.5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -30,
+    "rot": 0
+   },
+   "note": "J : forme de Y qui pivote (mouvement : flèche) — à valider par l’utilisateur"
+  },
+  "peau_mm": 2.96,
+  "paire_peau": "majeur/annulaire",
+  "capsules_mm": 2.92,
+  "paire_capsules": "index/majeur"
+ },
+ "Lettre K": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 45,
+    "rap": 10,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 8,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -8,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   },
+   "note": "K : V, pouce tendu posé à la base du majeur ; certains tableaux le confondent avec R — à valider par l’utilisateur"
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Lettre L": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": -28,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Lettre M": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 28,
+    "rap": 20.25,
+    "mcp": 18.92578125,
+    "ip": 6.25,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 80,
+    "pip": 40,
+    "dip": 10,
+    "ab": 0.8000002733411593,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 80,
+    "pip": 40,
+    "dip": 10,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 80,
+    "pip": 40,
+    "dip": 10,
+    "ab": -1.3999999267429102,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   },
+   "note": "M : trois doigts repliés SUR le pouce, main de côté (orientation) — à valider par l’utilisateur"
+  },
+  "peau_mm": 2.72,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.84,
+  "paire_capsules": "index/majeur"
+ },
+ "Lettre N": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 28,
+    "rap": 20.25,
+    "mcp": 18.92578125,
+    "ip": 6.25,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 80,
+    "pip": 40,
+    "dip": 10,
+    "ab": 0.8000002733411593,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 80,
+    "pip": 40,
+    "dip": 10,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   },
+   "note": "N : comme M avec deux doigts — à valider par l’utilisateur"
+  },
+  "peau_mm": 2.72,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.84,
+  "paire_capsules": "index/majeur"
+ },
+ "Lettre O": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0.6,
+   "pouce": {
+    "av": 38,
+    "rap": 15.5,
+    "mcp": 33.5,
+    "ip": 16,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 62,
+    "pip": 62,
+    "dip": 25,
+    "ab": -2,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 57,
+    "pip": 62,
+    "dip": 42,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 60,
+    "pip": 64,
+    "dip": 42,
+    "ab": 2,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 62,
+    "pip": 66,
+    "dip": 44,
+    "ab": -2.9799991078436516,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.24,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 1.92,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Lettre P": {
+  "pose": {
+   "poignet": {
+    "flex": 60,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 45,
+    "rap": 10,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 8,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -8,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   },
+   "note": "P : K orienté vers le bas (« hochement ») — à valider par l’utilisateur"
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Lettre Q": {
+  "pose": {
+   "poignet": {
+    "flex": 60,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": 0,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   },
+   "note": "Q : G orienté vers le bas — à valider par l’utilisateur"
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Lettre R": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 25,
+    "rap": 29.78125,
+    "mcp": 31.71875,
+    "ip": 45.3125,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 15,
+    "pip": 0,
+    "dip": 0,
+    "ab": 2,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 5,
+    "pip": 0,
+    "dip": 0,
+    "ab": 10,
+    "rot": 10
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   },
+   "note": "R : index et majeur CROISÉS (le majeur passe devant l’index) ; le solveur ne superpose pas deux doigts : le majeur vient au contact, tourné de 10° (rotation axiale passive) — à valider par l’utilisateur"
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Lettre S": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 29,
+    "rap": 30,
+    "mcp": 29,
+    "ip": 28.5,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.98310208320618,
+    "pip": 104.98028576374054,
+    "dip": 69.98685717582703,
+    "ab": -5.498967349529266,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.831771850585938,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.87,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 2.92,
+  "paire_capsules": "index/majeur"
+ },
+ "Lettre T": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 24.5,
+    "rap": 35,
+    "mcp": 45,
+    "ip": 20,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 45,
+    "pip": 60,
+    "dip": 30,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -6,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -16,
+    "rot": 0
+   },
+   "note": "T : variante LSF retenue = pouce replié contre l’intérieur de l’index courbé ; plusieurs tableaux montrent le pouce glissé entre index et majeur (T de l’ASL) — à trancher par l’utilisateur"
+  },
+  "peau_mm": 0.0,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 0,
+  "paire_capsules": ""
+ },
+ "Lettre U": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 35,
+    "mcp": 40,
+    "ip": 40,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -3,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Lettre V": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 35,
+    "rap": 45,
+    "mcp": 38.5,
+    "ip": 12.5,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 18,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -18,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Lettre W": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 24.5,
+    "rap": 35,
+    "mcp": 30,
+    "ip": 40,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 10,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -10,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.19,
+  "paire_peau": "auriculaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "auriculaire_bout/paume"
+ },
+ "Lettre X": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 40,
+    "rap": 35,
+    "mcp": 40,
+    "ip": 40,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 30,
+    "pip": 80,
+    "dip": 60,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   },
+   "note": "X : index en crochet (tableaux français) ; Wikipedia EN : index ET majeur courbés — à valider par l’utilisateur"
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Lettre Y": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 0,
+    "rap": -28,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 4,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 88,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 90,
+    "pip": 104,
+    "dip": 70,
+    "ab": -5.5,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -30,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.96,
+  "paire_peau": "majeur/annulaire",
+  "capsules_mm": 2.92,
+  "paire_capsules": "index/majeur"
+ },
+ "Lettre Z": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 34.5,
+    "rap": 36,
+    "mcp": 31.5,
+    "ip": 31,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   },
+   "note": "Z : index tendu qui trace un Z (mouvement : flèche)"
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Chiffre 0": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0.6,
+   "pouce": {
+    "av": 38,
+    "rap": 15.5,
+    "mcp": 33.5,
+    "ip": 16,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 62,
+    "pip": 62,
+    "dip": 25,
+    "ab": -2,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 57,
+    "pip": 62,
+    "dip": 42,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 60,
+    "pip": 64,
+    "dip": 42,
+    "ab": 2,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 62,
+    "pip": 66,
+    "dip": 44,
+    "ab": -2.9799991078436516,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.24,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 1.92,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Chiffre 1": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 34.5,
+    "rap": 36,
+    "mcp": 31.5,
+    "ip": 31,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 90,
+    "pip": 105,
+    "dip": 70,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.67,
+  "paire_capsules": "majeur/annulaire"
+ },
+ "Chiffre 2": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 35,
+    "rap": 45,
+    "mcp": 38.5,
+    "ip": 12.5,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 18,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -18,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.9831771850586,
+    "pip": 104.98037338256836,
+    "dip": 69.9869155883789,
+    "ab": -5.498971939086914,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.4375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.83251953125,
+    "rot": 0
+   }
+  },
+  "peau_mm": 2.41,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Chiffre 3": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 14,
+    "rap": 2,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -4.3953857421875,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 89.98228669166565,
+    "pip": 104.97933447360992,
+    "dip": 69.98622298240662,
+    "ab": -5.498917520046234,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 88.375,
+    "pip": 104,
+    "dip": 70,
+    "ab": -13.823654174804688,
+    "rot": 0
+   },
+   "note": "3 = pouce + index + majeur (famille « pouce compte », choix de la v1) ; variante index + majeur + annulaire"
+  },
+  "peau_mm": 2.4,
+  "paire_peau": "annulaire_bout/paume",
+  "capsules_mm": 2.59,
+  "paire_capsules": "annulaire_bout/paume"
+ },
+ "Chiffre 4": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 30,
+    "rap": 42,
+    "mcp": 45,
+    "ip": 30,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 12,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -10,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -30,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.0,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 0,
+  "paire_capsules": ""
+ },
+ "Chiffre 5": {
+  "pose": {
+   "poignet": {
+    "flex": 0,
+    "dev": 0
+   },
+   "prono": 0,
+   "arc": 0,
+   "pouce": {
+    "av": 8,
+    "rap": -12,
+    "mcp": 0,
+    "ip": 0,
+    "abdMcp": 0
+   },
+   "index": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 14,
+    "rot": 0
+   },
+   "majeur": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": 0,
+    "rot": 0
+   },
+   "annulaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -10,
+    "rot": 0
+   },
+   "auriculaire": {
+    "mcp": 0,
+    "pip": 0,
+    "dip": 0,
+    "ab": -32,
+    "rot": 0
+   }
+  },
+  "peau_mm": 0.0,
+  "paire_peau": "index/majeur",
+  "capsules_mm": 0,
+  "paire_capsules": ""
+ },
+ "_a_valider": {
+  "Chiffre 6": {
+   "peau_mm": 2.96,
+   "capsules_mm": 2.92
+  },
+  "Chiffre 7": {
+   "peau_mm": 2.87,
+   "capsules_mm": 2.92
+  },
+  "Chiffre 8": {
+   "peau_mm": 0.0,
+   "capsules_mm": 0.03
+  },
+  "Chiffre 9": {
+   "peau_mm": 1.7,
+   "capsules_mm": 1.75
+  },
+  "Chiffre 10": {
+   "peau_mm": 0.0,
+   "capsules_mm": 0
+  }
+ }
+}
