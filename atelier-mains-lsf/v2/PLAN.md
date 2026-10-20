@@ -76,7 +76,7 @@ poignet
 Chaque os a son origine au CENTRE ARTICULAIRE (dans la tête de l'os proximal, décalé vers la paume : anatomie.md § 3),
 axe local +Y le long de l'os, +X vers le pouce (axe de flexion), +Z vers la paume. Poids : ≤ 4 os par sommet, normalisés.
 Attributs de sommet supplémentaires (glTF `_REGION` float ou `COLOR_0`) : 0 peau, 1 plaque d'ongle, 2 frange libre de
-l'ongle, 3 repli d'ongle, 4 palmure. Maillage lisse (Catmull-Clark ×2 ≈ 27 k sommets, 8 morph targets correctifs des jointures), normales lissées, 100 % triangles à l'export.
+l'ongle, 3 repli d'ongle, 4 palmure. Maillage lisse (Catmull-Clark ×2 ≈ 27 k sommets, 9 morph targets correctifs (jointures + commissure du pouce)), normales lissées, 100 % triangles à l'export.
 
 `hand_v2.json` :
 ```

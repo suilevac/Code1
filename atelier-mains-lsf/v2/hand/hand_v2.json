@@ -25,12 +25,12 @@
   ],
   "attributs_threejs": "GLTFLoader r128 met en minuscules les attributs personnalisés : geometry.attributes._region, ._ongle, ._masques (les noms glTF restent _REGION, _ONGLE, _MASQUES)",
   "skinning": "≤ 4 os par sommet, normalisés (JOINTS_0 / WEIGHTS_0)",
-  "morph_targets": "8 correctifs des jointures (POSITION + NORMAL, noms dans mesh.extras.targetNames → morphTargetDictionary), voir « correctifs »"
+  "morph_targets": "9 correctifs (8 des jointures + « commissure_abd ») (POSITION + NORMAL, noms dans mesh.extras.targetNames → morphTargetDictionary), voir « correctifs »"
  },
  "correctifs": {
-  "principe": "déplacement de la peau, dans l’espace de LIAISON, à ajouter AVANT le skinning avec le poids clamp(angle / angle_ref, 0, 1) : à l’angle de référence, en DQS, la tête de l’os saille côté dos, la chair palmaire remplit le coin de la boucle du doigt, les rides dorsales sont lissées",
+  "principe": "déplacement de la peau, dans l’espace de LIAISON, à ajouter AVANT le skinning avec le poids clamp(angle / reference, 0, 1) (champ « angle » = « doigt.champ » de la pose ; reference NÉGATIVE pour « commissure_abd » : rap < 0) : à l’angle de référence, en DQS, la tête de l’os saille côté dos, la chair palmaire remplit le coin de la boucle du doigt, les rides dorsales sont lissées ; la palmure du pouce suit son abduction",
   "skinning": "calculés pour les quaternions duaux (DQS) ; en LBS l’effet est proche mais la jointure reste écrasée",
-  "limite_threejs_r128": "le shader intégré n’applique que 8 morphs (4 avec morphNormals) : 8 correctifs ici, tous actifs dans un poing ; garder morphNormals éteint, ou appliquer les morphs côté CPU",
+  "limite_threejs_r128": "le shader intégré n’applique que 8 morphs (4 avec morphNormals) : 9 correctifs ici (au plus 8 actifs dans un poing : commissure_abd y vaut 0) ; appliquer les morphs côté CPU (le moteur le fait), ou garder morphNormals éteint",
   "liste": [
    {
     "nom": "mcp_index",
@@ -103,6 +103,15 @@
     "poids": "clamp(auriculaire.pip / 100, 0, 1)",
     "saillie_dorsale_mm": 2.5,
     "coussin_palmaire_mm": 2.5
+   },
+   {
+    "nom": "commissure_abd",
+    "os": "pouce_p1",
+    "angle": "pouce.rap",
+    "reference": -28.0,
+    "poids": "clamp(pouce.rap / -28, 0, 1) = clamp(−pouce.rap / 28, 0, 1) : 0 pour tout pouce ramené (rap ≥ 0), 1 dans « L » (rap −28), 0,43 dans « Main ouverte (5) » (rap −12)",
+    "role": "palmure de la 1re commissure (faces dorsale et palmaire) ramenée vers la MCP du pouce quand le pouce s’écarte (abduction radiale) : la peau glisse le long du pouce comme sur ses photos 2354 et 2361",
+    "deplacement_max_mm": 15.4
    }
   ]
  },

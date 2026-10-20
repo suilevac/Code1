@@ -1989,7 +1989,8 @@ def correctif_jointure(V, W, sq, T, nbr, k, ang, A_dos, cfg):
     return np.einsum('nji,nj->ni', Rv, D), m
 
 def correctifs(V, W, sq, T, nbr):
-    """les 8 morph targets (MCP et IPP des quatre doigts), amplitude du dôme calée en 3 passes sur la saillie voulue"""
+    """les 8 morph targets des jointures (MCP et IPP des quatre doigts, amplitude du dôme calée en 3 passes sur la saillie
+    voulue) et le 9e, la palmure de la 1re commissure (`commissure_abd`)"""
     out, mes = {}, {}
     for ang, cfg in CORRECTIFS.items():
         for k in DOIGTS:
@@ -1998,7 +1999,63 @@ def correctifs(V, W, sq, T, nbr):
                 Db, m = correctif_jointure(V, W, sq, T, nbr, k, ang, A_, cfg)
                 A_ = float(np.clip(A_ * cfg['saillie'] / max(m['r_corr'] - m['r_repos'], 0.05), 0.1, 0.9))
             out['%s_%s' % (ang, k)] = Db.astype(np.float32); m['A'] = A_; mes['%s_%s' % (ang, k)] = m
+    if COMMISSURE_ABD:
+        out[COMMISSURE_ABD['nom']], mes[COMMISSURE_ABD['nom']] = correctif_commissure(V, W, sq, T, nbr)
     return out, mes
+
+# --- 9e correctif : la PALMURE de la 1re commissure quand le pouce s'écarte (20 octobre 2026, feu vert de l'orchestrateur) ---
+# « L » vu de dos : 39,6 mm de silhouette à la MCP du pouce (perpendiculaire à P1) contre ≈ 27 sur sa photo 2361 à la même
+# ouverture. L'apex de la commissure de SON dessin est 1,4 cm au-delà de la MCP ; quand le pouce s'écarte, la vraie peau
+# de la palmure glisse vers la MCP, une peau à poids fixes ne glisse pas (cinq familles de poids essayées, voir l'étape 5).
+# Correctif calculé DANS la pose « L » (pouce seul, rap = ref) : la peau de la palmure (part du pouce entre 0 et 1, autour
+# de l'apex, faces dorsale ET palmaire) est ramenée vers la MCP du pouce, dans le plan de la paume, d'`amplitude` à
+# l'apex (gaussienne σ autour de lui), puis lissée (Taubin) et ramenée au repos par Rᵀ. Poids moteur : clamp(rap / ref,
+# 0, 1) avec ref < 0, soit clamp(−rap / 28, 0, 1) : 0 pour tout pouce ramené (rap ≥ 0 : repos, dessin, V, Quatre, B,
+# poing, O, pinces…), 1 dans « L » (rap −28, mobilite.md 4.2), 0,43 dans « Main ouverte (5) » (rap −12).
+# Pilote : « rapprocher » < 0 (abduction RADIALE, dans le plan de la paume), pas « avancer » : sur ses photos 2354 et 2361
+# le pouce est écarté DANS le plan (palmure tendue) ; « avancer » est aussi grand pouce replié (V : av 35, B : av 20), où
+# la palmure est relâchée — le correctif y serait faux.
+# Réglage (banc d'essai sur la main livrée, « L » de dos, largeur perpendiculaire à P1 du pouce à la MCP / au quart de
+# P1, replis dans la commissure) : sans correctif 39,6 / 27,9 mm. Protection par la PART du pouce (peau à part ≥ 0,97
+# immobile) : 1,0 cm → 31,7 / 24,5 ; 1,2 → 29,8 / 22,4, mais un CROCHET au bord libre là où la palmure rejoint le pouce
+# (la peau du pouce immobile, la palmure voisine tirée de 1,2 cm) — rampe de part plus douce, champ lissé (20, 40
+# passes) : le crochet reste. Protection par la DISTANCE à l'axe du pouce posé (0 à moins de 0,9 cm, plein à 1,8 cm) et
+# champ lissé : bord libre en V arrondi qui rejoint le pouce sans crochet ; amplitude 1,4 cm (σ 1,2, 10 passes) → 29,6 /
+# 21,4 mm, mais 31,6 mm dans le MOTEUR (sa cinématique du pouce, TOFF et pronation couplée, élargit de 2 mm : 41,2 sans
+# correctif) ; 1,6 → 28,4 ; **1,7 (σ 1,3, 12 passes) → 27,5 / 19,5 mm** (moteur : voir JOURNAL) ; (1,5 avec la rampe
+# 1,1–2,2 : 3 arêtes vives ; 1,3 / 1,0–2,0 : angle encore visible). 0 arête > 60° et 0 triangle retourné dans la
+# commissure en L, en 5 et au repos.
+COMMISSURE_ABD = dict(nom='commissure_abd', angle='pouce.rap', ref=-28.0, amplitude=1.7, sigma=1.3, axe=(0.9, 1.8), lisse=12)
+
+def correctif_commissure(V, W, sq, T, nbr, cfg=None):
+    cfg = cfg or COMMISSURE_ABD
+    J4, w4 = poids4(W); M = cinematique(sq, {'pouce': {'rap': cfg['ref'], 'av': 0}})
+    Vp, Rv = dqs_rt(V, J4, w4, M)
+    th = W[:, [OSI[b] for b in CHAINES['pouce']]].sum(1)
+    ap = px2cm(sq['commissure'], sq['sx'])
+    sel = (np.hypot(V[:, 0] - ap[0], V[:, 1] - ap[1]) < 0.6) & (th > 0.25) & (th < 0.75)
+    apex = Vp[sel].mean(0); c = (M[OSI['pouce_p1']] @ np.r_[sq['C']['pouce_p1'], 1])[:3]
+    d = c - apex; d[2] = 0; dist = float(np.linalg.norm(d)); d /= dist
+    g = np.exp(-0.5 * (np.linalg.norm(Vp - apex, axis=1) / cfg['sigma']) ** 2)
+    g *= sstep((cfg.get('haut', 0.97) - th) / cfg.get('garde', 0.2)) * sstep((th - 0.03) / 0.15)
+    if cfg.get('axe'):        # protection par la distance à l'axe du pouce posé (MC I distal → bout) au lieu de la part du pouce
+        a_ = (M[OSI['mc1']] @ np.r_[sq['C']['mc1'] + 0.4 * (sq['C']['pouce_p1'] - sq['C']['mc1']), 1])[:3]
+        b_ = (M[OSI['pouce_p2']] @ np.r_[sq['bout']['pouce'], 1])[:3]; ab = b_ - a_
+        tt = np.clip((Vp - a_) @ ab / (ab @ ab), 0, 1); r_ = np.linalg.norm(Vp - a_ - np.outer(tt, ab), axis=1)
+        R0, R1 = cfg['axe']; g = np.exp(-0.5 * (np.linalg.norm(Vp - apex, axis=1) / cfg['sigma']) ** 2) * sstep((r_ - R0) / (R1 - R0)) * sstep((th - 0.03) / 0.15)
+    if cfg.get('lisse'): g = lisser(g[:, None], nbr, iters=cfg['lisse'], lam=0.5)[:, 0]   # champ du poids lissé sur la peau (pas de crochet au bord libre)
+    D = (cfg['amplitude'] * g)[:, None] * d[None, :]
+    zone = g > 0.02; Vt = Vp + D; Vs = Vt.copy()
+    for _ in range(6): Vs = lisser(Vs, nbr, 1, 0.5, zone); Vs = lisser(Vs, nbr, 1, -0.53, zone)
+    D = D + (Vs - Vt) * np.clip(g / 0.3, 0, 1)[:, None]
+    mes = dict(apex_mcp_cm=dist, sommets=int((np.linalg.norm(D, axis=1) > 1e-4).sum()), dmax=float(np.linalg.norm(D, axis=1).max()))
+    return np.einsum('nji,nj->ni', Rv, D).astype(np.float32), mes
+
+def poids_correctif(nom, pose):
+    """poids moteur d'un correctif : clamp(valeur / ref, 0, 1) (ref < 0 pour la commissure : rap négatif)"""
+    if nom == COMMISSURE_ABD['nom']:
+        k, ch = COMMISSURE_ABD['angle'].split('.'); return float(np.clip(((pose.get(k, {}) or {}).get(ch, 0) or 0) / COMMISSURE_ABD['ref'], 0, 1))
+    ang, k = nom.split('_'); return float(np.clip(((pose.get(k, {}) or {}).get(ang, 0) or 0) / CORRECTIFS[ang]['ref'], 0, 1))
 
 def deplacement_correctifs(cor, pose):
     """Σ wᵢ·Δᵢ (espace de liaison) pour une pose : wᵢ = clamp(θ / θref, 0, 1)"""
@@ -2006,6 +2063,7 @@ def deplacement_correctifs(cor, pose):
     for ang, cfg in CORRECTIFS.items():
         for k in DOIGTS:
             D = D + float(np.clip((pose.get(k, {}) or {}).get(ang, 0) / cfg['ref'], 0, 1)) * cor['%s_%s' % (ang, k)]
+    if COMMISSURE_ABD['nom'] in cor: D = D + poids_correctif(COMMISSURE_ABD['nom'], pose) * cor[COMMISSURE_ABD['nom']]
     return D
 
 def poser_v2(V, W, sq, pose, cor=None, mode='dqs'):
@@ -2109,12 +2167,18 @@ def etape8(s1, sq, op, s3, s6, regler=False):
     log(''); log('| jointure | angle de référence | rayon dorsal au repos (mm) | LBS (mm) | DQS (mm) | DQS + correctif (mm) | saillie (mm) | déplacement max (mm) |')
     log('|---|---|---|---|---|---|---|---|')
     for nm, m in mes.items():
+        if nm == COMMISSURE_ABD['nom']: continue
         ang, k = nm.split('_'); log('| %s %s | %.0f° | %.1f | %.1f | %.1f | %.1f | %+.1f | %.1f |' % (ang.upper(), k, CORRECTIFS[ang]['ref'], 10 * m['r_repos'],
             10 * m['r_lbs'], 10 * m['r_dqs'], 10 * m['r_corr'], 10 * (m['r_corr'] - m['r_repos']), 10 * m['dmax']))
     log('')
     log('- correctifs : rayon dorsal mesuré sur la bissectrice de la jointure (centre articulaire → peau) ; saillie = rayon '
         'posé avec correctif − rayon au repos ; cible %.1f mm à la MCP, %.1f mm à l’IPP ; coussinets palmaires %.1f / %.1f mm'
         % (10 * CORRECTIFS['mcp']['saillie'], 10 * CORRECTIFS['pip']['saillie'], 10 * CORRECTIFS['mcp']['coussin'], 10 * CORRECTIFS['pip']['coussin']))
+    if COMMISSURE_ABD['nom'] in mes:
+        m = mes[COMMISSURE_ABD['nom']]
+        log('- 9e correctif « %s » (palmure de la 1re commissure, poids clamp(%s / %g, 0, 1)) : calculé dans la pose pouce rap = %g ; '
+            'apex de la commissure à %.1f mm de la MCP du pouce, ramené vers elle de %.1f mm au plus, %d sommets'
+            % (COMMISSURE_ABD['nom'], COMMISSURE_ABD['angle'], COMMISSURE_ABD['ref'], COMMISSURE_ABD['ref'], 10 * m['apex_mcp_cm'], 10 * m['dmax'], m['sommets']))
     poses_c = POSES_CONTROLE
     if regler:
         poses_c = regler_poses(V, W, sq, Tc, cor); log('- poses de contrôle RE-RÉGLÉES (--regler-poses) : %s' % json.dumps(poses_c))
@@ -2283,6 +2347,15 @@ def etape9(s1, sq, op, s6, s7, s8):
     ongles = s6['ongles']
     correctifs_json = []
     for nm in s8['correctifs']:
+        if nm == COMMISSURE_ABD['nom']:
+            m = s8['correctifs_mes'][nm]; k_, ch_ = COMMISSURE_ABD['angle'].split('.')
+            correctifs_json.append({'nom': nm, 'os': 'pouce_p1', 'angle': COMMISSURE_ABD['angle'], 'reference': COMMISSURE_ABD['ref'],
+                                    'poids': 'clamp(%s / %g, 0, 1) = clamp(−%s.%s / %g, 0, 1) : 0 pour tout pouce ramené (rap ≥ 0), 1 dans « L » '
+                                             '(rap −28), 0,43 dans « Main ouverte (5) » (rap −12)' % (COMMISSURE_ABD['angle'], COMMISSURE_ABD['ref'], k_, ch_, -COMMISSURE_ABD['ref']),
+                                    'role': 'palmure de la 1re commissure (faces dorsale et palmaire) ramenée vers la MCP du pouce quand le pouce '
+                                            's’écarte (abduction radiale) : la peau glisse le long du pouce comme sur ses photos 2354 et 2361',
+                                    'deplacement_max_mm': round(10 * m['dmax'], 1)})
+            continue
         ang, k = nm.split('_'); cfg = CORRECTIFS[ang]; m = s8['correctifs_mes'][nm]
         correctifs_json.append({'nom': nm, 'os': k + cfg['os'], 'angle': '%s.%s' % (k, ang), 'reference': cfg['ref'],
                                 'poids': 'clamp(%s.%s / %g, 0, 1)' % (k, ang, cfg['ref']),
@@ -2301,14 +2374,17 @@ def etape9(s1, sq, op, s6, s7, s8):
                      'attributs_threejs': 'GLTFLoader r128 met en minuscules les attributs personnalisés : geometry.attributes._region, '
                                           '._ongle, ._masques (les noms glTF restent _REGION, _ONGLE, _MASQUES)',
                      'skinning': '≤ 4 os par sommet, normalisés (JOINTS_0 / WEIGHTS_0)',
-                     'morph_targets': '%d correctifs des jointures (POSITION + NORMAL, noms dans mesh.extras.targetNames → '
-                                      'morphTargetDictionary), voir « correctifs »' % len(s8['correctifs'])},
+                     'morph_targets': '%d correctifs (8 des jointures + « commissure_abd ») (POSITION + NORMAL, noms dans '
+                                      'mesh.extras.targetNames → morphTargetDictionary), voir « correctifs »' % len(s8['correctifs'])},
         'correctifs': {'principe': 'déplacement de la peau, dans l’espace de LIAISON, à ajouter AVANT le skinning avec le poids '
-                                   'clamp(angle / angle_ref, 0, 1) : à l’angle de référence, en DQS, la tête de l’os saille côté dos, la chair '
-                                   'palmaire remplit le coin de la boucle du doigt, les rides dorsales sont lissées',
+                                   'clamp(angle / reference, 0, 1) (champ « angle » = « doigt.champ » de la pose ; reference NÉGATIVE pour '
+                                   '« commissure_abd » : rap < 0) : à l’angle de référence, en DQS, la tête de l’os saille côté dos, la chair '
+                                   'palmaire remplit le coin de la boucle du doigt, les rides dorsales sont lissées ; la palmure du pouce suit '
+                                   'son abduction',
                        'skinning': 'calculés pour les quaternions duaux (DQS) ; en LBS l’effet est proche mais la jointure reste écrasée',
-                       'limite_threejs_r128': 'le shader intégré n’applique que 8 morphs (4 avec morphNormals) : 8 correctifs ici, '
-                                              'tous actifs dans un poing ; garder morphNormals éteint, ou appliquer les morphs côté CPU',
+                       'limite_threejs_r128': 'le shader intégré n’applique que 8 morphs (4 avec morphNormals) : 9 correctifs ici '
+                                              '(au plus 8 actifs dans un poing : commissure_abd y vaut 0) ; appliquer les morphs côté CPU '
+                                              '(le moteur le fait), ou garder morphNormals éteint',
                        'liste': correctifs_json},
         'regions': {'attribut': '_REGION', 'codes': {'0': 'peau', '1': 'plaque d’ongle', '2': 'frange libre de l’ongle',
                     '3': 'repli d’ongle', '4': 'palmure'},
