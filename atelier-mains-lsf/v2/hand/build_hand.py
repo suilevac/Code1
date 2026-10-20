@@ -297,15 +297,43 @@ EVENTAIL = {'index': 4.0, 'majeur': 0.0, 'annulaire': -5.5, 'auriculaire': -14.0
 # Bases des métacarpiens II–V (x, cm) : la rangée distale du carpe est plus étroite que la ligne des têtes
 # (≈ 3,3 cm de la base de MC II à celle de MC V contre 5,9 cm entre têtes)
 BASE_MC_X = {'index': 1.25, 'majeur': 0.15, 'annulaire': -0.95, 'auriculaire': -2.0}
-# Obliquité des axes de flexion des MCP (convergence vers le scaphoïde, mobilite.md R1) : v1 `LEAN`, réglé sur le
-# contact des P1 dans le poing (CLAUDE.md, piste Z) ; rotation de l'axe de flexion autour de l'os
-LEAN = {'index': -6.5, 'majeur': 0.0, 'annulaire': 6.5, 'auriculaire': 12.0}
+# Obliquité des axes de flexion (convergence vers le scaphoïde, mobilite.md R1 : « axes de flexion des MCP ET des IP
+# obliques ») : rotation de l'axe de flexion autour de l'os.
+# Grief du 20 octobre 2026 (« L » vu de dos : « j'ai jamais vu des doigts aussi inclinés », jointures en vague) : la v1
+# mettait TOUTE la convergence dans la MCP (`LEAN` −6,5 / 0 / +6,5 / +12°). Mesuré dans le moteur (presets résolus, repère
+# de la main, arc automatique 0,6 compris) : P1 repliées à 90° inclinées de −6,5 / 0 / +8,0 / +4,9° — vues de dos en
+# plongée, l'inclinaison s'amplifie (×1/sin de la plongée : ×2,9 à 20°) et chaque jointure penche vers le majeur. Sur SES
+# photos (V de dos, poing 2357), les P1 repliées restent PARALLÈLES sous le majeur ; ce sont les P2–P3 qui convergent vers
+# la base du thénar. D'où : MCP presque droites, la convergence passe dans les IP.
+#   LEAN (MCP)    : P1 à 90° (moteur, arc 0,6) inclinées de −3,0 / 0 / +3,0 / +3,2° (cible : « quelques degrés ») ;
+#                   l'auriculaire garde +10° d'axe parce que l'arc métacarpien du moteur (mc5 : supination 20°·arc, arc
+#                   0,6 dès que l'auriculaire se replie) le renverse de −6,8° ; l'annulaire +1,5 (mc4 : flexion 12°·arc
+#                   l'incline de +1,5°)
+#   LEAN_IP (IPP et IPD) : −4 / 0 / +4 / +8° : bouts du poing ramenés à 0,88 de l'écart des MCP (v1, piste P : 0,90)
+# Le contact entre P1 voisines, que la v1 obtenait en inclinant les P1, vient de la chair des flancs (correctif de la
+# MCP, `elargit`, comme `KNL` en v1).
+LEAN = {'index': -3.0, 'majeur': 0.0, 'annulaire': 1.5, 'auriculaire': 10.0}
+LEAN_IP = {'index': -4.0, 'majeur': 0.0, 'annulaire': 4.0, 'auriculaire': 8.0}
 # Pouce : trapézo-métacarpienne à la base de l'éminence thénar (dessin : (652, 748) px → (3,28 ; 1,08) cm ; anatomie
 # § 3 : trapèze dans la rangée distale du carpe) ; MC I à 30° de MC II (anatomie.md § 3, repos relâché), sorti de 20°
 # du plan de la paume (colonne du pouce antérieure) ; P1 et P2 dans le prolongement, un peu plus écartés (dessin)
 CMC_POUCE = np.array([3.2, 1.4, 0.3])
 POUCE_ANGLES = {'mc1': (None, 20.0), 'pouce_p1': (30.0, 12.0), 'pouce_p2': (34.0, 6.0)}   # (dans le plan°, élévation°)
 POUCE_MC_MCII = 30.0
+# Pronation de repos de P1–P2 du pouce (20 octobre 2026). MakeHuman donne 75° (normale de son ongle ; 0 = pulpe vers
+# +Z, 90 = pulpe vers l'index, ongle ⟂ paume). Mesuré sur SON dessin (pose « dessin », silhouette de face, milieu du
+# trait) : le pouce vu de face y fait 21,2 mm à mi-P1, 21,9 à l'IP, 19,8 / 18,1 sur P2 ; le maillage à 75° n'en montrait
+# que 19,6 / 18,2 / 17,9 / 17,1 — il montrait son FLANC (épaisseur 17,5 mm), donc il paraissait aussi mince que l'index
+# alors qu'une IP de 21,9 mm ne se voit que de face (largeur 22 mm). Ses photos disent la même chose : pouce écarté vu
+# côté paume = 1,3 à 1,5 × la largeur de P2 de l'index (IMG_2354 : P1 79 / IP 72,5 / P2 67 px contre 52,5 ; IMG_2361 :
+# 76 / 72 / 59,5 contre ≈ 47). Balayage : −20° → 21,4 / 20,0 / 19,2 / 18,5 mm (P1 aux 3/10 : 22,5 contre 21,9, plus
+# large que son dessin) ; −35° → jusqu'à +3,1 mm de trop ; −18° retenu (≈ 57°) : jamais plus large que son dessin. La
+# pronation COUPLÉE du moteur (34° en opposition) la remonte ensuite pouce opposé. C'est la PEAU de P1–P2 (et l'ongle) qui
+# tourne autour de l'os (repères géométriques AG, étape 2) ; les repères de liaison (axes de la MCP et de l'IP que lit le
+# moteur) et mc1 (trapézo-métacarpienne validée en v1) ne bougent pas : la MCP et l'IP du pouce fléchissent sur un axe
+# oblique de 18° par rapport à l'ongle (vers l'index), et les presets du pouce réglés par `reach` restent justes.
+# (Essayé d'abord : tourner aussi les axes — la pince, le F et les becs s'ouvraient d'≈ 1 cm dans le moteur.)
+PRONATION_POUCE_DELTA = -18.0
 
 def px2cm(p, sx):
     p = np.asarray(p, float); return np.array([(p[0] - DESSIN['x0']) * sx, (DESSIN['y_pli'] - p[1]) * SY])
@@ -427,8 +455,8 @@ def etape2(s1):
         for jj, b in enumerate(CHAINES[k][1:]):
             nxt = C[CHAINES[k][jj + 2]] if jj < 2 else bout[k]
             fr = repere(nxt - C[b], np.array([0, 0, 1.0]))
-            if jj == 0:    # obliquité de l'axe de flexion de la MCP : rotation de LEAN autour de l'os
-                fr = rot_axe(fr[:, 1], math.radians(LEAN[k])) @ fr
+            # obliquité de l'axe de flexion : LEAN à la MCP, LEAN_IP à l'IPP et à l'IPD (rotation autour de l'os)
+            fr = rot_axe(fr[:, 1], math.radians(LEAN[k] if jj == 0 else LEAN_IP[k])) @ fr
             A[b] = fr
     # pouce : Z = pulpe. Pronation reprise de MakeHuman : normale de la plaque d'ongle MH (dos), transportée par la
     # plus petite rotation de la direction MH de chaque os vers la direction cible
@@ -439,7 +467,19 @@ def etape2(s1):
         dmh = nz(jts[mhb + '____tail'] - jts[mhb + '____head']); y = nz((C[nxt] if nxt else bout['pouce']) - C[b])
         pulpe = rot_min(dmh, y) @ (-n_ongle)
         A[b] = repere(y, pulpe)
-    pron = math.degrees(math.atan2(-(A['pouce_p2'][:, 2] @ np.array([1.0, 0, 0])), A['pouce_p2'][:, 2] @ np.array([0, 0, 1.0])))
+    pron_ = lambda F: math.degrees(math.atan2(-(F[:, 2] @ np.array([1.0, 0, 0])), F[:, 2] @ np.array([0, 0, 1.0])))
+    pron_mh = pron_(A['pouce_p2'])
+    # repères GÉOMÉTRIQUES (AG) : ceux de la peau à la retaille, des ongles, des coupes ; = A partout sauf P1–P2 du pouce,
+    # tournés de PRONATION_POUCE_DELTA autour de l'os. Les repères de liaison A (axes de la MCP et de l'IP lus par le
+    # moteur) restent ceux de MakeHuman : les presets du pouce réglés par `reach` (O, pince, F, becs…) gardent leur
+    # cinématique (essayé : tourner aussi A ouvrait la pince et le F de 1 cm — le moteur les avait réglés sur ces axes).
+    AG = {b: A[b].copy() for b in A}
+    if PRONATION_POUCE_DELTA:
+        for b in ('pouce_p1', 'pouce_p2'):
+            Rp = rot_axe(A[b][:, 1], math.radians(abs(PRONATION_POUCE_DELTA))); Rm = rot_axe(A[b][:, 1], -math.radians(abs(PRONATION_POUCE_DELTA)))
+            plus = pron_(Rp @ A[b]) > pron_(Rm @ A[b])
+            AG[b] = (Rp if plus == (PRONATION_POUCE_DELTA > 0) else Rm) @ A[b]
+    pron = pron_(AG['pouce_p2'])
     # --- tableau ---
     long = {}
     for b in OS:
@@ -471,13 +511,26 @@ def etape2(s1):
         'élévation palmaire %.0f°) ; pronation de la pulpe %.0f° (0 = pulpe vers +Z, 90 = pulpe vers l’index ; reprise de '
         'MH : normale de son ongle) ; ongles MH repérés : %s faces' % (*C['mc1'], math.degrees(math.acos(u1 @ u2)), ang(u1), ang(u2),
         math.degrees(math.asin(u1[2])), pron, '/'.join(str(len(ong[k])) for k in ['pouce'] + DOIGTS)))
-    # contrôle de l'obliquité
+    if PRONATION_POUCE_DELTA:
+        log('- pronation de repos de P1–P2 du pouce : %.0f° chez MakeHuman, %+.0f° → %.0f° (voir PRONATION_POUCE_DELTA : '
+            'largeurs du pouce vu de face sur SON dessin)' % (pron_mh, PRONATION_POUCE_DELTA, pron))
+    # contrôle de l'obliquité : angle latéral des P1 et des P2 dans un poing (MCP 90, IPP 105, IPD 70, arc 0,6 comme le
+    # moteur), dans le repère de la main ; écart des bouts / écart des MCP
+    sq_ = dict(C=C, A=A, bout=bout); pz = dict({k: {'mcp': 90, 'pip': 105, 'dip': 70} for k in DOIGTS}, arc=0.6); Mz = cinematique(sq_, pz)
+    lat1 = {k: math.degrees(math.atan2(*(Mz[OSI[k + '_p1']][:3, :3] @ A[k + '_p1'][:, 1])[[0, 2]])) for k in DOIGTS}
+    tz = {k: (Mz[OSI[k + '_p3']] @ np.r_[bout[k], 1])[0] for k in DOIGTS}; mz = {k: (Mz[OSI[k + '_p1']] @ np.r_[C[k + '_p1'], 1])[0] for k in DOIGTS}
+    log('- obliquité (LEAN %s ; LEAN_IP %s) : poing (MCP 90 / IPP 105 / IPD 70, arc 0,6) — P1 inclinées de %s par rapport à la '
+        'normale de la paume (+ vers le pouce) ; écart des bouts index–auriculaire %.1f mm pour %.1f mm entre MCP (rapport %.2f)'
+        % ('/'.join('%+.1f' % LEAN[k] for k in DOIGTS), '/'.join('%+.1f' % LEAN_IP[k] for k in DOIGTS),
+           ' / '.join('%s %+.1f°' % (k, lat1[k]) for k in DOIGTS), 10 * (tz['index'] - tz['auriculaire']), 10 * (mz['index'] - mz['auriculaire']),
+           (tz['index'] - tz['auriculaire']) / (mz['index'] - mz['auriculaire'])))
+    # (ancienne mesure, gardée)
     txt = []
     for k in DOIGTS:
         b = k + '_p1'; c = C[b]; R = rot_axe(A[b][:, 0], math.radians(90)); t2 = c + R @ (bout[k] - c)
         txt.append('%s %+.2f cm' % (k, t2[0] - bout[k][0]))
     log('- obliquité (LEAN) : déport latéral du bout après 90° de flexion de la MCP (+ vers le pouce) : ' + ', '.join(txt))
-    sq = dict(C={b: C[b].tolist() for b in C}, A={b: A[b].tolist() for b in A}, bout={k: bout[k].tolist() for k in bout},
+    sq = dict(C={b: C[b].tolist() for b in C}, A={b: A[b].tolist() for b in A}, AG={b: AG[b].tolist() for b in AG}, bout={k: bout[k].tolist() for k in bout},
               L=L, long=long, sx=sx, commissure=[xa, ya], x_uln=x_uln, ongles_mh={k: list(map(int, v)) for k, v in ong.items()})
     json.dump(sq, open(os.path.join(WORK, 's2.json'), 'w'), indent=1)
     # --- images : squelette cible sur la main MH brute (paume, profil) et sur le dessin ---
@@ -515,6 +568,7 @@ def etape2(s1):
 def lire_s2():
     sq = json.load(open(os.path.join(WORK, 's2.json')))
     sq['C'] = {k: np.array(v) for k, v in sq['C'].items()}; sq['A'] = {k: np.array(v) for k, v in sq['A'].items()}
+    sq['AG'] = {k: np.array(v) for k, v in sq.get('AG', sq['A']).items()}
     sq['bout'] = {k: np.array(v) for k, v in sq['bout'].items()}
     return sq
 
@@ -598,6 +652,44 @@ EPAISSEUR = {'index': (1.70, 1.75, 1.50, 1.45, 1.30), 'majeur': (1.80, 1.80, 1.5
              'pouce': (1.90, 1.85, 1.75, 1.70, 1.60)}
 # pouce : stations [P1 milieu, P1 aux 3/4, IP, P2 milieu (pulpe proximale), pulpe] (table 4.1 : P1 23, IP 22,
 # pulpe 21 ; table 4.2 : P1 19, IP 17, P3 16)
+LARGEUR_TABLE = {k: tuple(v) for k, v in LARGEUR.items()}; EPAISSEUR_TABLE = {k: tuple(v) for k, v in EPAISSEUR.items()}
+# --- LARGEURS DES DOIGTS : SON DESSIN, pas les tables (grief du 20 octobre 2026 : « on a perdu en précision par rapport à
+# avant », la v1 étant construite sur ses dessins). Mesuré (pose « dessin », silhouette de face sur la grille du dessin,
+# 0,25 mm) : avec les tables 4.1, les quatre doigts sortaient 1 à 4 mm PLUS LARGES que son dessin (index +3,3 à +4,0 mm
+# sur P1–IPP, majeur +2,6 à +3,2, annulaire +1,9 à +2,7, auriculaire +0,4 à +1,5), alors que la paume y colle à 1–2 mm
+# près : rapportés à la paume, des doigts 10 à 20 % trop gros. Sa photo IMG_2354 (paume à plat), en rapport à la largeur
+# de la paume (apex de la 1re commissure → bord ulnaire, 283 px) : index P1 57,5 / P2 52,5 / P3 48,5 px → 18,4 / 16,8 /
+# 15,5 mm, c'est-à-dire la largeur de son dessin au MILIEU DU TRAIT (18,2 / 16,0 / 14,9), la convention même de
+# l'ajustement de la paume (3b) et de l'échelle X (PAUME_L). D'où : largeur de chaque station = son dessin au milieu du
+# trait, le long de la chaîne v1 corrigée (mesh.chain : celle qu'il a validée) ; épaisseur = largeur × le rapport e/l des
+# tables 4.1–4.2 (0,76–0,87 : le dessin ne donne pas l'épaisseur). Le pouce garde les tables : vu dans la pose « dessin »
+# (projeté comme sur le dessin) il est déjà 0 à 3,7 mm PLUS ÉTROIT que son dessin, jamais plus large.
+F_P1_DESSIN = 0.6      # station « P1 milieu » prise aux 6/10 de MCP → IPP sur le dessin : à 0,5 la corde touche la
+                       # palmure dessinée de l'index et du majeur (+0,6 mm), pas le doigt
+
+def largeurs_du_dessin():
+    """largeurs (cm) de SON dessin paume au milieu du trait, aux 5 stations des tables, pour les quatre doigts"""
+    peau, milieu, _ = masques_dessin()
+    top = np.array([np.where(milieu[:, x])[0].min() if milieu[:, x].any() else 0 for x in range(milieu.shape[1])])
+    xa = 600 + int(np.argmax(top[600:760])); ya = int(top[xa]); x_uln = int(np.where(milieu[ya])[0].min())
+    sx = PAUME_L / (xa - x_uln); ds = Dessin(sx); ch = chaines_v1(); out = {}
+    def corde(c, n, rmax=2.0, pas=0.0125):
+        ts = np.arange(-rmax, rmax + pas / 2, pas); P = c[None, :] + ts[:, None] * n[None, :]
+        ix, iy = ds.pix(P); v = ds.D[iy, ix]; i0 = len(ts) // 2
+        a = b = i0
+        while a > 0 and v[a - 1]: a -= 1
+        while b < len(v) - 1 and v[b + 1]: b += 1
+        return (b - a + 1) * pas
+    perp = lambda u: np.array([-u[1], u[0]])
+    for k in DOIGTS:
+        p = [px2cm(q, sx) for q in ch[k]]; u = [nz(p[i + 1] - p[i]) for i in range(3)]
+        st = [(p[0] + F_P1_DESSIN * (p[1] - p[0]), u[0]), (p[1], nz(u[0] + u[1])), (0.5 * (p[1] + p[2]), u[1]),
+              (p[2], nz(u[1] + u[2])), (p[2] + 0.45 * (p[3] - p[2]), u[2])]
+        w = [corde(c, perp(d)) for c, d in st]
+        w[0] = min(w[0], w[1] + 0.05)    # auriculaire : aux 6/10 de sa P1 courte la corde prend encore la palmure (18,5
+        out[k] = tuple(round(x, 4) for x in w)   # mm contre 17,2 à l'IPP) ; une P1 n'est pas plus large que sa tête
+    return out
+
 PROF_DOIGT = 0.45      # centre IPP / IPD dans l'épaisseur, depuis le dos (anatomie.md § 3 : tête de P1 de 9 mm sous
                        # ≈ 2,5 mm de peau dorsale → 7 mm sur 17,5 = 0,41, tête décalée vers la paume → 0,45)
 K_PAUME = (1.10, 1.05)  # échelle radiale (x, z) des métacarpiens : paume MH 7,9 cm de large aux têtes contre 8,8–9,0
@@ -676,7 +768,7 @@ def preparer_retaille(s1, sq, op):
     St = np.cumsum([0] + [np.linalg.norm(tg[q + 1] - tg[q]) for q in range(3)])
     S_MH['pouce'], S_T['pouce'] = Smh, St
     for q, b in enumerate(CHAINES['pouce']):
-        cad[b] = dict(o=pts[q], F=repere(pts[q + 1] - pts[q], -n_o), S=Smh[q]); cib[b] = dict(o=tg[q], F=A[b], S=St[q])
+        cad[b] = dict(o=pts[q], F=repere(pts[q + 1] - pts[q], -n_o), S=Smh[q]); cib[b] = dict(o=tg[q], F=sq['AG'][b], S=St[q])
     S, F2 = op['S'], op['F2']; T2, _ = triangles(F2)
     prof = profils_mh(S @ V, T2, S @ W, cad, {k: CHAINES[k] for k in DOIGTS + ['pouce']})
     return dict(cad=cad, cib=cib, S_T=S_T, S_MH=S_MH, prof=prof, roulis=roulis)
@@ -744,7 +836,7 @@ def mesurer_sections(Vf, T2, sq):
         for st in stations_cible(k, St):
             q = int(np.searchsorted(St, st, side='right') - 1); b = ch[q]
             nxt = C[ch[q + 1]] if q + 1 < len(ch) else bout[k]; u = nz(nxt - C[b]); o = C[b] + (st - St[q]) * u
-            Fr = A[b] if k == 'pouce' else repere(u, np.array([0, 0, 1.0]))
+            Fr = sq['AG'][b] if k == 'pouce' else repere(u, np.array([0, 0, 1.0]))
             P = coupe(Vf, T2, o, u); qq = (P - o) @ Fr
             res.append((float(np.ptp(qq[:, 0])), float(np.ptp(qq[:, 2])), float(qq[:, 2].min()), float(qq[:, 2].max())))
         out[k] = res
@@ -772,6 +864,11 @@ class Dessin:
                 np.clip(np.round((self.Y1 - P[:, 1]) / self.res - 0.5).astype(int), 0, self.gh - 1))
 
 def iou(M, D): return float((M & D).sum() / max(1, (M | D).sum()))
+
+LARGEUR_DESSIN = largeurs_du_dessin()
+for _k in DOIGTS:
+    LARGEUR[_k] = LARGEUR_DESSIN[_k]
+    EPAISSEUR[_k] = tuple(round(w * e / l, 4) for w, e, l in zip(LARGEUR_DESSIN[_k], EPAISSEUR_TABLE[_k], LARGEUR_TABLE[_k]))
 
 def optimiser_pose_dessin(Vf, T2, W2, sq, ds, pose, pas=(4, 2, 1), params=None, mode='dqs'):
     """descente par coordonnées sur quelques angles pour que la silhouette de face recouvre le mieux le dessin (IoU)"""
@@ -849,6 +946,9 @@ def etape3(s1, sq, op):
     R = preparer_retaille(s1, sq, op)
     log('- roulis des doigts MH (normale de la plaque d’ongle contre −Z) corrigé à la retaille : ' +
         ', '.join('%s %+.1f°' % (k, R['roulis'][k]) for k in DOIGTS))
+    log('- largeurs cibles des doigts = SON dessin au milieu du trait (mm, stations P1 / IPP / P2 / IPD / pulpe ; entre '
+        'parenthèses les tables 4.1 de la version précédente) : ' + ' ; '.join('%s %s (%s)' % (k, ' / '.join('%.1f' % (10 * w) for w in LARGEUR[k]),
+        ' / '.join('%.1f' % (10 * w) for w in LARGEUR_TABLE[k])) for k in DOIGTS) + ' ; épaisseurs = largeur × e/l des tables 4.2')
     # 3a avec une passe de rétroaction sur les stations
     sec = sections(R); V3 = retaille_os(V, W, R, sec)
     m0 = mesurer_sections(S @ V3, T2, sq)
@@ -1042,7 +1142,7 @@ def etape4(s1, sq, op, s3):
         'max %.1f° ; arêtes > 30° : %d, > 60° : %d (hors bord vif du poignet)' % (np.median(di), np.percentile(di, 99.9), di.max(), (di > 30).sum(), (di > 60).sum()))
     # sections
     ms = mesurer_sections(Vf, T2, sq)
-    log(''); log('| doigt | station | largeur (mm) | table 4.1 | épaisseur (mm) | table 4.2 | e/l | dos/paume (largeur à 25 % / 75 % de l’épaisseur) |')
+    log(''); log('| doigt | station | largeur (mm) | cible (doigts : SON dessin, milieu du trait ; pouce : table 4.1) | épaisseur (mm) | cible (e/l des tables 4.2) | e/l | dos/paume (largeur à 25 % / 75 % de l’épaisseur) |')
     log('|---|---|---|---|---|---|---|---|')
     secs = {}
     for k in DOIGTS + ['pouce']:
@@ -1052,7 +1152,7 @@ def etape4(s1, sq, op, s3):
         for i, st in enumerate(stations_cible(k, St)):
             q = int(np.searchsorted(St, st, side='right') - 1); b = ch[q]
             nxt = C[ch[q + 1]] if q + 1 < len(ch) else bout[k]; u = nz(nxt - C[b]); o = C[b] + (st - St[q]) * u
-            Fr = A[b] if k == 'pouce' else repere(u, np.array([0, 0, 1.0]))
+            Fr = sq['AG'][b] if k == 'pouce' else repere(u, np.array([0, 0, 1.0]))
             qq, (w25, w75) = forme_section(Vf, T2, o, u, Fr); secs[k].append(qq)
             w, t = ms[k][i][0], ms[k][i][1]
             log('| %s | %s | %.1f | %.1f | %.1f | %.1f | %.2f | %.2f |' % (k, noms[i], 10 * w, 10 * LARGEUR[k][i], 10 * t, 10 * EPAISSEUR[k][i], t / w, w25 / w75))
@@ -1061,7 +1161,7 @@ def etape4(s1, sq, op, s3):
     txt = []
     prof3 = {}
     for k in DOIGTS + ['pouce']:
-        b = CHAINES[k][-1]; u = nz(bout[k] - C[b]); Fr = A[b] if k == 'pouce' else repere(u, np.array([0, 0, 1.0]))
+        b = CHAINES[k][-1]; u = nz(bout[k] - C[b]); Fr = sq['AG'][b] if k == 'pouce' else repere(u, np.array([0, 0, 1.0]))
         sv, zv = profil_sagittal(Vf, T2, C[b], u, Fr); prof3[k] = (sv, zv)
         L3 = np.linalg.norm(bout[k] - C[b]); m = (sv > 0.25 * L3) & (sv < 0.85 * L3)
         dz = zv[m & (zv < 0)]; ds_ = sv[m & (zv < 0)]
@@ -1261,7 +1361,7 @@ REPLI_L = 0.15         # cm : largeur de la bande « repli » (sillons latéraux
 
 def ongle_cadre(k, sq):
     C, A, bout = sq['C'], sq['A'], sq['bout']; b = CHAINES[k][-1]
-    u = nz(bout[k] - C[b]); Fr = A[b] if k == 'pouce' else repere(u, np.array([0, 0, 1.0]))
+    u = nz(bout[k] - C[b]); Fr = sq['AG'][b] if k == 'pouce' else repere(u, np.array([0, 0, 1.0]))
     return b, C[b], Fr, float(np.linalg.norm(bout[k] - C[b]))
 
 def ongle_geometrie(k, sq, s_d=None):
@@ -1535,7 +1635,7 @@ def etape7(s1, sq, op, s3, s6):
                 ajouter('%s_%s_dos_%s' % (art, k, lettre), '=', arc_section(V, T2, oc + u * off, u, Fr, 'dos', da),
                         'ext(%s)' % os_, '%s_%s_dos' % (art, k), '« = » dorsal sur l’%s, effacé par la flexion' % art.upper())
     # pouce : « = » dorsal sur l'IP
-    o3 = C['pouce_p2']; u = nz(bout['pouce'] - o3); Fr = A['pouce_p2']
+    o3 = C['pouce_p2']; u = nz(bout['pouce'] - o3); Fr = sq['AG']['pouce_p2']
     for lettre, off, da in (('a', -0.10, 48), ('b', 0.08, 44)):
         ajouter('ip_pouce_dos_%s' % lettre, '=', arc_section(V, T2, o3 + u * off, u, Fr, 'dos', da), 'ext(pouce_p2)', 'ip_pouce_dos')
     # --- paume, pouce, poignet : relevés sur le dessin, projetés sur la main posée « dessin » (vue paume, +Z) ---
@@ -1640,17 +1740,19 @@ COUPLAGES = {
     'pouce_vis': 'trapézo-métacarpienne : rapprocher fait sortir le pouce du plan, av ≥ 0,7·max(0, rap) (v1 AVC 0,7), axes inclinés TFT 20°, '
                  'TAT 15°, FEV 15°, pronation couplée à l’opposition (PRONA 34°) — modèle v1 validé (R8), à garder',
     'arc': 'arc = max(flexion MCP auriculaire / 90, opposition du pouce) par défaut (R11)',
-    'convergence': 'les axes X des P1 sont inclinés de LEAN autour de l’os (index −6,5°, majeur 0, annulaire +6,5°, '
-                   'auriculaire +12°) : à 90° de flexion les doigts convergent vers le scaphoïde (R1)',
+    'convergence': 'axes de flexion obliques (R1), rotation autour de l’os : MCP (X des P1) index −3°, majeur 0, annulaire '
+                   '+1,5°, auriculaire +10° (dont 6,8° compensent la supination de mc5 par l’arc) → P1 repliées à 90° quasi '
+                   'parallèles (−3 / 0 / +3 / +3,2° avec arc 0,6) ; IPP et IPD (X des P2 et P3) −4 / 0 / +4 / +8° → les '
+                   'P2–P3 convergent vers la base du thénar (bouts du poing à 0,88 de l’écart des MCP)',
 }
 
 CONVENTION_POSE = {
     'unites': 'degrés',
     'doigts': 'P1 : R = Rz(−ab) · Rx(mcp) · Ry(rot) dans le repère de liaison de l’os (ab > 0 : vers le pouce, +X ; '
-              'mcp > 0 : flexion vers la paume, autour de l’axe X OBLIQUE ; rot > 0 : autour de Y) ; P2 : Rx(pip) ; P3 : Rx(dip)',
+              'mcp > 0 : flexion vers la paume, autour de l’axe X OBLIQUE ; rot > 0 : autour de Y) ; P2 : Rx(pip) ; P3 : Rx(dip) (X des P2 et P3 obliques aussi : voir couplages.convergence)',
     'pouce': 'mc1 : R = Rx(rap) · Rz(−av) (rap > 0 : vers l’index, flexion-adduction, axe X ≈ normale à la paume ; '
              'av > 0 : abduction palmaire, le pouce sort vers +Z) ; pouce_p1 : Rx(mcp) · Rz(−abdMcp) ; pouce_p2 : Rx(ip). '
-             'Z local du pouce = pulpe (pronation de repos 75°, reprise de MakeHuman) : le moteur ajoute la pronation couplée',
+             'Z local du pouce = pulpe des AXES (pronation de repos 75°, reprise de MakeHuman ; la PEAU de P1–P2 est tournée de −18° autour de l’os : pulpe visible à 57°, axes de la MCP et de l’IP obliques de 18° par rapport à l’ongle) : le moteur ajoute la pronation couplée',
     'poignet': 'l’os « poignet » (racine) porte l’avant-bras : flexion (flex > 0 : vers la paume, autour de X) et '
                'inclinaison (dev > 0 : radiale, vers le pouce, autour de −Z) font tourner mc1–mc5 autour de l’origine ; '
                'prono (autour de Y) fait tourner toute la main avec l’avant-bras',
@@ -1676,8 +1778,17 @@ POSES_CONTROLE = {
               'arc': 0.6},
     'V': {'pouce': {'rap': 40.75, 'av': 28.525, 'mcp': 43.75, 'ip': 28.5, 'abdMcp': -5.0}, 'index': doigt(0, 0, 0, 12), 'majeur': doigt(0, 0, 0, -12),
           'annulaire': {'mcp': 91.75, 'pip': 106.0, 'dip': 51.5, 'ab': -2.2}, 'auriculaire': {'mcp': 88.0, 'pip': 104.0, 'dip': 58.25, 'ab': -5.4},
-          'arc': 0.4},
+          'arc': 0.6},
 }
+# 20 octobre 2026 (largeurs de SON dessin, obliquité passée des MCP aux IP) : ces angles sont GARDÉS. `--regler-poses`
+# relancé sur la nouvelle main tombait sur des poses moins naturelles (poing : IPP du majeur à 90°, sa butée basse de
+# réglage, IP du pouce à 63° ; tunnel vu de profil 111 mm²) ; les angles validés donnent sur la nouvelle main : poing
+# 2,5 mm de pénétration (bout de l'index sur la paume), tunnel 74 mm² ; V 3,2 mm avec arc 0,4 → arc 0,6 (celui que le
+# moteur prend dès que l'auriculaire est replié : ARC_AUTO 0,6 × 88/90) : 2,4 mm (annulaire_bout/paume).
+# « L » (grief du 20 octobre 2026), dans la convention de CE fichier (ab par rapport à la liaison) : pouce en abduction
+# radiale à angle droit (moteur : TH(0, −28, 0, 0), mobilite.md 4.2), trois doigts repliés comme le PLI du moteur
+POSE_L = {'pouce': {'av': 0, 'rap': -28, 'mcp': 0, 'ip': 0}, 'index': doigt(0, 0, 0), 'majeur': doigt(90, 105, 70),
+          'annulaire': doigt(90, 105, 70), 'auriculaire': doigt(90, 105, 70), 'arc': 0.6}
 POSES_CONTROLE_AVANT = {     # pour la comparaison du journal (version livrée avant la relecture)
     'poing': {'pouce': {'rap': 38, 'av': 22, 'mcp': 40, 'ip': 45}, 'index': doigt(90, 100, 65), 'majeur': doigt(90, 102, 65),
               'annulaire': doigt(90, 104, 65), 'auriculaire': doigt(90, 106, 65), 'arc': 0.6},
@@ -1778,7 +1889,7 @@ def tunnel_profil(Vp, T, M, sq, res=0.02):
 # 5,7 / 9, 3,8 / 6 mm : des PICS ; dôme en plateau (plein sur ± 0,6 demi-largeur, rampe 1,0 ; σφ 60°) à 3,5 mm : 6,5 / 14,
 # 5,4 / 12, 3,4 / 8,5 mm — des têtes arrondies, larges comme la tête d'un métacarpien (13 mm d'os + la chair). Saillie
 # retenue 3,5 mm à la MCP (v1 : 3,2 ; CLAUDE.md : 4–5 ; à 4 mm les têtes redevenaient pointues), 2,5 mm à l'IPP.
-CORRECTIFS = {'mcp': dict(ref=90.0, saillie=0.35, sig_phi=60.0, plateau=(0.6, 1.0), coussin=0.60, os='_p1'),
+CORRECTIFS = {'mcp': dict(ref=90.0, saillie=0.35, sig_phi=60.0, plateau=(0.6, 1.0), coussin=0.60, os='_p1', elargit=0.12),
               'pip': dict(ref=100.0, saillie=0.25, sig_phi=60.0, plateau=(0.6, 1.0), coussin=0.25, os='_p2')}
 
 def rayon_rayon(Vp, T, c, dirn, cand):
@@ -1815,6 +1926,21 @@ def correctif_jointure(V, W, sq, T, nbr, k, ang, A_dos, cfg):
     lat_p = np.exp(-0.5 * (lat / (0.7 * hw)) ** 2) * porte_p
     g_p = np.exp(-0.5 * ((180 - phi) / 40.0) ** 2) * lat_p; g_c = np.exp(-0.5 * ((180 - phi) / 10.0) ** 2) * lat_p
     D = (A_dos * g_d + cfg['coussin'] * g_p - 0.06 * g_c)[:, None] * ur
+    if cfg.get('elargit'):
+        # chair des flancs de P1 chassée sur les côtés par la flexion (v1 piste X, `KNL`, validé par l'utilisateur) : avec SES
+        # largeurs (dessin, plus minces que les tables) et des axes de flexion presque droits (LEAN réduit, 20 octobre 2026),
+        # deux P1 voisines repliées à 90° gardaient 2,4 à 3,8 mm d'air (index–majeur) et 1,5 à 3,0 (majeur–annulaire) entre
+        # leurs flancs ; le poing se lit alors comme des tuyaux séparés. Le flanc de P1 s'élargit de `elargit` cm de chaque
+        # côté, sur toute la longueur de P1 et jusqu'à l'IPP (plateau le long de l'os), nul sur le dos et la pulpe.
+        Y1 = Ad[:, 1]; X1 = Ad[:, 0]; L1 = float(np.linalg.norm(C[CHAINES[k][2]] - C[b]))
+        s1 = r @ Y1; l1 = r @ X1; z1 = r @ Ad[:, 2]
+        # flancs côté dos et à mi-épaisseur seulement, à partir de 3,5 mm de la MCP : sur la face palmaire de la base de
+        # P1 (pli digito-palmaire, qui se referme en flexion) l'élargissement faisait 12 arêtes vives au repos sur
+        # l'auriculaire (mesuré : repos DQS + correctifs 15 arêtes > 60° contre 3)
+        g_s = sstep((s1 - 0.35) / 0.5) * sstep((L1 + 0.5 - s1) / 0.5)
+        g_z = np.where(z1 < 0, np.exp(-0.5 * (z1 / (0.9 * hw)) ** 2), np.exp(-0.5 * (z1 / (0.4 * hw)) ** 2))
+        g_f = sstep((np.abs(l1) - 0.25 * hw) / (0.55 * hw)) * sstep((2.0 * hw - np.abs(l1)) / (0.6 * hw)) * g_z
+        D = D + (cfg['elargit'] * g_s * g_f * np.sign(l1) * sstep((wch - 0.5) / 0.4))[:, None] * X1[None, :]
     # les deux coussinets se RENCONTRENT au plan bissecteur palmaire du pli sans le traverser (sinon la peau se
     # recoupe : 240 triangles retournés dans le poing avec des coussinets de 4 mm non plafonnés, mesuré) : chaque sommet
     # palmaire reste à 0,3 mm au moins de son côté du plan (axe de la jointure, bissectrice)
@@ -2284,8 +2410,29 @@ def etape10(s1, sq, op, s6, s8, sans_cycles=False):
     nren += len(gp)
     planche([Image.open(p).convert('RGB') for p in gp], ['V : ongles de l’index et du majeur (dos)', 'bouts et ongles au repos (dos)', 'bout de l’index (profil)'],
             cols=3, titre='Contrôle Cycles — gros plans').save(os.path.join(CHECKS, 'e10_gros_plans.jpg'), quality=90)
+    # 6. signes du grief du 20 octobre 2026 (« L » vu de dos) : repos, poing, V, L × face / dos / profil, et gros plans des
+    #    jointures de dos (de face et en plongée de 35°, là où l'obliquité des P1 se voyait le plus)
+    ims, labs = [], []
+    Rpl = VW['dos'] @ rot_axe([1, 0, 0], math.radians(-35))
+    sig = [('repos', s8['repos']), ('poing', s8['controle']['poing']), ('V', s8['controle']['V']), ('L', POSE_L)]
+    for i, (nom, p) in enumerate(sig):
+        Vx = poser_v2(V, W, sq, p, cor)
+        vl = [(VW[nm],) + cadre(Vx, VW[nm]) for nm in ('paume', 'dos', 'profil_radial')]
+        ch = cycles_bpy.rendus([(Vx, Tc, dong)], vl, taille=420, echantillons=24, chemin_tmp=os.path.join(WORK, 'cyc_s%d_%%d.png' % i))
+        ims += [Image.open(q).convert('RGB') for q in ch]; nren += len(ch); labs += ['%s — %s' % (nom, v) for v in ('face (paume)', 'dos', 'profil (pouce)')]
+    planche(ims, labs, cols=3, titre='Signes (DQS + correctifs) : repos, poing, V, L — largeurs de SON dessin, P1 repliées quasi parallèles, '
+            'pouce à 56° de pronation de repos').save(os.path.join(CHECKS, 'e10_signes.jpg'), quality=90)
+    ims, labs = [], []
+    for i, (nom, p) in enumerate(sig[1:]):
+        Vx = poser_v2(V, W, sq, p, cor); M = cinematique(sq, p)
+        ctr = np.mean([(M[OSI[k + '_p1']] @ np.r_[C[k + '_p1'], 1])[:3] for k in DOIGTS], 0)
+        ch = cycles_bpy.rendus([(Vx, Tc, dong)], [(VW['dos'], ctr, 4.2), (Rpl, ctr, 4.2)], taille=480, echantillons=28,
+                               chemin_tmp=os.path.join(WORK, 'cyc_j%d_%%d.png' % i))
+        ims += [Image.open(q).convert('RGB') for q in ch]; nren += len(ch); labs += ['%s — jointures, dos' % nom, '%s — jointures, dos en plongée 35°' % nom]
+    planche(ims, labs, cols=2, titre='Jointures vues de dos (DQS + correctifs) : P1 repliées (photos : parallèles sous le majeur)').save(
+        os.path.join(CHECKS, 'e10_jointures_dos.jpg'), quality=90)
     log('- %d rendus Cycles (CPU, 20 à 32 échantillons) en %.0f s : e10_cycles.jpg, e10_pouce.jpg, e8_correctifs.jpg, e10_bouts.jpg, '
-        'e10_gros_plans.jpg' % (nren, time.time() - t0))
+        'e10_gros_plans.jpg, e10_signes.jpg, e10_jointures_dos.jpg' % (nren, time.time() - t0))
 
 # =================================================================================================================
 if __name__ == '__main__':

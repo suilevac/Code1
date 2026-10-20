@@ -305,6 +305,53 @@ function decoder(sk, J) {
     }
   }
   a.biaisBase = a.biais.slice();
+  // --- JOINTURES À L'IDENTITÉ DE LEUR DOIGT (grief de l'utilisateur, 20 octobre : « des doigts qui se fondent dans la
+  //     main, tu ne vois même plus les traits de chaque doigt », capture de « L » vue de dos). Mesuré (passe identité lue
+  //     sur la G-pass, vues dos et dos ¾ de L, Index (1), V (2), Poing serré) : tout ce que l'on voit de dos d'un doigt
+  //     replié — la tête du métacarpien, la palmure dorsale et la base de la P1 — porte l'identité PAUME (les poids de
+  //     peau y sont dominés par mc2–mc5 ; 0 pixel de trait entre deux jointures à 30 px/cm comme à 90). Aucune frontière
+  //     doigt / doigt n'existait donc à cet endroit, quel que soit le seuil : un gant. En v1, la peau de la jointure
+  //     appartenait à la P1 (pas d'os métacarpien) et la passe identité y traçait toujours le trait de contact.
+  //     Chaque sommet du DOS de la paume reçoit ici, dans le repère de liaison, une coordonnée latérale CONTINUE entre les
+  //     rayons (u = 0 sur l'axe de l'index … 3 sur celui de l'auriculaire, k + ½ sur la ligne médiane entre deux rayons),
+  //     sa position le long du rayon (t = 0 à la base du métacarpien, 1 au centre de la MCP), et un poids « dos ». La
+  //     G-pass (shaders.js, 1) donne au fragment l'identité du doigt k = arrondi(u) quand la MCP de ce doigt est pliée
+  //     (seuil en t passé par uniforme, Pipeline.poser) : la frontière entre deux jointures est l'isoligne u = k + ½ d'un
+  //     champ lisse (pas l'escalier des triangles), c'est-à-dire le fond de la vallée entre deux têtes métacarpiennes.
+  //     Mesuré au repos : 1 637 des 1 659 sommets dorsaux des P1 (t < 1,5) sont à moins de ½ de leur rayon (|u − k| < ½),
+  //     les 22 autres au bord cubital de l'auriculaire (u 2,48–2,50 ou > 3,5) : la frontière ne coupe aucune P1.
+  {
+    const MC = ['mc2', 'mc3', 'mc4', 'mc5'].map(k => OSI[k]), P1 = DOIGTS.map(k => OSI[k + '_p1']);
+    const ax = MC.map((m, k) => { const b = a.Cb[m], h = a.Cb[P1[k]], d = [h[0] - b[0], h[1] - b[1]], L = Math.hypot(d[0], d[1]); return {b, d, L}; });
+    const ecart = [0, 1, 2].map(k => Math.hypot(a.Cb[P1[k + 1]][0] - a.Cb[P1[k]][0], a.Cb[P1[k + 1]][1] - a.Cb[P1[k]][1]));   // 2,25 / 2,22 / 1,74 cm
+    a.rayon = new Float32Array(3 * n);
+    for (let i = 0; i < n; i++) {
+      // calculé pour TOUS les sommets (le nuanceur décide qui change d'identité : la paume, et la base dorsale des P1) ;
+      // n'écrire que ceux de la paume laissait des zéros sur les sommets voisins des doigts, interpolés dans les triangles
+      // mixtes : trous de paume dans la jointure, tirets de trait (Y de profil, O en dos ¾). Le pouce n'en a pas.
+      if (a.part[i] === 1) continue;
+      const x = a.rest[3 * i], y = a.rest[3 * i + 1];
+      // e[k] : distance signée à l'axe du rayon k dans le plan de la paume, > 0 vers le cubital (−X) ; t[k] : abscisse
+      const e = [], t = [];
+      for (let k = 0; k < 4; k++) { const w = [x - ax[k].b[0], y - ax[k].b[1]];
+        t.push((w[0] * ax[k].d[0] + w[1] * ax[k].d[1]) / (ax[k].L * ax[k].L)); e.push((w[0] * -ax[k].d[1] + w[1] * ax[k].d[0]) / ax[k].L); }
+      let u = null;
+      if (e[0] < 0) u = e[0] / ecart[0]; else if (e[3] > 0) u = 3 + e[3] / ecart[2];
+      else for (let k = 0; k < 3; k++) if (e[k] >= 0 && e[k + 1] <= 0) { u = k + e[k] / (e[k] - e[k + 1]); break; }
+      if (u === null) continue;
+      const k0 = Math.max(0, Math.min(2, Math.floor(u))), f = Math.max(0, Math.min(1, u - k0)), tt = t[k0] * (1 - f) + t[k0 + 1] * f;
+      // dos : n.z < −0,05 → 0, < −0,35 → 1 (isoligne ½ à n.z ≈ −0,2, comme le « dos franc » des sillons) ; au-delà d'une
+      // demi-jointure hors des rayons extrêmes (bord radial de l'index, cubital de l'auriculaire : la commissure du pouce
+      // et la tranche), rien — sinon la palmure dorsale du pouce aurait pris l'identité de l'index et tracé un trait
+      // « pouce / index » le long de la commissure
+      // La PALMURE (région 4) compte comme dos jusqu'à n.z 0,2 : au fond de la commissure ses normales regardent le
+      // bout des doigts (mesuré : 189 sommets de palmure à moins de 0,1 de la ligne médiane, n.z −0,2 à +0,2) ; restée
+      // « paume », elle laissait un blanc de 4 à 6 px (×3) entre le trait de la vallée et l'encoche du contour.
+      const nz = a.restN[3 * i + 2], palmure = Math.round(a.region[i]) === 4;
+      const dos = (u < -0.45 || u > 3.45) ? 0 : palmure ? sstep(0.35, 0.05, nz) : sstep(-0.05, -0.35, nz);
+      a.rayon[3 * i] = u; a.rayon[3 * i + 1] = tt; a.rayon[3 * i + 2] = dos;
+    }
+  }
   // --- correctifs (morph targets, accesseurs creux → on ne garde que les sommets déplacés) ---
   a.morphs = [];
   const dict = sk.morphTargetDictionary || {}, mp = g.morphAttributes.position || [], mn = g.morphAttributes.normal || [];
@@ -961,6 +1008,16 @@ const RENDU = {
   // 0,3 mm (v1 : 0,02 u) faisait basculer le trait d'un côté à l'autre le long d'un contact (deux doigts convergent :
   // l'écart y vaut quelques dixièmes de mm) — trait déchiqueté ; à 2,5 mm il reste d'un seul côté (relecture adverse)
   porteDoigts: 0.25,
+  // TRAIT DE CONTACT entre deux doigts (pouce compris) : centré sur la frontière d'identité, tracé par les DEUX côtés
+  // sur un anneau de contactK × r (shaders.js 4a), sans aucune porte de profondeur. À RÉGLER : voir JOURNAL.md.
+  contactK: 0.5,
+  // jointures à l'identité de leur doigt (decoder, Pipeline.poser) : abscisse le long du rayon (1 = centre de la MCP) où
+  // s'arrête, MCP pliée à fond, le trait de la vallée entre deux têtes métacarpiennes. À RÉGLER : voir JOURNAL.md.
+  jointureT: 0.88,
+  // fin EFFILÉE du trait de la vallée (shaders.js, 1) : la limite basse de la zone d'une jointure monte vers la ligne
+  // médiane (pente en t par unité de u, descente max au centre de la tête) ; sous la fin du trait, un coin de paume
+  // s'ouvre entre les deux jointures et le trait centré s'amincit jusqu'à rien. À RÉGLER : voir JOURNAL.md.
+  jointurePente: 0.3, jointureDescente: 0.15, jointureEffile: 0.06,
   decolle: 0.04,      // cm : rubans décollés de la peau (Spider-Verse)
   // réserve des plis devant une autre partie (shaders.js 4b, relecture M5 : pli de la paume qui « traverse » le pouce) :
   // rayon 4 × le contour (éteint à moins de 2 × : un blanc d'un contour entre le pli et le trait du pouce, puis
@@ -1048,6 +1105,7 @@ function Pipeline(renderer) {
   g.setAttribute('aOngle', new THREE.BufferAttribute(A.ongle, 1));
   g.setAttribute('aMasque', new THREE.BufferAttribute(A.masque, 2));
   g.setAttribute('aY', new THREE.BufferAttribute(A.y, 1));
+  g.setAttribute('aRayon', new THREE.BufferAttribute(A.rayon, 3));   // jointures à l'identité de leur doigt (decoder)
   // part de la partie survolée (marionnette) par sommet, tirée des POIDS de peau : interpolée, sa frontière suit la peau
   // (avec l'identité plate par triangle, le surlignage avait un bord en dents de scie — relecture adverse)
   this.survolA = new Float32Array(n);
@@ -1065,7 +1123,8 @@ function Pipeline(renderer) {
     dGraze: {value: RENDU.dGraze}, porte: {value: RENDU.porte}, porteDoigts: {value: RENDU.porteDoigts}, cn: {value: 1}, cf: {value: 100},
     pxPli: {value: 3}, plancher: {value: 1.25}, decolle: {value: RENDU.decolle}, coupeY: {value: RENDU.coupeY}, debug: {value: 0}, bandeOn: {value: 0},
     tL: {value: null}, voisinsMin: {value: 7.5}, cmPx: {value: 0.01}, continuite: {value: 1}, enveloppe: {value: 0.15}, presFond: {value: 1}, fonduFond: {value: 0}, masque: {value: 0},
-    tCreux: {value: null}, creuxOn: {value: 0}, rCreux: {value: 1.2}, dCreux: {value: 0.5}, nCreux: {value: 6.5}, rOcc: {value: 0}, dOcc: {value: 0.3}
+    tCreux: {value: null}, creuxOn: {value: 0}, rCreux: {value: 1.2}, dCreux: {value: 0.5}, nCreux: {value: 6.5}, rOcc: {value: 0}, dOcc: {value: 0.3},
+    tJointure: {value: new THREE.Vector4(9, 9, 9, 9)}, finJointure: {value: new THREE.Vector3(0.3, 0.15, 0.06)}, rContact: {value: 2}
   };
   const mat = (vs, fs, extra) => new THREE.ShaderMaterial(Object.assign({uniforms: u, vertexShader: vs, fragmentShader: fs, extensions: {derivatives: true}}, extra || {}));
   this.mG = mat(SH.gVertex, SH.gFragment);
@@ -1124,7 +1183,7 @@ function Pipeline(renderer) {
     gc.setAttribute('position', new THREE.BufferAttribute(this.bouchon.pos, 3).setUsage(THREE.DynamicDrawUsage));
     gc.setAttribute('normal', new THREE.BufferAttribute(this.bouchon.nor, 3).setUsage(THREE.DynamicDrawUsage));
     const remplir = (nom, c, v) => { const t = new Float32Array(c * nv); for (let i = 0; i < nv; i++) for (let j = 0; j < c; j++) t[c * i + j] = Array.isArray(v) ? v[j] : v; gc.setAttribute(nom, new THREE.BufferAttribute(t, c)); };
-    remplir('aPart', 1, 0); remplir('aOs', 1, 0); remplir('aBiais', 1, 0); remplir('aOngle', 1, -3); remplir('aMasque', 2, [0, 0]); remplir('aY', 1, c0 + 1e-3);
+    remplir('aPart', 1, 0); remplir('aOs', 1, 0); remplir('aBiais', 1, 0); remplir('aOngle', 1, -3); remplir('aMasque', 2, [0, 0]); remplir('aY', 1, c0 + 1e-3); remplir('aRayon', 3, [0, 0, 0]);
     gc.boundingSphere = g.boundingSphere;
     this.geoC = gc;
     this.mGc = mat(SH.gVertex, SH.gFragment, {side: THREE.DoubleSide, defines: {BOUCHON: 1}});
@@ -1181,7 +1240,7 @@ Pipeline.prototype.survol = function (part) {
 };
 // pose → peau (positions, normales) et rubans ; cache : la dernière pose
 Pipeline.prototype.poser = function (p, pe) {
-  const k0 = cle(p), k = k0 + '|' + RENDU.sillon + ',' + RENDU.vallee; if (k === this.cle) return this.F;
+  const k0 = cle(p), k = k0 + '|' + RENDU.sillon + ',' + RENDU.vallee + ',' + RENDU.jointureT; if (k === this.cle) return this.F;
   if (pe && pe.k === k0) { this.P.set(pe.P); this.N.set(pe.N); this.F = pe.F; } else this.F = skin(p, this.P, this.N);
   this.cle = k;
   this.geo.attributes.position.needsUpdate = true; this.geo.attributes.normal.needsUpdate = true;
@@ -1196,6 +1255,19 @@ Pipeline.prototype.poser = function (p, pe) {
       for (let i = 0; i < n; i++) { const w = fs * S2[i] + fv * V2[i]; if (w > bz[i] - b0[i]) bz[i] = b0[i] + w; }
     }
     this.geo.attributes.aBiais.needsUpdate = true;
+  }
+  // jointures à l'identité de leur doigt (decoder, « JOINTURES ») : seuil en t (abscisse le long du rayon, 1 = centre de
+  // la MCP) au-delà duquel la peau dorsale de la paume prend l'identité du doigt k, selon la flexion de sa MCP. Main à plat
+  // (MCP < 30°) : aucun changement (9 = jamais) — le dos d'une main ouverte est lisse, sans trait entre les rayons. De 30
+  // à 75° la zone descend de la base de la P1 (t 1,05) jusqu'à t = RENDU.jointureT : le trait de la vallée grandit avec
+  // la jointure qui sort, sans apparaître d'un coup. La zone d'un doigt TENDU s'active aussi quand un VOISIN est plié :
+  // la vallée existe dès qu'une des deux têtes sort (capture de « L » de l'utilisateur, vue de dos : sans cela, rien ne
+  // séparait la jointure du majeur replié de la base de l'index tendu) ; elle prolonge la P1 du doigt tendu (même
+  // identité), donc aucun trait de plus ailleurs.
+  {
+    const tj = this.u.tJointure.value, f = DOIGTS.map(k => sstep(30, 75, p[k].mcp)), v = [0, 0, 0, 0];
+    for (let k = 0; k < 4; k++) { const g = Math.max(f[k], k > 0 ? f[k - 1] : 0, k < 3 ? f[k + 1] : 0); v[k] = g > 0 ? 1.05 + (RENDU.jointureT - 1.05) * g : 9; }
+    tj.set(v[0], v[1], v[2], v[3]);
   }
   // rubans : position et normale barycentriques sur la peau posée ; voisins pour la tangente écran ; largeur
   const rp = this.rp, P = this.P, N = this.N;
@@ -1281,6 +1353,8 @@ Pipeline.prototype.dessiner = function (cam, W, H, st, px, sortie, rapide, netto
   u.continuite.value = RENDU.continuite; u.enveloppe.value = RENDU.enveloppe; u.presFond.value = RENDU.presFond; u.fonduFond.value = RENDU.fonduFond;
   u.px.value = px.contour; u.onglePx.value = px.ongle; u.plancherPx.value = px.plancher; u.plancher.value = px.plancher;
   u.r.value = px.interne / 0.85; u.pxPli.value = px.plis;
+  u.rContact.value = RENDU.contactK * u.r.value;
+  u.finJointure.value.set(RENDU.jointurePente, RENDU.jointureDescente, RENDU.jointureEffile);
   u.rOcc.value = (RENDU.reserveOcc || 0) * px.contour; u.dOcc.value = RENDU.dOcc;
   const rt = this.cible(W, H);
   if (!this.rtL) this.rtL = new THREE.WebGLRenderTarget(W, H, {minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true});

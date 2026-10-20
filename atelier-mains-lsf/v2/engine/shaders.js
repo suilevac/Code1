@@ -27,18 +27,23 @@ const S = {};
 S.gVertex = FLAT + `
 attribute float aPart;
 attribute float aY;
+attribute vec3 aRayon;
 varying vec3 vN;
 varying float vY;
+varying vec3 vRayon;
 PLAT varying float vPart;
 void main(){
   vN = normalize(normalMatrix * normal);
-  vPart = aPart; vY = aY;
+  vPart = aPart; vY = aY; vRayon = aRayon;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
 S.gFragment = FLAT + `
 uniform float coupeY;
+uniform vec4 tJointure;    // par doigt : abscisse le long du rayon au-delà de laquelle la jointure prend son identité
+uniform vec3 finJointure;  // (pente, descente max, longueur d'effilement) de la limite basse de la zone (en t)
 varying vec3 vN;
 varying float vY;
+varying vec3 vRayon;       // (u latéral continu entre les rayons, t le long du rayon, poids « dos ») — engine.js, JOINTURES
 varying float vMmPx;
 PLAT varying float vPart;
 void main(){
@@ -53,11 +58,30 @@ void main(){
   // WebGL1 : un triangle « mixte » (deux parties) a une identité interpolée non entière ; on la marque 7 (inconnue)
   if (abs(p - floor(p + 0.5)) > 0.02) p = 6.0; else p = floor(p + 0.5);
 #endif
+  // JOINTURES : la peau dorsale de la paume au droit d'une MCP pliée (tête du métacarpien, palmure dorsale, base de la
+  // P1) prend l'identité du doigt k = arrondi(u). u est interpolé (lisse) : la frontière entre deux jointures voisines
+  // est l'isoligne u = k + ½, le fond de la vallée entre les deux têtes — et non l'escalier des triangles (identité plate)
+  float reste = 0.0;
+  // (la base dorsale des P1, t < 1,35, suit la même règle : là, la frontière entre la P1 du doigt k et la jointure de
+  // k + 1 était l'escalier des triangles de la P1 — dents de 2 à 6 px à ×3 —, elle devient l'isoligne. Mesuré au repos :
+  // les sommets dorsaux des P1 sont à |u − k| < ½ de leur rayon, l'identité de leur intérieur ne change pas)
+  if ((p < 0.5 || (p > 1.5 && vRayon.y < 1.35)) && vRayon.z > 0.5) {
+    float k = clamp(floor(vRayon.x + 0.5), 0.0, 3.0);
+    float tj = k < 0.5 ? tJointure.x : k < 1.5 ? tJointure.y : k < 2.5 ? tJointure.z : tJointure.w;
+    // limite basse légèrement bombée (plus basse au centre de la tête qu'à la ligne médiane) ; sur les finJointure.z
+    // derniers de t avant cette limite, la part « effilement » descend de 1 à 0 : le trait de contact (4a) s'y amincit
+    // jusqu'à une pointe, comme un trait de plume, au lieu de finir carré
+    float w = abs(vRayon.x - k), tb = max(tj + finJointure.x * (w - 0.5), tj - finJointure.y);
+    if (vRayon.y > tb) { p = 2.0 + k; reste = 0.1 + 0.3 * (1.0 - clamp((vRayon.y - tb) / finJointure.z, 0.0, 1.0)); }
+  }
   vec3 n = normalize(vN);
   // intérieur (vu par l'ouverture de la manche) : identité 8, sur laquelle la passe d'arêtes ne trace rien (un aplat
   // sombre, bordé par le seul trait de l'ouverture)
   if (!gl_FrontFacing) { gl_FragColor = vec4(-n * 0.5 + 0.5, 1.0); return; }
-  gl_FragColor = vec4(n * 0.5 + 0.5, (p + 1.0) / 8.0);
+  // alpha = (identité + 1 + reste) / 8 : le décodage floor(a·8 + ½) rend la même identité (reste < ½). Le reste marque
+  // les pixels de JOINTURE (≥ 0,1 ; 3 pas de 8 bits au-dessus de 0) et porte l'effilement de la fin de la vallée (0,1 →
+  // 0,4, 10 pas) ; ailleurs il est nul et l'alpha est celui d'avant au bit près
+  gl_FragColor = vec4(n * 0.5 + 0.5, (p + 1.0 + reste) / 8.0);
 }`;
 
 /* ---------- passe de sélection (marionnette) : os dominant + partie ---------- */
@@ -332,8 +356,9 @@ void main(){
 //  - un saut de profondeur vers l'arrière que la pente locale n'explique pas (test SYMÉTRIQUE : sur une surface inclinée
 //    continue, d − d0 ≈ d0 − dq ; au bord d'une occlusion le côté opposé reste continu), seuil × (1 + k(1 − |n.z|)) ;
 //  - une autre partie (identité) derrière : saut ≥ porte × seuil entre la paume et un doigt (sinon la racine des doigts
-//    tendus serait soulignée), ≥ porteDoigts entre deux doigts (au contact, le côté qui trace est décidé par l'ordre des
-//    identités : UN seul trait de contact, comme en v1).
+//    tendus serait soulignée) ;
+//  - TRAIT DE CONTACT entre deux doigts différents (pouce compris) : SANS porte de profondeur, centré sur la frontière
+//    d'identité et tracé par les deux côtés sur un anneau de rContact ≈ ½ r (voir plus bas).
 // Le fond (alpha 0) est ignoré : la silhouette est l'affaire de la coque.
 S.edgeVertex = `
 varying vec2 vUv;
@@ -347,6 +372,7 @@ uniform float dThr;
 uniform float dGraze;
 uniform float porte;
 uniform float porteDoigts;
+uniform float rContact;    // px de la cible : demi-anneau du trait de contact entre deux doigts (≈ ½ r)
 uniform float ortho;
 uniform float cn;
 uniform float cf;
@@ -388,6 +414,8 @@ void main(){
     float dq = gq.a < 0.01 ? d0 : lin(texture2D(tD, vUv - o).r);
     float e = 0.0;
     float id = floor(g.a * 8.0 + 0.5);
+    // l'un des deux pixels est une JOINTURE (reste de l'alpha ≥ 0,1, G-pass)
+    bool jointure = g0.a * 8.0 - id0 > 0.05 || g.a * 8.0 - id > 0.05;
     if (d - d0 > thr && (d - d0) - (d0 - dq) > 0.7 * thr) {
       e = 1.0;
       // CONTINUITÉ (relecture adverse : doubles anneaux noirs autour des bouts des doigts vus de face, « vue dessus ») :
@@ -396,7 +424,10 @@ void main(){
       // l'« écho » du contour sur un flanc). Pente de la profondeur le long de o d'après une normale vue n :
       // (n.x·o.x + n.y·o.y) / n.z ; une surface continue a sa marche entre les deux pentes (valeurs moyennes), une
       // occlusion la dépasse. n.z plafonné à 0,08 (pente 12,5 : un flanc vu à 5° du rasant).
-      if (continuite > 0.5 && (id == id0 || id > 7.5)) {
+      // … et entre une JOINTURE et ce qui l'entoure (reste de l'alpha ≥ 0,1, voir la G-pass) : c'est la même peau,
+      // continue, dont seule l'identité a changé — sans cela le veto tombait et la peau des têtes vue en rasant se
+      // hachurait de tirets (O en dos ¾, Y de profil)
+      if (continuite > 0.5 && (id == id0 || id > 7.5 || jointure)) {
         vec3 n1 = g.rgb * 2.0 - 1.0;
         vec2 u = vec2(cos(a), sin(a)), oc = u * r * cpx;
         float s0 = dot(n0.xy, oc) / max(n0.z, 0.08), s1 = dot(n1.xy, oc) / max(n1.z, 0.08);
@@ -409,33 +440,68 @@ void main(){
       }
     }
     if (id != id0 && id < 6.5 && id0 < 6.5) {
-      if (id0 >= 2.0 && id >= 2.0) {
-        // deux doigts : contact ou recouvrement → UN trait. Les profondeurs sont comparées JUSTE DE PART ET D'AUTRE DE LA
-        // FRONTIÈRE (trois pas le long de o), pas à r px : deux doigts qui se touchent sont deux cylindres, et chacun,
-        // vu depuis l'autre à r px, paraît « derrière » (sa surface fuit) — les deux côtés traçaient, d'où un trait
-        // DOUBLÉ et, là où l'écart frôlait le seuil, un second trait en tirets (relecture adverse : « trait de contact
-        // qui clignote en tirets » ; main plate de face : un tiret tous les 6 à 8 px le long de chaque contact)
-        float dA = d0, dB = d, vuB = 0.0;
-        for (int k = 1; k <= 3; k++) {
-          vec2 uk = vUv + o * (float(k) / 4.0);
-          float ik = floor(texture2D(tG, uk).a * 8.0 + 0.5), dk = lin(texture2D(tD, uk).r);
-          if (ik == id0 && vuB < 0.5) dA = dk;
-          else if (ik == id && vuB < 0.5) { dB = dk; vuB = 1.0; }
-        }
-        float dd = dB - dA;
-        // décision CONTINUE (et non un seuil sec) : le doigt d'identité basse trace tant que l'autre n'est pas nettement
-        // devant lui (il s'efface de porteDoigts à 2 × porteDoigts), l'autre prend le relais au-delà ; à la bascule les
-        // deux tracent à moitié au lieu de hachurer pixel par pixel (relecture adverse : bande hachurée grise le long du
-        // contact index–majeur, main plate en dos ¾)
-        e = max(e, id0 < id ? 1.0 - smoothstep(porteDoigts, 2.0 * porteDoigts, -dd) : smoothstep(porteDoigts, 2.0 * porteDoigts, dd));
-      } else if (d - d0 > porte * thr) e = 1.0;
+      // deux doigts (pouce compris) : ni la marche de profondeur ni la porte ne décident — c'est le trait de contact
+      // centré, compté à part (cntC) ; paume / doigt : porte de profondeur (la racine d'un doigt tendu reste sans trait)
+      if (id0 > 1.5 && id > 1.5) e = 0.0;   // (identités lues + 1 : paume 1, pouce 2, doigts 3 à 6)
+      // jointure / paume : la même peau continue (seule l'identité change) — ni porte ni trait ; une vraie occlusion y
+      // reste tracée par la marche de profondeur (plus haut, si les normales ne l'expliquent pas)
+      else if (jointure) {}
+      else if (d - d0 > porte * thr) e = 1.0;
     }
     cnt += e;
   }
+  // TRAIT DE CONTACT entre deux doigts différents (pouce compris), rétabli comme en v1 (CLAUDE.md, passe identité : un
+  // trait sépare TOUJOURS deux doigts, même collés, même sans marche de profondeur). Grief de l'utilisateur (20 octobre,
+  // « L » vu de dos : « des doigts qui se fondent dans la main, tu ne vois même plus les traits de chaque doigt »).
+  // L'ancienne règle faisait tracer UN côté, choisi par la profondeur juste de part et d'autre de la frontière (porte
+  // 2,5 mm, fondu jusqu'à 5 mm) : là où l'écart de profondeur passait la porte le long d'un contact, le trait sautait
+  // d'un côté de la frontière à l'autre (un cran de r px). Ici le trait est CENTRÉ sur la frontière : chaque côté
+  // compte les échantillons d'une autre identité de doigt sur un anneau de rContact (≈ ½ r) et trace sa moitié ; les
+  // deux moitiés sont symétriques par construction, donc le trait est continu, d'épaisseur constante (≈ celle de
+  // l'ancien trait d'un seul côté sur r : bande où le compte dépasse 1 à 3 sur 12, ≈ 0,84 × l'anneau de chaque côté),
+  // et sa place ne dépend ni de la profondeur ni de l'ordre des identités. Le fond est ignoré (la coque fait la
+  // silhouette), le fond d'un creux fermé aussi (4c).
+  float cntC = 0.0, cntP = 0.0;
+  // effilement du pixel (G-pass : reste de l'alpha d'identité, 0 hors de la fin d'une vallée) : l'anneau se resserre
+  // jusqu'à 0,25 × rContact, le trait s'amincit vers sa pointe
+  float rC = rContact * mix(0.25, 1.0, 1.0 - clamp((g0.a * 8.0 - id0 - 0.12) / 0.26, 0.0, 1.0));
+  // 12 directions : 24 ne changent rien de visible (pointe du trait comparée à ×9, jointures du poing en dos ¾ à ×3)
+  if (id0 > 1.5) for (int i = 0; i < 12; i++) {
+    float a = float(i) * 0.5235988;
+    vec2 o = vec2(cos(a), sin(a)) * rC * texel;
+    vec4 g = texture2D(tG, vUv + o);
+    if (g.a < 0.01) {
+      // JOUR ÉTROIT entre deux doigts collés (B en dos ¾ : 1 à 2 px de fond entre majeur et annulaire sur une partie du
+      // contact) : la coque n'y noircit que le jour lui-même ; si l'autre doigt est juste au-delà (à 2 × rC), le jour
+      // fait partie du contact et le trait garde son épaisseur (sinon il se pinçait à 2,1 px pour 3,2 à la transition)
+      float idj = floor(texture2D(tG, vUv + 2.0 * o).a * 8.0 + 0.5);
+      if (idj != id0 && idj > 1.5 && idj < 6.5) cntC += 1.0;
+      continue;
+    }
+    if (creuxOn > 0.5 && texture2D(tCreux, vUv + o).r > 0.5) continue;
+    float id = floor(g.a * 8.0 + 0.5);
+    if (id != id0 && id > 1.5 && id < 6.5) {
+      // ANTI-LAMELLE (vues de profil et en rasant : la jointure du majeur qui dépasse de 1 à 2 px derrière celle de
+      // l'index, l'entre-deux des racines vu par la tranche — le trait centré soulignait ces lamelles en tirets : 4 → 11
+      // échardes sur 12 presets × 4 vues). L'échantillon ne compte que si l'autre doigt est ÉPAIS (à 2 × rC ce n'est
+      // toujours pas moi) et si je ne suis pas moi-même une lamelle (à l'opposé, ce n'est pas ce même autre doigt).
+      // Deux doigts qui se touchent vraiment ont, de part et d'autre de la frontière, bien plus de 2 × rC (≈ 1 mm) ;
+      // une lamelle est laissée à la marche de profondeur (plus haut), comme avant.
+      float id2 = floor(texture2D(tG, vUv + 2.0 * o).a * 8.0 + 0.5);
+      float idq = floor(texture2D(tG, vUv - o).a * 8.0 + 0.5);
+      if (id2 != id0 && idq != id) cntC += 1.0;
+    }
+    else if (id < 1.5) cntP += 1.0;
+  }
+  // FIN DU TRAIT : là où le contact rejoint la paume (bas de la vallée entre deux jointures, où un coin de paume s'ouvre
+  // entre elles ; fond d'une commissure), chaque moitié du trait longeait son bord du coin et la fin se fendait en deux
+  // pointes (« queue de poisson », vue ×3). Le trait s'éteint avec la part de l'anneau qui voit la paume : une seule
+  // pointe, effilée sur ≈ rContact
+  float aC = smoothstep(1.0, 3.0, cntC) * clamp(1.0 - cntP / 4.0, 0.0, 1.0);
   // au moins deux échantillons sur douze (règle v1 contre les échardes), mais en fondu de 1 à 3 : le bord de la bande
   // de trait, où le compte hésite d'un pixel à l'autre, s'adoucit au lieu de hachurer
-  if (cnt < 1.0) discard;
-  float aCnt = smoothstep(1.0, 3.0, cnt);
+  if (cnt < 1.0 && aC < 0.01) discard;
+  float aCnt = max(smoothstep(1.0, 3.0, cnt), aC);
   // FONDU près de la silhouette : à moins de r du fond le trait intérieur est jeté (la coque trace le contour) ; entre
   // r et 2r il entre PROGRESSIVEMENT (distance au fond estimée sur 4 anneaux de 8 directions, au quart de r). Avec la
   // seule coupure à r, un doigt vu de biais derrière un autre, dont il ne reste qu'une lamelle de l'ordre de r entre le
