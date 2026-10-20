@@ -1,0 +1,46 @@
+{
+ "export_x2": {
+  "w": 3840,
+  "h": 2160,
+  "octets": 523182,
+  "itxt_octets": 34428
+ },
+ "export_transparent": {
+  "w": 1920,
+  "h": 1080,
+  "coins_alpha": [
+   0,
+   0
+  ],
+  "px_opaques": 1031976
+ },
+ "projet_json": {
+  "nom_fichier": "cent.atelier.json",
+  "octets": 34428,
+  "elements": 5,
+  "fond": "image",
+  "assets": 1
+ },
+ "rendus_total": 3,
+ "dialogues": [
+  "Remplacer la planche par le gabarit « A · Bannière + définitions » ?\n\nCtrl+Z ramène la planche actuelle, et son brouillon reste dans l'onglet Projet."
+ ],
+ "erreurs": [],
+ "temps": {
+  "ouvrir_page_pret_s": 3.58,
+  "main_posee_rendue_s": 2.39,
+  "preset_V2_rendu_s": 0.68,
+  "geste_marionnette_s": 2.85,
+  "geste_marionnette_images": {
+   "images": 72,
+   "max_ms": 533,
+   "p95_ms": 83
+  },
+  "gabarit_A_rendu_s": 0.93,
+  "export_x2_s": 2.1,
+  "export_x1_transparent_s": 0.72,
+  "rechargement_pret_s": 1.3,
+  "reouverture_rendue_s": 0.7
+ },
+ "echecs": []
+}

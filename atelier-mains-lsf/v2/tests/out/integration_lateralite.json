@@ -1,0 +1,40 @@
+{
+ "pouce_L_D_paume": [
+  1,
+  366,
+  139
+ ],
+ "pouce_L_G_paume": [
+  -1,
+  139,
+  367
+ ],
+ "pouce_L_D_dos": [
+  -1,
+  139,
+  367
+ ],
+ "iou_G_vs_D_retournee_paume": 1.0,
+ "iou_G_vs_D_retournee_dos34": 1.0,
+ "ombre_a_droite_index_L_D_G": [
+  0.983,
+  0.978
+ ],
+ "iou_planche_D_vs_rendu_direct": 1.0,
+ "convertir": {
+  "element": {
+   "cote": "G",
+   "q": [
+    -0.044943455527547777,
+    -0.9512512425641977,
+    -0.16773125949652062,
+    0.25488700224417876
+   ],
+   "flipH": false,
+   "nom": "Main G"
+  },
+  "iou_vs_D_retournee": 1.0
+ },
+ "miroir_flipH": true,
+ "erreurs": []
+}

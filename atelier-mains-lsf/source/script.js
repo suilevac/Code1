@@ -1,0 +1,1684 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script type="application/json" id="handData">__DATA__</script>
+<script>
+(async function(){
+const $=id=>document.getElementById(id), D=Math.PI/180, clone=o=>JSON.parse(JSON.stringify(o));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+const HD=JSON.parse($('handData').textContent);
+const LOCK_SVG='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor" stroke="none"/><path d="M5 7V5a3 3 0 0 1 6 0v2"/></svg>';
+
+/* ======================================================================
+   Repère : pixels du dessin paume -> unités 3D (x à droite, y en haut, z vers la paume)
+   ====================================================================== */
+const SC=50, CX=HD.W/2, CY=HD.H*.48;
+const toM=(x,y,z)=>new THREE.Vector3((x-CX)/SC,-(y-CY)/SC,z/SC);
+const Z=new THREE.Vector3(0,0,1);
+const FING=['index','majeur','annulaire','auriculaire'],ALL=['pouce',...FING];
+const NOMS={pouce:'Pouce',index:'Index',majeur:'Majeur',annulaire:'Annulaire',auriculaire:'Auriculaire'};
+const SEGN={pouce:['base','bout'],doigt:['base','milieu','bout']};
+const typ=k=>k==='pouce'?'pouce':'doigt';
+
+/* ======================================================================
+   Anatomie
+   - doigts : MCP (flexion + écartement), IPP et IPD (charnières) ; l'IPD suit l'IPP (tendon commun)
+   - en pliant, les doigts se resserrent et convergent (ils pointent vers le scaphoïde)
+   - l'écartement se referme quand la MCP plie (ligaments collatéraux tendus)
+   - l'annulaire entraîne ses voisins ; l'index est libre
+   - pouce : trapézo-métacarpienne (avancer / rapprocher + pronation), MCP, IP ;
+     la MCP du pouce ne plie loin que si le pouce s'est avancé devant la paume,
+     et le bout du pouce ne pointe jamais vers le poignet
+   ====================================================================== */
+const AX={};
+ALL.forEach(k=>{AX[k]=HD.segs[k].map(sg=>{const u=new THREE.Vector3(sg.u[0],-sg.u[1],0).normalize();return{u,lat:u.clone().cross(Z).normalize()}})});
+// doigts : axes repris sur la chaîne CORRIGÉE (l'IPD n'est pas au pli distal dessiné, voir rig3d.py).
+// Le segment de base garde exactement sa direction, donc PAR et l'éventail des doigts ne bougent pas.
+const chAx=C=>{const u=new THREE.Vector3(C[1][0]-C[0][0],-(C[1][1]-C[0][1]),0).normalize();return{u,lat:u.clone().cross(Z).normalize()}};
+FING.forEach(k=>{const C=HD.mesh.chain[k];AX[k]=[0,1,2].map(i=>chAx([C[i],C[i+1]]))});
+// pouce : chaîne corrigée [CMC, MCP, IP, bout] (le pli IP dessiné n'est pas le centre de l'articulation, voir rig3d.py).
+// Ses axes de flexion sont repris sur les OS corrigés, pas sur les segments du dessin.
+const TCH=HD.mesh.chain.pouce;
+AX.pouce=[0,1].map(i=>{const a=TCH[i+1],b=TCH[i+2],u=new THREE.Vector3(b[0]-a[0],-(b[1]-a[1]),0).normalize();return{u,lat:u.clone().cross(Z).normalize()}});
+const ang=k=>Math.atan2(AX[k][0].u.y,AX[k][0].u.x);
+const PAR={};FING.forEach(k=>PAR[k]=-(ang('majeur')-ang(k))/D);
+const SPREAD={index:[-10,25],majeur:[-15,15],annulaire:[-20,12],auriculaire:[-45,15]}; // + = vers le pouce, 0 = parallèle au majeur
+// Convergence : en pliant, les doigts se rapprochent (ils pointent vers le scaphoïde, à la base de l'éminence).
+// Mesuré : poing fermé, les bouts des quatre doigts s'écartaient de 310 px alors que les MCP ne s'écartent que de
+// 263 px — les doigts DIVERGEAIENT. Les signes étaient inversés : avec ces valeurs l'écartement des bouts tombe
+// à 236 px (et à 239 px aux 3/4), le poing se ferme en entier sans pénétration (cas_3 : 90/105/70 au lieu de
+// 89/103/69) et le jour entre les bouts et la paume se referme en bonne partie.
+const CONV={index:6,majeur:2,annulaire:-2,auriculaire:-7};
+// OBLIQUITÉ des axes de flexion des MCP. `CONV` tourne le doigt autour de Z : à 90° de flexion c'est une rotation
+// autour de l'axe même de la 1re phalange, donc elle oriente P2/P3 (les bouts convergent) mais ne déplace pas P1
+// d'un millimètre. Mesuré sur le poing serré (peau posée, scipy.cKDTree, station 0,75–1,0 de P1) : les phalanges
+// proximales voisines restaient PARALLÈLES et, le doigt s'amincissant vers l'IPP, l'écart y atteignait 4,0 mm
+// (index–majeur), 4,2 mm (majeur–annulaire) et 2,0 mm (annulaire–auriculaire) — quatre boudins séparés, chacun
+// cerné de son contour, là où les photos 2357, 2364 et 2375 montrent les P1 pressées l'une contre l'autre sur
+// toute leur longueur. L'anatomie le dit : les axes de flexion des MCP ne sont pas parallèles, et en pliant
+// chaque P1 PENCHE vers l'axe de la main (le majeur), d'autant plus qu'elle en est loin. On incline donc l'axe
+// de flexion de la MCP autour de l'os (comme `tAxis` pour le pouce) : à 90° la P1 pointe vers Z·cos β + lat·sin β
+// (+ = vers le pouce), le déport latéral vaut hauteur × sin β, nul au repos (dessin exact au pixel près).
+// β ≈ asin(écart / hauteur de l'IPP dans le poing : 3,23 / 3,72 / 3,20 / 2,51 unités), majeur = axe de la main,
+// réglé pour le CONTACT et pas pour l'écart nul (la peau est de la chair) : écarts de peau le long de la P1 après
+// réglage, V (2) annulaire–auriculaire 0,23 / 0,25 / 0,17 mm, poing index–majeur 1,3 / 1,4 / 0,6, majeur–annulaire
+// 0,4 / 1,1 / 0,8, annulaire–auriculaire 0,3 / 0,2 / 0,2. L'obliquité agit dès 20–30° : les poses molles (Repos, C,
+// O) bougent aussi de 2 à 4 mm en moyenne sur l'auriculaire — c'est l'anatomie, à savoir en comparant deux rendus.
+const LEAN={index:-6.5,majeur:0,annulaire:6.5,auriculaire:12};
+const setLean=o=>{Object.assign(LEAN,o||{});FING.forEach(k=>{const A=AX[k][0],b=LEAN[k]*D;A.flex=A.lat.clone().multiplyScalar(Math.cos(b)).addScaledVector(Z,-Math.sin(b)).normalize()})};setLean();
+const LIMF={mcp:[-20,90],pip:[0,105],dip:[-10,80]};
+const LIMT={av:[0,45],rap:[-20,40],mcp:[-10,55],ip:[-20,80]};
+const AVC=.7;   // part d'abduction palmaire entraînée par le rapprochement (vis sans fin de la CMC)
+const ENSLAVE=[['index','majeur',90],['majeur','annulaire',85],['annulaire','auriculaire',75]];
+const CMC_IMG=TCH[0],MCP_T=TCH[1];
+const CMC=toM(CMC_IMG[0],CMC_IMG[1],HD.mesh.jz.pouce[0]);
+// axe du 1er métacarpien pris d'une articulation à l'autre, à leur vraie profondeur (la colonne du pouce
+// est en avant du plan de la paume) ; LATM lui est perpendiculaire, dans le plan de la paume
+const UM=toM(MCP_T[0],MCP_T[1],HD.mesh.jz.pouce[1]).sub(CMC).normalize(),LATM=UM.clone().cross(Z).normalize();
+const convOf=(k,v)=>CONV[k]*clamp((Math.max(0,v.mcp)+.6*Math.max(0,v.pip))/150,0,1);
+
+function constrain(p,driver){
+  FING.forEach(k=>{const v=p.f[k];
+    v.mcp=clamp(v.mcp,...LIMF.mcp);v.pip=clamp(v.pip,...LIMF.pip);
+    // fléchisseur profond commun : le bout suit le milieu dans les deux sens. On ne tient pas l'articulation du
+    // milieu pliée à fond avec le bout parfaitement tendu — c'est ce doigt-là qui se lit comme une pièce mécanique.
+    v.dip=clamp(v.dip,Math.max(LIMF.dip[0],.45*(v.pip-55)),Math.min(LIMF.dip[1],25+.65*v.pip));
+    const fr=1-.85*clamp(v.mcp,0,90)/90;v.ab=clamp(v.ab,SPREAD[k][0]*fr,SPREAD[k][1]*fr)});
+  const t=p.f.pouce;for(const j in LIMT)t[j]=clamp(t[j],...LIMT[j]);
+  // VIS SANS FIN de la trapézo-métacarpienne (Hollister 1992 ; les études in vivo de cinématique du pouce parlent
+  // de « screw-home ») : à cette articulation, flexion/adduction, abduction et rotation axiale sont COUPLÉES, ce
+  // n'est pas trois commandes indépendantes. Concrètement : on ne rapproche pas le pouce des doigts sans qu'il
+  // sorte du plan de la paume — c'est ce qui le fait passer DEVANT la paume au lieu de dedans.
+  // Mesuré sur ce modèle : le pouce ne peut se rapprocher au-delà de ≈ 21° tant qu'il reste dans le plan
+  // (avancer < 15°), et il atteint 40° dès que l'abduction palmaire dépasse ≈ 20°. AVC = 0,7 suit exactement
+  // cette frontière. Sans ce couplage, le solveur de contacts butait sur la paume et REVENAIT en arrière sur
+  // « avancer » et sur la base — bouger une commande du pouce en déplaçait trois.
+  t.av=Math.max(t.av,AVC*Math.max(0,t.rap));
+  if(t.av+t.rap>80){const e=(t.av+t.rap-80)/2;t.av-=e;t.rap-=e}
+  t.mcp=Math.min(t.mcp,30+.8*t.av+.4*Math.max(0,t.rap));   // la MCP du pouce plie davantage quand il s'avance ou se rapproche
+  if(driver&&driver!=='pouce'){
+    const order=[driver];const seen=new Set(order);
+    for(let i=0;i<order.length;i++){const a=order[i];
+      ENSLAVE.forEach(([x,y,mx])=>{if(x!==a&&y!==a)return;const b=x===a?y:x;if(seen.has(b))return;
+        const va=p.f[a],vb=p.f[b],d=va.mcp-vb.mcp;
+        if(Math.abs(d)>mx){if(S.locks[b][0]){va.mcp=vb.mcp+Math.sign(d)*mx}else{vb.mcp=va.mcp-Math.sign(d)*mx;seen.add(b);order.push(b)}}
+      })}
+  }
+  return p;
+}
+
+const F=(mcp,pip,dip,ab)=>({mcp,pip,dip,ab});
+const TH=(av,rap,mcp,ip)=>({av,rap,mcp,ip});
+function pose(fn,t){const f={pouce:t};FING.forEach(k=>f[k]=fn(k));return{f,q:[0,0,0,1],pos:[0,0,0]}}
+const fist=()=>F(90,105,70,0);
+const together={index:-6,majeur:0,annulaire:6,auriculaire:9};
+const PRESETS={
+  'Dessin':pose(k=>F(0,0,0,-PAR[k]),TH(0,0,0,0)),
+  'Repos':pose(k=>({index:F(18,28,14,5),majeur:F(22,33,16,0),annulaire:F(27,38,18,-3),auriculaire:F(32,42,20,-8)})[k],TH(25,10,10,15)),
+  'Main plate (B)':pose(k=>F(0,0,0,together[k]),TH(20,35,30,10)),
+  'Poing (A)':pose(fist,TH(5,35,10,5)),
+  // Pouce du poing serré, repris sur la photo 2357 (son vrai poing) : il ne se couche pas À PLAT EN TRAVERS de
+  // la paume — il s'enroule sur le FLANC RADIAL de l'index, MCP et IP bien pliées. L'ancien réglage (45/35/40/25)
+  // envoyait le bout du pouce à x = −1,7, c'est-à-dire au-delà du majeur : le pouce dépassait du poing comme une
+  // palette, et c'est ce qui faisait que « le poing serré ne correspond pas ». Balayage de 1 232 poses de pouce
+  // contre la cible (flanc radial de P2 de l'index) : l'écart passe de 5,52 à ≈ 1,0 unité, sans ajouter une seule
+  // unité de pénétration (0,77, qui est celle des quatre doigts eux-mêmes).
+  'Poing serré':pose(fist,TH(24,10,35,60)),   // pouce EN TRAVERS des P2 (photo 2357), voir CLAUDE.md piste X
+  'Index (1)':pose(k=>k==='index'?F(0,0,0,0):fist(),TH(40,35,40,40)),
+  'V (2)':pose(k=>k==='index'?F(0,0,0,8):k==='majeur'?F(0,0,0,-8):fist(),TH(40,35,40,40)),
+  // Chiffres. 1 et 2 existaient déjà (« Index (1) », « V (2) ») ; 3, 4 et 5 complètent la première dizaine, qui
+  // est ce dont on a besoin pour une leçon de mathématiques. Formes françaises courantes : 3 = pouce + index +
+  // majeur, 4 = les quatre doigts, pouce replié en travers de la paume, 5 = main ouverte, doigts écartés.
+  // Au-delà de 5, les formes varient d'un usage à l'autre : elles ne sont PAS devinées ici — à poser et à ranger
+  // dans la bibliothèque.
+  'Trois (3)':pose(k=>k==='index'||k==='majeur'?F(0,0,0,together[k]):fist(),TH(14,2,0,0)),
+  'Quatre (4)':pose(k=>F(0,0,0,together[k]),TH(28,40,45,20)),
+  'Main ouverte (5)':pose(k=>F(0,0,0,-PAR[k]),TH(8,-12,0,0)),
+  'L':pose(k=>k==='index'?F(0,0,0,0):fist(),TH(0,-20,0,0)),
+  'Y':pose(k=>k==='auriculaire'?F(0,0,0,-30):fist(),TH(0,-20,0,0)),
+  'C':pose(k=>F(35,45,30,together[k]),TH(45,5,10,10)),
+  'O':pose(k=>({index:F(55,60,40,-2),majeur:F(58,62,42,0),annulaire:F(60,64,42,2),auriculaire:F(62,66,44,4)})[k],TH(45,30,25,30)),
+  'Pince':pose(k=>k==='index'?F(45,55,35,0):F(0,0,0,together[k]),TH(45,20,20,20))
+};
+// État. Deux mains possibles (« D » droite, « G » gauche, la gauche étant la droite en miroir), et, en mode
+// mouvement, une suite d'ÉTAPES CLÉS : chacune porte sa propre configuration de doigts, son orientation et sa place,
+// donc un signe peut changer de configuration en cours de route (début → intermédiaire → fin).
+const S={mode:'pose',mains:'D',act:'D',cur:0,etapes:1,fleche:true,
+  fl:{style:'droite',sens:1,double:false,col:'#14201f'},
+  fond:{type:'aucun',col:'#ffffff',cadre:false},
+  ref:{style:'aucun',t:1,h:0,x:0,visage:true,reperes:false},
+  pose:{D:clone(PRESETS['Dessin']),G:null},cles:null,locks:{}};
+ALL.forEach(k=>S.locks[k]=SEGN[typ(k)].map(()=>false));
+const mainsOn=()=>S.mains==='DG'?['D','G']:[S.mains];
+const curSet=()=>S.mode==='pose'?S.pose:S.cles[S.cur];
+const editable=()=>curSet()[S.act]||curSet().D;
+// une main gauche, c'est la droite vue dans un miroir : mêmes angles de doigts, place et rotation retournées en x
+function mirror(p){const o=clone(p);o.pos=[-p.pos[0],p.pos[1],p.pos[2]];o.q=[p.q[0],-p.q[1],-p.q[2],p.q[3]];return o}
+
+/* ======================================================================
+   Textures : dessin paume devant, dessin dos recalé derrière
+   ====================================================================== */
+function tex(src){return new Promise(r=>{const t=new THREE.TextureLoader().load(src,()=>r(t));t.anisotropy=4})}
+const [TF,TB,TN,TE,TC]=await Promise.all([tex(HD.texFront),tex(HD.texBack),tex(HD.texNail),tex(HD.texNailE),tex(HD.texCrease)]);
+[TN,TE].forEach(t=>{t.generateMipmaps=false;t.minFilter=THREE.LinearFilter});   // distance signée : pas de moyenne entre niveaux (elle déborderait sur la tranche)
+const NAILC=new THREE.Vector3(...HD.nail.col),NAILS=new THREE.Vector3(...HD.nail.skin);
+const LIGHT=new THREE.Vector3(-.45,.55,1).normalize();
+// vAw : pixels de dessin par pixel d'écran au sommet (profondeur × raccourci de la normale), LISSE d'un sommet à l'autre.
+// Sert à la largeur du trait d'ongle. Pris par fwidth(sd) au fragment, il était bruité : sd est une texture 8 bits
+// (1/12 px) interpolée, sa dérivée saute d'un texel à l'autre (≈ 8 % à ×3) et le bord intérieur du trait était crénelé.
+const VS=`attribute float part;attribute float rnz;attribute vec2 crf;uniform float hlPart;uniform float nflip;uniform float pxk;varying float vH;varying float vS;varying vec2 vCr;varying vec2 vUv;varying vec3 vN;varying float vAw;void main(){vH=abs(part-hlPart)<.5?1.:0.;vS=smoothstep(-.3,.3,rnz);vCr=crf;vUv=uv;vN=normalize(normalMatrix*normal)*nflip;vAw=50.*max(-(modelViewMatrix*vec4(position,1.0)).z,.5)/pxk/max(abs(vN.z),.3);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`;
+// ongles (dos seulement) : texNail R = distance signée au bord (px) → aplat net + trait fin du dessin, nets à tout grossissement ;
+// G/B = peau repeinte (sous l'ongle, son trait, bouts de trait étirés en taches), sur le dos franc (vS≈0) ; texNailE = poids
+// du trait : il s'amincit jusqu'à rien au bord libre (« U » ouvert du dessin). Pose du dessin : rien sur la tranche ni vu en biais (vue paume = dessin exact) ; hors pose (npose) partout
+// plis et rides (piste R) : crTex = trait de la paume (R), le même élargi (G), aplat du dos (B) et masque des rides
+// du dos (A) ; vCr donne l'effacement du trait selon l'angle de l'articulation voisine (x paume, négatif = creusé ;
+// y dos, positif = effacé). Paume : le trait est gris, un multiplicateur (1-a(1-e))/(1-a) suffit. Dos : le trait est
+// NOIR, on le remplace par l'aplat voisin. Les deux valent exactement l'identité à e = 0 (dessin exact au repos).
+const FS=`uniform sampler2D nailTex;uniform sampler2D nailE;uniform float npose;uniform vec3 nailCol;uniform vec3 nailSkin;uniform float nailLW;uniform float nailPx;uniform sampler2D colTex;uniform sampler2D colTex2;uniform sampler2D crTex;uniform sampler2D alphaTex;uniform float opacity;uniform float hl;uniform vec3 L;varying float vH;varying float vS;varying vec2 vCr;varying vec2 vUv;varying vec3 vN;varying float vAw;
+void main(){if(texture2D(alphaTex,vUv).a<.35){gl_FragColor=vec4(.067,.067,.067,opacity);return;}vec3 cb=texture2D(colTex2,vUv).rgb,cf=texture2D(colTex,vUv).rgb;
+if(vCr.x!=0.||vCr.y!=0.){vec4 cr=texture2D(crTex,vUv);
+ cb=mix(cb,nailSkin*cr.b*255.,cr.a*vCr.y);
+ cf*=max(1.-cr.r*(1.-vCr.x),.08)/max(1.-cr.r,.15)*(1.-.22*max(-vCr.x,0.)*smoothstep(.13,.26,cr.g));}
+vec3 nt=texture2D(nailTex,vUv).rgb;cb=mix(cb,nailSkin*nt.b*255.,nt.g*max((1.-smoothstep(0.,.15,vS))*smoothstep(.15,.4,normalize(vN).z),npose));
+float sd=(nt.r*255.-128.)/12.,aw0=fwidth(sd),aw=max(aw0,.03),wn=max(1.-smoothstep(.5,.9,vS),npose),fill=wn*clamp(.5-sd/aw,0.,1.);vec3 ne=texture2D(nailE,vUv).rgb;
+// Tablette bombée (mesh.dz, hors pose) lue par UNE ombre franche, au ton de l'ombre du dessin (0,82 de l'aplat, mesuré
+// sur les deux dessins) : le terme d'ombre général (.8 + .26·N·L, saturé dès N·L > .77) ne variait que de 3 à 5 % sur
+// l'ongle, l'ongle restait un autocollant. Le croissant (nailE.b) est peint dans la texture, du côté où le dessin
+// pose ses ombres, comme les ombres du dessin lui-même ; nul à la pose du dessin (npose), où l'ongle est l'aplat dessiné.
+// FRANCHE : la texture (rampe + flou, interpolée) donnait une lisière en dégradé de ≈ 10 px de dessin (mesuré en travers
+// de l'index de « V (2) » ×3 : 194 → 155 sur 34 px d'écran, 28 % de la largeur de l'ongle). Elle est seuillée ici à
+// mi-hauteur (comme la distance signée de l'ongle), adoucie sur ~1,5 px d'écran : une seule lisière nette à tout grossissement
+// (mesuré ×3 : 186 → 150 en 4 px d'écran ≈ 1,3 px de dessin). Peint à 0,85 et non 0,82 : au bord de l'arc le terme d'ombre
+// général en retire déjà 4 % (194 → 186), l'écran lit 0,85 × 0,96 ≈ 0,82, le ton de l'ombre du dessin.
+float eb=clamp(.75*fwidth(ne.b),.02,.25),sh=smoothstep(.5-eb,.5+eb,ne.b);cb=mix(cb,nailCol*(1.-.15*npose*sh),fill);
+// Trait de largeur CONSTANTE À L'ÉCRAN (nailPx : les 2,4 px du dessin ramenés en pixels d'écran à la distance de la
+// cible, calculé par renderAll comme le rayon des traits intérieurs ; × vAw, pixels de dessin par pixel d'écran au
+// sommet — pas fwidth(sd), bruité, voir VS), au moins ~1,25 px. Il était fixé en pixels du
+// DESSIN sur la peau : sa largeur à l'écran suivait le raccourci de la texture, mesuré à l'angle de la capture sur
+// l'index de « V (2) » : 0,60 px de dessin par pixel d'écran côté éloigné, 0,36 côté proche — un bras du « U » deux
+// fois plus gros que l'autre (4 contre 7-8 px). Un illustrateur garde la même plume des deux côtés et à toute taille.
+// Plafond 5/3 × le trait du dessin (4 px de dessin) : un ongle vu presque DE CHANT (bout replié vu de la paume : le
+// pouce et l'annulaire de « V (2) » face, « Index (1) », « Poing serré ») n'est plus qu'une mince lamelle, et un trait
+// constant à l'écran (jusqu'à 8 px de dessin en biais) la mangeait, bord libre compris : « tiret noir + tiret blanc »
+// au lieu d'un ongle. Avec le plafond, le trait suit de nouveau le raccourci au-delà de 53° (N.z < 0,6), là où
+// l'illustrateur ne pose qu'un filet. 4 px et pas 3,6 : à 3,6 le bras éloigné du « U » de l'index en dos ¾ (×3)
+// retombait à 7-8 px d'écran contre 10-11 (rapport 1,43, le dédoublement revenait) ; à 4 px, 8-9 px (≤ 1,25).
+// Jamais sous ~1,25 px d'écran (de loin le trait reste continu).
+// La forme en « U » est préservée : la largeur est multipliée par le profil (nailE.r), qui s'éteint au bord libre.
+// Bord libre (nailE.g, la part du bord qui regarde le bout) : aplat plus clair de la même largeur, là où le U est ouvert
+// (sur ses photos la frange libre est ≈ 1,35 × plus claire que la tablette).
+float px=min(max(nailPx,1.25)*vAw,max(5.*nailLW/3.,1.25*vAw)),lw=ne.r*px,bw=ne.g*px;
+cb=mix(cb,mix(nailCol,vec3(1.),.45),wn*min(bw/aw,1.)*clamp(.5-(abs(sd+bw*.5)-bw*.5)/aw,0.,1.));
+cb*=1.-wn*min(lw/aw,1.)*clamp(.5-(abs(sd+lw*.5)-lw*.5)/aw,0.,1.);vec3 c=mix(cb,cf,vS);
+float s=clamp(.8+.26*max(dot(normalize(vN),L),0.),0.,1.);c*=s;c=mix(c,vec3(1.,.78,.1),hl*vH*.4);gl_FragColor=vec4(c,opacity);}`;
+const SKINMATS=[];   // toutes les matières de peau (mains pleines et fantômes) : renderAll y pousse la largeur du trait d'ongle
+const skinMat=back=>{const m=new THREE.ShaderMaterial({uniforms:{colTex:{value:back?TB:TF},colTex2:{value:TB},crTex:{value:TC},alphaTex:{value:TF},nailTex:{value:TN},nailE:{value:TE},npose:{value:0},nailCol:{value:NAILC},nailSkin:{value:NAILS},nailLW:{value:HD.nail.lw},nailPx:{value:HD.nail.lw},pxk:{value:1e3},opacity:{value:1},hl:{value:0},hlPart:{value:-10},nflip:{value:1},L:{value:LIGHT}},vertexShader:VS,fragmentShader:FS,extensions:{derivatives:true}});SKINMATS.push(m);return m};
+const HULL=HD.outw+.6;
+
+function orient(geo,inside){
+  geo.computeVertexNormals();const p=geo.attributes.position,n=geo.attributes.normal,ix=geo.index.array;
+  let s=0;for(let i=0;i<ix.length;i+=21){const a=ix[i];const v=new THREE.Vector3().fromBufferAttribute(p,a),nn=new THREE.Vector3().fromBufferAttribute(n,a);s+=Math.sign(nn.dot(v.sub(inside(a))))}
+  if(s<0){for(let i=0;i<ix.length;i+=3){const t=ix[i+1];ix[i+1]=ix[i+2];ix[i+2]=t}geo.index.needsUpdate=true;geo.computeVertexNormals()}
+  return geo;
+}
+
+/* ======================================================================
+   Doigts : une peau continue par doigt, portée par des os rigides.
+   Chaque anneau de peau suit un os ; près d'une articulation il se partage entre les deux os
+   (mélange par quaternions duaux : la peau plie sans se pincer ni s'allonger).
+   ====================================================================== */
+const DF=.92,DB=.7,DB_TIP=.58;   // épaisseur côté paume (pulpe) / côté dos (plus plat, ongle)
+function chainRings(k){
+  const segs=HD.segs[k],rings=[];let S0=0;const joints=[];
+  segs.forEach((sg,i)=>{joints.push(S0);
+    const n=[-sg.u[1],sg.u[0]];
+    if(i===0){const w0=(sg.wl[0]+sg.wr[0])/2,CAP=7;
+      for(let j=CAP;j>=1;j--){const th=j/CAP*Math.PI/2;rings.push({seg:0,t:-w0*.85*Math.sin(th),s:-w0*.85*Math.sin(th),wl:sg.wl[0],wr:sg.wr[0],f:Math.cos(th),a:sg.a,u:sg.u,n})}}
+    sg.ts.forEach((t,j)=>{if(i>0&&j===0)return;rings.push({seg:i,t,s:S0+t,wl:sg.wl[j],wr:sg.wr[j],f:1,a:sg.a,u:sg.u,n,tip:sg.tip,tEnd:sg.ts[sg.ts.length-1]})});
+    S0+=sg.ts[sg.ts.length-1]<sg.len&&!sg.tip?sg.len:(sg.tip?0:sg.len);
+  });
+  // poids des os : bone 0 = paume (ou base du pouce), bone i+1 = phalange i
+  rings.forEach(r=>{const w=(r.wl+r.wr)/2||10;let m=0;joints.forEach((sj,j)=>{if(r.s>sj+1e-6)m=j+1});
+    let best=null;joints.forEach((sj,j)=>{const z=Math.max(14,.6*w);if(Math.abs(r.s-sj)<z&&(!best||Math.abs(r.s-sj)<best.d))best={j,d:Math.abs(r.s-sj),z,sj}});
+    if(best){r.b0=best.j;r.b1=best.j+1;r.w=smooth(-best.z,best.z,r.s-best.sj)}else{r.b0=m;r.b1=m;r.w=0}});
+  return rings;
+}
+const RINGS={};ALL.forEach(k=>RINGS[k]=chainRings(k));
+function tubeGeo(k,side){
+  const rings=RINGS[k],M=16,pos=[],uv=[],axis=[],idx=[],ringOf=[];
+  rings.forEach((r,ri)=>{
+    // dos du bout du doigt aplati progressivement (lit de l'ongle), pulpe pleine côté paume
+    const kb=r.tip?DB-(DB-DB_TIP)*smooth(.15,.5,r.t/r.tEnd):DB,dfr=DF*(r.wl+r.wr)/2,dbr=kb*(r.wl+r.wr)/2;
+    for(let j=0;j<=M;j++){
+      const ph=(side>0?-Math.PI/2:Math.PI/2)+Math.PI*j/M,s=Math.sin(ph),c=Math.cos(ph),w=s>=0?r.wr:r.wl,d=c>=0?dfr:dbr;
+      const lat=w*r.f*s,dep=d*r.f*c,px=r.a[0]+r.u[0]*r.t+r.n[0]*lat,py=r.a[1]+r.u[1]*r.t+r.n[1]*lat;
+      const v=toM(px,py,dep);pos.push(v.x,v.y,v.z);
+      // la couleur vient de l'endroit exact du dessin (projection), y compris au bout du doigt : aucun étirement
+      // sur les flancs du doigt, la couleur est prise un peu en retrait du bord dessiné (pas de traînées sur la tranche)
+      const ut=r.t<0?Math.min(14,r.tEnd||14):(r.tip?Math.min(r.t,r.tEnd-(side<0?13:9)):r.t),ul=lat*(.82+.18*Math.abs(c)),qx=r.a[0]+r.u[0]*ut+r.n[0]*ul,qy=r.a[1]+r.u[1]*ut+r.n[1]*ul;
+      uv.push(qx/HD.W,1-qy/HD.H);axis.push(toM(r.a[0]+r.u[0]*r.t,r.a[1]+r.u[1]*r.t,0));ringOf.push(ri);
+    }});
+  for(let r=0;r<rings.length-1;r++)for(let j=0;j<M;j++){const p0=r*(M+1)+j,p1=p0+1,q0=p0+M+1,q1=q0+1;idx.push(p0,q0,p1,p1,q0,q1)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);
+  orient(g,i=>axis[i]);
+  g.userData.rest=Float32Array.from(g.attributes.position.array);g.userData.restN=Float32Array.from(g.attributes.normal.array);g.userData.ringOf=Int32Array.from(ringOf);
+  return g;
+}
+const TUBE={};ALL.forEach(k=>TUBE[k]=[tubeGeo(k,1),tubeGeo(k,-1)]);
+
+/* ---------- paume ---------- */
+function b64arr(s,T){const b=Uint8Array.from(atob(s),c=>c.charCodeAt(0));return new T(b.buffer)}
+const PXY=b64arr(HD.palm.xy,Int16Array),PZF=b64arr(HD.palm.zf,Int16Array),PZB=b64arr(HD.palm.zb,Int16Array),PIX=b64arr(HD.palm.idx,Uint32Array);
+const NP=HD.palm.n,ZS=HD.palm.zscale||1;
+const thenarW=(x,y)=>{
+  const ax=MCP_T[0]-CMC_IMG[0],ay=MCP_T[1]-CMC_IMG[1],L2=ax*ax+ay*ay,L=Math.sqrt(L2),dx=x-CMC_IMG[0],dy=y-CMC_IMG[1];
+  const s=(dx*ax+dy*ay)/L2;let nx=-ay/L,ny=ax/L;if(nx*(500-CMC_IMG[0])+ny*(560-CMC_IMG[1])<0){nx=-nx;ny=-ny}
+  const l=dx*nx+dy*ny;return smooth(-.12,.78,s)*(l>0?1-smooth(28,135,l):1)*(1-smooth(1.15,1.6,s)*smooth(10,60,l));
+};
+const PW=new Float32Array(NP);for(let i=0;i<NP;i++)PW[i]=thenarW(PXY[2*i],PXY[2*i+1]);
+function palmGeo(side){
+  const pos=new Float32Array(NP*3),uv=new Float32Array(NP*2);
+  for(let i=0;i<NP;i++){const x=PXY[2*i],y=PXY[2*i+1],v=toM(x,y,(side>0?PZF[i]:-PZB[i])/ZS);pos.set([v.x,v.y,v.z],3*i);uv.set([x/HD.W,1-y/HD.H],2*i)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('uv',new THREE.BufferAttribute(uv,2));g.setIndex(new THREE.BufferAttribute(new Uint32Array(PIX),1));
+  orient(g,i=>new THREE.Vector3(pos[3*i],pos[3*i+1],pos[3*i+2]-side*5));
+  g.userData.rest=pos.slice();return g;
+}
+const PALM_RIM=[];for(let i=0;i<NP;i+=3)if(PZF[i]<=2*ZS)PALM_RIM.push(toM(PXY[2*i],PXY[2*i+1],0));
+
+/* ---------- collisions ---------- */
+const HG=HD.hgrid,HGF=b64arr(HG.hf,Int16Array),HGB=b64arr(HG.hb,Int16Array);
+// Hauteur de la paume lue par INTERPOLATION BILINÉAIRE, plus par la cellule la plus proche. La grille a un pas de
+// 8 px et des hauteurs ENTIÈRES (px) : lue au plus proche, la paume était un escalier à marches de 1 px tous les
+// 8 px, et le budget du solveur (solve, thumbReach) n'est que de 0,5 px. Mesuré sur le bout de l'auriculaire replié
+// de V (2) : écarter le doigt de 2° déplace le bout de 2 px, change de cellule (hf 51 → 52) et la pénétration saute
+// de 0,00 à 0,92 ; de même l'annulaire du poing bloqué à ab = −3,3 (à −3,0 : +0,61). Une marche valait deux fois le
+// budget, et la liberté de la marionnette dépendait de la cellule où le bout s'était arrêté. Interpolée, la
+// hauteur est continue : le solveur s'arrête là où la chair le veut, pas sur une frontière de cellule.
+const palmH=(x,y)=>{const fx=x/HG.step,fy=y/HG.step,i=Math.floor(fx),j=Math.floor(fy);if(i<0||j<0||i+1>=HG.gw||j+1>=HG.gh)return null;
+  const k=j*HG.gw+i,tx=fx-i,ty=fy-j,g=HG.gw,bl=(a,b,c,d)=>(a*(1-tx)+b*tx)*(1-ty)+(c*(1-tx)+d*tx)*ty;
+  const hf=bl(HGF[k],HGF[k+1],HGF[k+g],HGF[k+g+1]),hb=bl(HGB[k],HGB[k+1],HGB[k+g],HGB[k+g+1]);return hf||hb?[hf,hb]:null};
+const SEGW={};ALL.forEach(k=>SEGW[k]=HD.segs[k].map(sg=>{const w=sg.ts.map((_,i)=>(sg.wl[i]+sg.wr[i])/2).filter(v=>v>4);return w.reduce((a,b)=>a+b,0)/w.length/SC}));
+// la vraie articulation de la base (tête du métacarpien) n'est pas au pli de la racine du doigt visible sur le dessin,
+// mais ≈ 1,5 cm plus bas, sous le pli distal de la paume : le doigt pivote de là (sinon 1re phalange trop courte,
+// les deux autres trop longues : le bout plonge dans la paume au lieu de s'y poser). Le dessin au repos ne change pas.
+const DEEP={};ALL.forEach(k=>DEEP[k]=k==='pouce'?0:Math.hypot(HD.chains[k][0][0]-HD.mesh.chain[k][0][0],HD.chains[k][0][1]-HD.mesh.chain[k][0][1])/SC);
+const MCPJ=k=>{const c=HD.mesh.chain[k][0];return toM(c[0],c[1],HD.mesh.jz[k][0])};
+
+/* ======================================================================
+   Peau v8 : UN maillage fermé pour toute la main (paume, doigts, pouce), sans raccord.
+   Chaque sommet suit jusqu'à 4 os (paume, métacarpien du pouce, phalanges) avec des poids lisses ;
+   le mélange se fait par quaternions duaux : la peau plie sans se pincer ni gonfler.
+   ====================================================================== */
+const MS=HD.mesh,MN=MS.n;
+const MXYZ=b64arr(MS.xyz,Int16Array),MUVQ=b64arr(MS.uv,Int16Array),MBI=b64arr(MS.bi,Uint8Array),MBW=b64arr(MS.bw,Uint8Array),MPRT=b64arr(MS.part,Uint8Array);
+const MREST=new Float32Array(3*MN),muv=new Float32Array(2*MN),mpart=new Float32Array(MN),midc=new Float32Array(3*MN);
+for(let i=0;i<MN;i++){const v=toM(MXYZ[3*i]/MS.q,MXYZ[3*i+1]/MS.q,MXYZ[3*i+2]/MS.q);MREST[3*i]=v.x;MREST[3*i+1]=v.y;MREST[3*i+2]=v.z;
+  muv[2*i]=MUVQ[2*i]/MS.q/HD.W;muv[2*i+1]=1-MUVQ[2*i+1]/MS.q/HD.H;mpart[i]=MPRT[i];midc[3*i]=MPRT[i]/8;midc[3*i+1]=MPRT[i]===1?0:1}
+const MUVA=new THREE.BufferAttribute(muv,2),MPARTA=new THREE.BufferAttribute(mpart,1),MIDC=new THREE.BufferAttribute(midc,3);
+const MINDEX=new THREE.BufferAttribute(MS.i32?b64arr(MS.idx,Uint32Array):b64arr(MS.idx,Uint16Array),1);
+// passe « identité » : une partie nette par triangle (pas de mélange de couleurs d'un sommet à l'autre)
+const NT=MINDEX.count/3,MIDF=new Float32Array(9*NT);
+for(let t=0;t<NT;t++){const a=MPRT[MINDEX.array[3*t]],b=MPRT[MINDEX.array[3*t+1]],c=MPRT[MINDEX.array[3*t+2]],pp=(a===b||a===c)?a:(b===c?b:Math.min(a,b,c));
+  for(let j=0;j<3;j++){MIDF[9*t+3*j]=pp/8;MIDF[9*t+3*j+1]=pp===1?0:1}}
+const MIDFA=new THREE.BufferAttribute(MIDF,3);
+// racines des doigts et du pouce sans « col » (gorge + bourrelet du volume du dessin) : déplacement en z, appliqué
+// progressivement dès que la pose quitte celle du dessin (le dessin au repos reste exact au pixel près)
+const MDZ=new Float32Array(MN);if(MS.dz){const d=b64arr(MS.dz,Int16Array);for(let i=0;i<MN;i++)MDZ[i]=d[i]/MS.q/SC}
+let MRNZC=null;const rootBlend=f=>{const d0=PRESETS['Dessin'].f;let m=0;for(const k in d0)for(const a in d0[k])m=Math.max(m,Math.abs((f[k][a]||0)-d0[k][a]));return smooth(0,12,m)};
+let MRNZ=null;
+// Passe « identité » : R = partie, G = doigt ou non, et B = la part « hors pose du dessin » (gR) de CETTE main.
+// Avec deux mains, la passe des traits est unique pour tout l'écran : sans ce canal, une main qui bouge ouvrirait
+// le détecteur de plis et épaissirait les traits de l'autre, restée au repos — et « Dessin = dessin exact au
+// pixel près » tomberait dès qu'on affiche les deux.
+const idMatProto=()=>new THREE.ShaderMaterial({side:THREE.DoubleSide,uniforms:{gr:{value:0}},
+  vertexShader:'attribute vec3 color;uniform float gr;varying vec3 vC;void main(){vC=vec3(color.rg,gr);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+  fragmentShader:'varying vec3 vC;void main(){gl_FragColor=vec4(vC,1.);}'});
+
+/* ======================================================================
+   Une main = une hiérarchie d'articulations + des peaux
+   ====================================================================== */
+const scene=new THREE.Scene();
+const ID={paume:1,pouce:2,index:3,majeur:4,annulaire:5,auriculaire:6};
+const idMats={};for(const k in ID)idMats[k]=new THREE.MeshBasicMaterial({color:new THREE.Color(ID[k]/8,k==='paume'?0:1,0),side:THREE.DoubleSide});
+/* coque du contour. Hors pose du dessin (main entière seulement), elle s'efface là où elle ne fait que ressortir d'un pli
+   (fente noire en dents de scie, « confettis ») : fragment de coque à moins de « push » devant la peau qu'il recouvre
+   (profondeur lue dans la passe identité), quand la peau recouverte est la même partie, la paume sous un doigt (racine)
+   ou le pouce et la paume (pli de l'éminence, pli de la MCP du pouce). Le vrai contour garde tout son poids : silhouette
+   (pas de peau derrière), doigt sur doigt, pouce et doigt, et pouce posé devant la paume, toujours loin devant elle
+   (écart ≥ 2 push mesuré dans pouce_ip80_cote) ; pas d'exception près du fond (elle laissait des éclats à l'embouchure des plis). */
+const HULL_VS=`attribute float part;attribute float rnz;varying float vP;varying float vZ;varying float vD;void main(){vP=part;vD=rnz;vec4 mv=modelViewMatrix*vec4(position,1.);vZ=-mv.z;gl_Position=projectionMatrix*mv;}`;
+const HULL_FS=`uniform float opacity;uniform float push;uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 res;uniform float cn;uniform float cf;varying float vP;varying float vZ;varying float vD;
+  float L(vec2 uv){float z=texture2D(tDepth,uv).r*2.-1.;return 2.*cn*cf/(cf+cn-z*(cf-cn));}
+  void main(){if(push>0.){vec2 uv=gl_FragCoord.xy/res;vec4 c=texture2D(tId,uv);
+    if(c.a>.5){float pb=floor(c.r*8.+.5),ph=floor(vP+.5);float d=L(uv)-vZ;
+      // « doigt sur doigt / pouce et doigt » n'est un VRAI contour que s'il y a un vrai écart de profondeur :
+      // un doigt passe DEVANT l'autre. Quand deux doigts repliés se TOUCHENT (le poing), l'écart est nul, la
+      // coque des deux se superpose au point de contact et le test bascule d'un pixel à l'autre : le creux se
+      // remplissait de lambeaux noirs déchirés. Le trait de contact est l'affaire de la passe identité, qui en
+      // trace UN, propre et d'épaisseur constante (voir sep() : entre deux doigts son seuil est déjà de 0,02).
+      // Le seuil était 0,5 × push : avec les P1 voisines maintenant pressées l'une contre l'autre (obliquité des
+      // MCP), l'écart de profondeur au droit du contact croît lentement depuis zéro et le test basculait sur une
+      // bande entière — le contour entre deux jointures repliées était une déchirure de 2 à 3 trois lambeaux
+      // (mesuré en dos34 de V (2), fenêtre des jointures : 54 fragments noirs isolés). Même seuil que la paume
+      // sous un doigt : la coque ne compte que si un doigt passe franchement DEVANT l'autre (≥ push = 2,6 mm) ;
+      // en deçà, la passe identité trace déjà UN trait à ce contact (seuil 0,02 entre deux doigts).
+      bool real=pb!=ph&&pb>1.5&&ph>1.5&&d>push;
+      // Sur le DOS de la main (rnz < −0,3, le « dos franc » du nuanceur de peau), hors « doigt sur doigt », la coque
+      // ne compte qu'à 2 × push. Entre deux jointures repliées, le dos plonge dans une vallée dont le fond est à 1 à
+      // 2 push derrière les crêtes : la coque de chaque crête, vue en rasant par-dessus ce fond (même partie, ou
+      // paume derrière un doigt), ne perce que par lambeaux d'un ou deux pixels entre les facettes de la peau — le
+      // « bouquet d'échardes » au bas de la jointure. Le vrai contour de ces cas-là est toujours bien plus loin
+      // devant (un doigt replié devant la paume : l'épaisseur du doigt, 16 mm), et la passe identité trace déjà
+      // le trait de la vallée (seuil 0,3 entre paume et doigt). Mesuré en dos34, fenêtre des jointures (fragments
+      // noirs < 120 px / pixels dedans) : Index (1) 23 / 80 → 7 / 7, Poing serré 24 / 74 → 13 / 17, V (2) 19 / 160
+      // → 18 / 213 (ce qui reste en V (2) est un seul trait de 117 px à la base du majeur et les lambeaux d'une
+      // coque « doigt sur doigt » légitime, à plus de 2 push). Côté PAUME le seuil reste push : les plis y sont des
+      // contours à 1 à 2 push qu'on veut (mesuré sur 15 presets × 5 vues, à 2 push partout : le bord inférieur du
+      // pouce sur le thénar perdait 322 px en V (2) de face, 286 en Quatre (4)).
+      float lim=vD<-.3?2.*push:push;
+      if(!real&&d<lim)discard;}}
+    gl_FragColor=vec4(.067,.067,.067,opacity);}`;
+const hullMatProto=()=>new THREE.ShaderMaterial({uniforms:{opacity:{value:1},push:{value:0},tId:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2(1,1)},cn:{value:.5},cf:{value:500}},
+  vertexShader:HULL_VS,fragmentShader:HULL_FS,side:THREE.BackSide,polygonOffset:true,polygonOffsetFactor:2,polygonOffsetUnits:4});
+const HPUSH=1.8;   // recul de la coque (× épaisseur du contour)
+let EDMAX=2.6;     // marche de profondeur au-delà de laquelle on ne trace plus de trait intérieur (unités)
+// Détecteur de plis (arêtes RENTRANTES). Le dessin ne porte que les traits d'une main à PLAT : rien ne dessine la
+// vallée entre deux doigts repliés qui se touchent, ni la cassure entre le dos de la main et les phalanges levées.
+// D'où les « pâtés » : le dos du poing était une tache verte vide. Un illustrateur trace un trait à chaque creux.
+// On le lit dans la profondeur : en traversant un creux la profondeur passe par un MAXIMUM local (laplacien < 0),
+// alors que sur une surface bombée (le corps d'un doigt) il est positif — aucun trait parasite sur les doigts.
+// ÉTEINT (voir plus bas le relief du dos). Mesuré sur cinq vues de contrôle, détecteur contre détecteur éteint :
+// sur le poing et la pince, il ne change RIEN de visible (198 et 175 pixels sur 350 000, invisibles à l'œil) ;
+// sur le dos de la main, il ne produit que des griffures, en lisant chaque facette du relief comme un trait.
+// Il avait été écrit pour faire lire les creux ; le relief du dos le fait mieux, par l'ombre. On le garde en
+// place et réglable (`window.__atelier.setCrv`), mais à zéro par défaut : au-dessus de 100 la passe le saute.
+let CRV=1e4;       // seuil : tangente du demi-angle du pli (.55 ≈ pli à partir de ~30° de versant)
+let CRMAX=1.6;     // plafond de l'écart de profondeur : au fond d'une crevasse, un trait et pas une tache
+function makeHand(skeletonOnly){
+  const root=new THREE.Group(),mats=[],chainMats={},hullMat=hullMatProto(),meshes=[];mats.push(hullMat);
+  const addSkin=(geos,key)=>{const f=skinMat(false),b=skinMat(true);mats.push(f,b);chainMats[key]=[f,b];if(key==='paume')[f,b].forEach(m=>m.side=THREE.DoubleSide);
+    [[geos[0],f,false],[geos[1],b,false],[geos[2],hullMat,true],[geos[3],hullMat,true]].forEach(([g,m,h])=>{const me=new THREE.Mesh(g,m);me.frustumCulled=false;me.userData={hull:h,idMat:idMats[key]};root.add(me);meshes.push(me)})};
+  let skin=null,skinMats=[];
+  if(!skeletonOnly){
+    // une seule matière : dessin paume devant, dessin dos derrière, fondus sur la tranche
+    const f=skinMat(false);mats.push(f);skinMats=[f];
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));g.setAttribute('uv',MUVA);
+    g.setAttribute('part',MPARTA);g.setAttribute('color',MIDC);g.setIndex(MINDEX);
+    g.computeVertexNormals();if(!MRNZ){MRNZ=new Float32Array(MN);const nn=g.attributes.normal.array;for(let i=0;i<MN;i++)MRNZ[i]=nn[3*i+2];
+      const gc=new THREE.BufferGeometry(),pc=MREST.slice();for(let i=0;i<MN;i++)pc[3*i+2]+=MDZ[i];gc.setAttribute('position',new THREE.BufferAttribute(pc,3));gc.setIndex(MINDEX);
+      gc.computeVertexNormals();MRNZC=new Float32Array(MN);const nc=gc.attributes.normal.array;for(let i=0;i<MN;i++)MRNZC[i]=nc[3*i+2]}
+    g.setAttribute('rnz',new THREE.BufferAttribute(MRNZ.slice(),1));
+    g.setAttribute('crf',new THREE.BufferAttribute(new Int8Array(2*MN),2,true));   // plis et rides (piste R)
+    const hg=new THREE.BufferGeometry();hg.setAttribute('position',new THREE.BufferAttribute(MREST.slice(),3));hg.setAttribute('part',MPARTA);hg.setAttribute('rnz',g.attributes.rnz);hg.setIndex(MINDEX);   // rnz : côté dos / paume, lu par HULL_FS
+    const me=new THREE.Mesh(g,f),mh=new THREE.Mesh(hg,hullMat);me.frustumCulled=mh.frustumCulled=false;
+    me.userData={hull:false};mh.userData={hull:true};root.add(me,mh);meshes.push(me,mh);
+    const idg=new THREE.BufferGeometry();idg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(9*NT),3));idg.setAttribute('color',MIDFA);
+    const im=idMatProto();const idm=new THREE.Mesh(idg,im);idm.visible=false;idm.frustumCulled=false;root.add(idm);skin={g,hg,idg,idm,im,key:'',hm:hullMat,sm:f,gR:0,crZ:true};
+  }
+  const joints={};
+  ALL.forEach(k=>{
+    const off=k==='pouce'?1:0,src=k==='pouce'?TCH.slice(1):HD.mesh.chain[k];   // doigts : chaîne corrigée (IPD glissée)
+    const J=src.map((p,i)=>toM(p[0],p[1],i<HD.segs[k].length?HD.mesh.jz[k][i+off]:0));if(DEEP[k])J[0]=MCPJ(k);joints[k]=[];joints[k].J=J;
+    let parent=root,prev=new THREE.Vector3();
+    if(k==='pouce'){const c=new THREE.Group();c.position.copy(CMC);root.add(c);joints.cmc=c;parent=c;prev=CMC.clone()}
+    HD.segs[k].forEach((sg,i)=>{const g=new THREE.Group();g.position.copy(J[i].clone().sub(prev));parent.add(g);joints[k].push(g);parent=g;prev=J[i]});
+    const sg=HD.segs[k][HD.segs[k].length-1],te=sg.ts[sg.ts.length-1];
+    const tip=new THREE.Object3D();tip.position.copy(toM(sg.a[0]+sg.u[0]*te*.9,sg.a[1]+sg.u[1]*te*.9,0).sub(prev));parent.add(tip);joints[k].tip=tip;
+  });
+  scene.add(root);
+  return {root,joints,mats,chainMats,skin,skinMats,meshes};
+}
+const qa=(axis,deg)=>new THREE.Quaternion().setFromAxisAngle(axis,deg*D);
+// pouce : le dessin montre sa pulpe ; MCP et IP plient vers l'avant et un peu en travers de la paume
+const tAxis=(i,beta)=>AX.pouce[i].lat.clone().multiplyScalar(Math.sin(beta*D)).add(Z.clone().multiplyScalar(Math.cos(beta*D))).normalize();
+const TFA=[tAxis(0,45),tAxis(1,55)];
+/* ---------- base du pouce : trapézo-métacarpienne en selle (Hollister 1992, Imaeda 1994) ----------
+   Deux axes FIXES, ni perpendiculaires entre eux ni aux os, et qui NE SE CROISENT PAS :
+   - flexion/extension (« rapprocher », vers les doigts) dans le TRAPÈZE, donc par CMC ;
+   - abduction/adduction palmaire (« avancer », en avant de la paume) dans la BASE DU 1er MÉTACARPIEN,
+     donc décalée de TOFF vers le pouce. Le pouce n'a plus de centre de rotation unique : sa base glisse.
+   Chaque axe est incliné de TFT / TAT sur l'os : la flexion comme l'abduction entraînent déjà un peu de
+   pronation, comme l'articulation réelle (l'axe oblique en produit ≈ 25° à pleine opposition). */
+const TFT=20*D,TAT=15*D,FEV=15*D,TOFF=.30;
+// axe de flexion : incliné de TFT sur l'os (→ pronation) et de FEV vers la paume (→ en se rapprochant des
+// doigts, le pouce passe DEVANT la paume au lieu de glisser dans son plan : la colonne du pouce est antérieure)
+const E_FE=Z.clone().addScaledVector(LATM,Math.tan(FEV)).addScaledVector(UM,-Math.tan(TFT)).normalize();
+const E_AA=LATM.clone().multiplyScalar(Math.cos(TAT)).addScaledVector(UM,-Math.sin(TAT)).normalize();
+const P_FE=CMC,P_AA=CMC.clone().addScaledVector(UM,TOFF);
+// Pronation : elle suit l'OPPOSITION, pas « avancer ». Elle démarre avec l'abduction palmaire mais ne culmine
+// qu'une fois le pouce ramené vers les doigts (42° en abduction radiale → 99° en opposition, soit ≈ 57° d'écart ;
+// les axes obliques en donnent déjà ≈ 25°, PRONA fournit le reste). Au repos (0,0) : aucune pronation.
+let PRONA=34;
+const pronOf=t=>{const a=clamp(t.av/LIMT.av[1],0,1),r=clamp(Math.max(t.rap,0)/LIMT.rap[1],0,1);
+  return -PRONA*(a*(.35+.65*r)+.25*r*(1-a))};
+const _pv=new THREE.Vector3();
+function cmcPose(t,g){
+  const qp=qa(UM,pronOf(t)),qb=qa(E_AA,t.av),qf=qa(E_FE,t.rap);
+  g.quaternion.copy(qf).multiply(qb).multiply(qp);
+  // axes non sécants : on applique les trois rotations au point CMC, chacune autour de SON axe
+  _pv.copy(CMC).sub(P_AA).applyQuaternion(qp).add(P_AA);        // pronation, autour de l'axe du métacarpien
+  _pv.sub(P_AA).applyQuaternion(qb).add(P_AA);                   // abduction, axe dans la base du métacarpien
+  _pv.sub(P_FE).applyQuaternion(qf).add(P_FE);                   // flexion, axe dans le trapèze
+  g.position.copy(_pv);
+}
+function setJoints(h,p){
+  FING.forEach(k=>{const v=p.f[k],A=AX[k],j=h.joints[k];
+    j[0].quaternion.copy(qa(Z,-(v.ab+convOf(k,v)+PAR[k]))).multiply(qa(A[0].flex,v.mcp));
+    j[1].quaternion.copy(qa(A[1].lat,v.pip));j[2].quaternion.copy(qa(A[2].lat,v.dip))});
+  const t=p.f.pouce,j=h.joints.pouce;
+  cmcPose(t,h.joints.cmc);j[0].quaternion.copy(qa(TFA[0],t.mcp));j[1].quaternion.copy(qa(TFA[1],t.ip));
+}
+/* ---------- peau : mélange par quaternions duaux, anneau par anneau ---------- */
+const _inv=new THREE.Matrix4(),_m=new THREE.Matrix4(),_q=new THREE.Quaternion(),_t=new THREE.Vector3(),_s=new THREE.Vector3();
+function boneDQ(h,k){
+  // transformations « repos -> posé » de chaque os, dans le repère de la main
+  _inv.copy(h.root.matrixWorld).invert();const out=[];
+  const list=[k==='pouce'?{g:h.joints.cmc,J:CMC}:null,...h.joints[k].map((g,i)=>({g,J:h.joints[k].J[i]}))];
+  list.forEach(b=>{let q=new THREE.Quaternion(),t=new THREE.Vector3();
+    if(b){_m.multiplyMatrices(_inv,b.g.matrixWorld);_m.multiply(new THREE.Matrix4().makeTranslation(-b.J.x,-b.J.y,-b.J.z));_m.decompose(t,q,_s)}
+    // quaternion dual : réel q, dual 0.5 * (t,0) * q
+    const d=[.5*(t.x*q.w+t.y*q.z-t.z*q.y),.5*(-t.x*q.z+t.y*q.w+t.z*q.x),.5*(t.x*q.y-t.y*q.x+t.z*q.w),-.5*(t.x*q.x+t.y*q.y+t.z*q.z)];
+    out.push({r:[q.x,q.y,q.z,q.w],d})});
+  return out;
+}
+function ringXform(dq,r){
+  const a=dq[r.b0],b=dq[r.b1],w=r.w;let s=1;if(a.r[0]*b.r[0]+a.r[1]*b.r[1]+a.r[2]*b.r[2]+a.r[3]*b.r[3]<0)s=-1;
+  const R=[0,1,2,3].map(i=>a.r[i]*(1-w)+s*b.r[i]*w),Dd=[0,1,2,3].map(i=>a.d[i]*(1-w)+s*b.d[i]*w);
+  const n=Math.hypot(...R);for(let i=0;i<4;i++){R[i]/=n;Dd[i]/=n}
+  // translation = 2 * dual * conj(réel)
+  const [x,y,z,wq]=R,[dx,dy,dz,dw]=Dd;
+  const tx=2*(-dw*x+dx*wq-dy*z+dz*y),ty=2*(-dw*y+dx*z+dy*wq-dz*x),tz=2*(-dw*z-dx*y+dy*x+dz*wq);
+  return {q:new THREE.Quaternion(x,y,z,wq),t:new THREE.Vector3(tx,ty,tz)};
+}
+function skinTube(h,k,key){
+  const T=h.tubes[k];if(T.key===key)return;T.key=key;
+  const dq=boneDQ(h,k),X=RINGS[k].map(r=>ringXform(dq,r)),v=new THREE.Vector3(),e=HULL/SC;
+  [[T.f,T.hf],[T.b,T.hb]].forEach(([g,hg])=>{
+    const rest=g.userData.rest,rn=g.userData.restN,ro=g.userData.ringOf,p=g.attributes.position.array,n=g.attributes.normal.array,hp=hg.attributes.position.array;
+    for(let i=0;i<ro.length;i++){const x=X[ro[i]],o=3*i;
+      v.set(rest[o],rest[o+1],rest[o+2]).applyQuaternion(x.q).add(x.t);p[o]=v.x;p[o+1]=v.y;p[o+2]=v.z;
+      v.set(rn[o],rn[o+1],rn[o+2]).applyQuaternion(x.q);n[o]=v.x;n[o+1]=v.y;n[o+2]=v.z;
+      hp[o]=p[o]+v.x*e;hp[o+1]=p[o+1]+v.y*e;hp[o+2]=p[o+2]+v.z*e}
+    g.attributes.position.needsUpdate=true;g.attributes.normal.needsUpdate=true;hg.attributes.position.needsUpdate=true;
+  });
+}
+// peau de la paume : suit la paume, le pouce (éminence thénar) et la base des doigts (jointures, palmures)
+const PFW=b64arr(HD.fw,Uint8Array);
+function blendDQ(list){ // [[dq,w],...] -> {q,t}
+  const R=[0,0,0,0],Dd=[0,0,0,0];const ref=list[0][0].r;
+  list.forEach(([dq,w])=>{const s=dq.r[0]*ref[0]+dq.r[1]*ref[1]+dq.r[2]*ref[2]+dq.r[3]*ref[3]<0?-1:1;for(let i=0;i<4;i++){R[i]+=s*w*dq.r[i];Dd[i]+=s*w*dq.d[i]}});
+  const n=Math.hypot(...R);for(let i=0;i<4;i++){R[i]/=n;Dd[i]/=n}
+  const [x,y,z,wq]=R,[dx,dy,dz,dw]=Dd;
+  return {q:new THREE.Quaternion(x,y,z,wq),t:new THREE.Vector3(2*(-dw*x+dx*wq-dy*z+dz*y),2*(-dw*y+dx*z+dy*wq-dz*x),2*(-dw*z-dx*y+dy*x+dz*wq))};
+}
+const DQ_ID={r:[0,0,0,1],d:[0,0,0,0]};
+const PINF=[];for(let i=0;i<NP;i++){let wt=PW[i];const wf=[0,1,2,3].map(j=>PFW[4*i+j]/255);let tot=wt+wf[0]+wf[1]+wf[2]+wf[3];
+  if(tot<=1e-3)continue;if(tot>1){wt/=tot;for(let j=0;j<4;j++)wf[j]/=tot;tot=1}PINF.push([i,1-tot,wt,wf[0],wf[1],wf[2],wf[3]])}
+function skinPalm(h,p){
+  const key=JSON.stringify([p.f.pouce.av,p.f.pouce.rap,...FING.map(k=>[p.f[k].mcp,p.f[k].ab,p.f[k].pip])]);if(h.palm.key===key)return;h.palm.key=key;
+  const B=[DQ_ID,boneDQ(h,'pouce')[0],...FING.map(k=>boneDQ(h,k)[1])];
+  // alignement des signes une fois pour toutes (référence : identité)
+  B.forEach(b=>{if(b.r[3]<0){b.r=b.r.map(x=>-x);b.d=b.d.map(x=>-x)}});
+  const R=new Float64Array(4),Dd=new Float64Array(4);
+  [[h.palm.pf,h.palm.hf],[h.palm.pb,h.palm.hb]].forEach(([g,hg])=>{
+    const rest=g.userData.rest,pa=g.attributes.position.array;pa.set(rest);
+    for(const inf of PINF){const i=inf[0],o=3*i;R.fill(0);Dd.fill(0);
+      for(let b=0;b<6;b++){const w=inf[b+1];if(w<=0)continue;const q=B[b];for(let c=0;c<4;c++){R[c]+=w*q.r[c];Dd[c]+=w*q.d[c]}}
+      const n=Math.hypot(R[0],R[1],R[2],R[3]),x=R[0]/n,y=R[1]/n,z=R[2]/n,w=R[3]/n,dx=Dd[0]/n,dy=Dd[1]/n,dz=Dd[2]/n,dw=Dd[3]/n;
+      const tx=2*(-dw*x+dx*w-dy*z+dz*y),ty=2*(-dw*y+dx*z+dy*w-dz*x),tz=2*(-dw*z-dx*y+dy*x+dz*w);
+      const px=rest[o],py=rest[o+1],pz=rest[o+2];
+      // rotation du point par le quaternion (x,y,z,w)
+      const ix=w*px+y*pz-z*py,iy=w*py+z*px-x*pz,iz=w*pz+x*py-y*px,iw=-x*px-y*py-z*pz;
+      pa[o]=ix*w+iw*-x+iy*-z-iz*-y+tx;pa[o+1]=iy*w+iw*-y+iz*-x-ix*-z+ty;pa[o+2]=iz*w+iw*-z+ix*-y-iy*-x+tz}
+    g.attributes.position.needsUpdate=true;g.computeVertexNormals();
+    const nn=g.attributes.normal.array,hp=hg.attributes.position.array,e=HULL/SC;for(let i=0;i<3*NP;i++)hp[i]=pa[i]+nn[i]*e;
+    hg.attributes.position.needsUpdate=true;
+  });
+}
+function boneDQ1(h,g,J){
+  let q=new THREE.Quaternion(),t=new THREE.Vector3();
+  _m.multiplyMatrices(_inv,g.matrixWorld);_m.multiply(new THREE.Matrix4().makeTranslation(-J.x,-J.y,-J.z));_m.decompose(t,q,_s);
+  if(q.w<0){q.x=-q.x;q.y=-q.y;q.z=-q.z;q.w=-q.w}
+  return {r:[q.x,q.y,q.z,q.w],d:[.5*(t.x*q.w+t.y*q.z-t.z*q.y),.5*(-t.x*q.z+t.y*q.w+t.z*q.x),.5*(t.x*q.y-t.y*q.x+t.z*q.w),-.5*(t.x*q.x+t.y*q.y+t.z*q.z)]};
+}
+/* ---------- déformeur en arc aux articulations charnières (MCP, IPP, IPD ; MCP et IP du pouce) ----------
+   Dans la zone d'une articulation, la section d'abscisse tau (0 = début de zone, 1 = fin) tourne de tau·θ autour
+   d'un centre Q(tau) qui glisse : chaque fibre de peau devient un arc de cercle (rayon jamais négatif côté paume :
+   pas de repli, pas de fente noire, pas de creux), et en fin de zone la section rejoint exactement l'os distal
+   (Q = centre de l'articulation). Q - C = h·[(tau-1)·u + (tau·g(tau·θ) - g(θ))·f], g(x) = 2/x - cot(x/2),
+   u = axe du doigt, f = côté de la flexion, h = demi-largeur de zone (grande côté paume, petite côté dos).
+   Chaque chaîne (pouce, doigt) ajoute son déplacement ; la base du pouce (trapézo-métacarpienne) reste en quaternions duaux. */
+const ARC=MS.arc,ACH=b64arr(ARC.c,Uint8Array),AHM=b64arr(ARC.hm,Uint8Array),ASH=b64arr(ARC.s,Uint16Array),ATA=b64arr(ARC.t,Uint16Array),CHN=['pouce',...FING];
+const ARCJ={};CHN.forEach(k=>ARCJ[k]=ARC.joints[k].map((p,j)=>{
+  const c=k==='pouce'?HD.mesh.chain.pouce[j+1]:HD.mesh.chain[k][j],z=k==='pouce'?HD.mesh.jz.pouce[j+1]:HD.mesh.jz[k][j];
+  const C=toM(c[0],c[1],z);
+  return {C,u:new THREE.Vector3(...p.u),f0:new THREE.Vector3(...p.f),rp:p.rp/SC,rd:p.rd/SC,hp:p.hp/SC,hd:p.hd/SC,kf:p.kf}}));
+// demi-largeur de zone de chaque sommet (selon sa profondeur côté paume / côté dos) : chaîne principale (3 art.), MCP de la 2e
+const AH1=new Float32Array(3*MN),AH2=new Float32Array(MN);
+{const hOf=(J,o)=>{const d=(MREST[o]-J.C.x)*J.f0.x+(MREST[o+1]-J.C.y)*J.f0.y+(MREST[o+2]-J.C.z)*J.f0.z;return Math.max(J.hd+(J.hp-J.hd)*smooth(-J.rd,J.rp,d),J.kf*d)};
+  for(let i=0;i<MN;i++){const c1=ACH[2*i],c2=ACH[2*i+1];
+    if(c1)ARCJ[CHN[c1-1]].forEach((J,j)=>AH1[3*i+j]=hOf(J,3*i));if(c1>1)AH1[3*i]=AHM[2*i]/2/SC;if(c2>1)AH2[i]=AHM[2*i+1]/2/SC}}
+
+/* ---------- piste R : les rides et les plis suivent la flexion ----------
+   Côté DOS la peau s'étire quand l'articulation plie (+0,35 %/° à l'IPP, 0,29 à la MCP, 0,20 à l'IPD, ≈30 % en tout) :
+   les rides dessinées s'écartent (la peau porte sa texture) puis s'effacent, et la phalange pliée a le dos lisse et
+   tendu (photos 2374, 2375, 2360). Côté PAUME le pli de flexion se creuse, s'assombrit et s'élargit ; en
+   hyperextension c'est l'inverse des deux côtés. Le pli thénar suit le pouce qui se rapproche ou s'oppose.
+   On envoie au shader, par sommet, l'effacement e du trait du dessin : crf.x côté paume (< 0 : creusé), crf.y côté
+   dos (> 0 : effacé) ; texCrease dit OÙ sont les traits. Au repos tous les angles valent 0, donc e = 0 partout et le
+   multiplicateur vaut exactement 1 : le dessin reste exact au pixel près.
+   Chaque sommet retient les DEUX articulations qui le commandent le plus (bosse le long de l'os, refermée de côté). */
+// Le dos s'étire de 0,29 %/° à la MCP, 0,35 à l'IPP, 0,20 à l'IPD (≈30 % en tout). La réserve de peau plissée d'une
+// jointure est à la mesure de ce qu'elle doit rendre : l'effacement est donc la part de course parcourue, ×1,1
+// (le dos est lisse un peu avant la butée, comme sur les photos 2374 et 2375).
+const CRMX=[95,110,85],CRMXT=[55,80];     // flexion maximale : MCP / IPP / IPD, puis MCP / IP du pouce (°)
+const CRJ=[],crAdd=(C,u,f0,sp,sq,sd,wp,wd,drv)=>{const U=u.clone().normalize();
+  CRJ.push({C,u:U,lat:U.clone().cross(f0).normalize(),sp:sp/SC,sq:sq/SC,sd:sd/SC,wp:wp/SC,wd:wd/SC,drv})};
+FING.forEach(k=>ARCJ[k].forEach((J,j)=>{
+  const g=HD.segs[k][j],n=g.wl.length,hw=g.wl.reduce((s,v,i)=>s+(v+g.wr[i])/2,0)/n;   // demi-largeur du doigt (px)
+  const key=['mcp','pip','dip'][j];
+  crAdd(J.C,J.u,J.f0,1.7*hw,1.25*hw,1.15*hw,j?1.3*hw:2.2*hw,1.3*hw,
+    f=>{const a=f?f[k][key]||0:0,t=1.1*a/CRMX[j];return [clamp(t,-.6,1),-clamp(t,-.5,1)]})}));
+['mcp','ip'].forEach((key,j)=>{const J=ARCJ.pouce[j],g=HD.segs.pouce[j],
+   hw=g.wl.reduce((s,v,i)=>s+(v+g.wr[i])/2,0)/g.wl.length;
+  crAdd(J.C,J.u,J.f0,1.6*hw,1.2*hw,1.1*hw,1.4*hw,1.3*hw,
+    f=>{const a=f?f.pouce[key]||0:0,t=1.1*a/CRMXT[j];return [clamp(t,-.6,1),-clamp(t,-.5,1)]})});
+// pli thénar : le plus constant de la paume (grande mobilité de la CMC). Son arc passe à ≈0,95 × la longueur du
+// métacarpien du pouce sur le côté ulnaire de celui-ci : on centre là une tache large, menée par « rapprocher » et « avancer ».
+{const n=LATM.clone().multiplyScalar(LATM.dot(toM(500,560,0).clone().sub(CMC))>0?1:-1);
+ crAdd(CMC.clone().addScaledVector(UM,.45*193.6/SC).addScaledVector(n,.95*193.6/SC),UM,Z,170,170,170,120,120,
+   f=>[0,-clamp((Math.max(f?f.pouce.rap:0,0)*.9+Math.max(f?f.pouce.av:0,0)*.45)/55,0,1)])}
+const CRN=CRJ.length,CRA=new Float32Array(2*CRN);
+const CRIP=new Uint8Array(2*MN),CRWP=new Uint8Array(2*MN),CRID=new Uint8Array(2*MN),CRWD=new Uint8Array(2*MN);
+{const bump=(J,x,y,z,dor)=>{const rx=x-J.C.x,ry=y-J.C.y,rz=z-J.C.z;
+   const t=rx*J.u.x+ry*J.u.y+rz*J.u.z,l=rx*J.lat.x+ry*J.lat.y+rz*J.lat.z,s=dor?J.sd:(t<0?J.sp:J.sq),q=t/s,w=dor?J.wd:J.wp;
+   return q*q>9?0:Math.exp(-q*q)*(1-smooth(w,1.9*w,Math.abs(l)))};
+ for(let i=0;i<MN;i++){const x=MREST[3*i],y=MREST[3*i+1],z=MREST[3*i+2];
+   for(let d=0;d<2;d++){let b0=0,i0=0,b1=0,i1=0;
+     for(let j=0;j<CRN;j++){const v=bump(CRJ[j],x,y,z,d===1);if(v>b0){b1=b0;i1=i0;b0=v;i0=j}else if(v>b1){b1=v;i1=j}}
+     const I=d?CRID:CRIP,W=d?CRWD:CRWP;I[2*i]=i0;I[2*i+1]=i1;W[2*i]=255*Math.min(b0,1);W[2*i+1]=255*Math.min(b1,1)}}}
+/* ---------- relief des jointures (piste D) : la bosse dorsale sort avec la flexion ----------
+   Sur une vraie main pliée, le dos d'une articulation n'est pas un tuyau lisse : la tête de l'os saille et la peau
+   s'y tend. Dans le poing, les quatre têtes métacarpiennes font quatre bosses nettes et les phalanges repliées font
+   des marches (photos 2357, 2364, 2374). Le déformeur en arc, lui, donne un cylindre parfait : on ajoute donc un
+   relèvement local de la peau du CÔTÉ DOS, centré sur l'articulation, dont la hauteur suit l'angle de flexion.
+   Le déplacement est posé AVANT l'arc (comme mesh.dz), donc porté par lui : la bosse reste sur la jointure quand
+   le doigt tourne. Au repos tous les angles valent 0 : hauteur nulle, le dessin ne bouge pas d'un pixel.
+   Direction : −f0 de l'articulation (le côté extenseur), donc exactement −z pour les doigts. */
+// Mesuré sur les rendus de contrôle du poing, comparés à la photo 2357 : la bosse valait .14 × la demi-largeur,
+// soit 1,8 mm à la tête du métacarpien là où une vraie jointure sort de 4 à 5 mm. Les quatre doigts repliés se
+// lisaient donc comme quatre tuyaux lisses, sans arête de jointure pour accrocher l'ombre. On monte la hauteur de moitié
+// et on RESSERRE la gaussienne le long de l'os (s plus petit) : une jointure est un dôme court, pas un renflement
+// qui court sur toute la phalange. C'est le contraste bosse / creux qui fait lire la marche.
+const KNK=.22;                 // hauteur de la bosse à flexion maximale (× demi-largeur du segment)
+let KNQ=.25/255;               // pas de quantification de la hauteur (unités moteur ; ajusté plus bas)
+let KNG=1;                     // multiplicateur global (mise au point : window.__atelier.setKnk)
+const KNJ=[],knAdd=(C,u,f0,s,w,rd,amp,drv)=>{const U=u.clone().normalize(),F=f0.clone().normalize();
+  // amplitude SIGNÉE : négative = on CREUSE. Le poids par sommet est un octet non signé, donc le signe voyage
+  // avec le pilote et le précalcul ne voit que la valeur absolue.
+  KNJ.push({C,u:U,f:F,lat:U.clone().cross(F).normalize(),s,w,rd,amp:Math.abs(amp),sg:amp<0?-1:1,drv})};
+const hwOf=g=>g.wl.reduce((a,v,i)=>a+(v+g.wr[i])/2,0)/g.wl.length/SC;
+FING.forEach(k=>ARCJ[k].forEach((J,j)=>{const hw=hwOf(HD.segs[k][j]),key=['mcp','pip','dip'][j];
+  // la tête du métacarpien est plus large et plus saillante que celles des phalanges
+  knAdd(J.C,J.u,J.f0,(j===0?1.0:j===1?.85:.8)*hw,1.2*hw,J.rd,KNK*(j===0?1.45:j===1?1.05:.55)*hw,
+    f=>clamp((f?f[k][key]||0:0)/CRMX[j],0,1))}));
+/* LARGEUR DES JOINTURES. Le dessin de référence est une main OUVERTE : à la racine, deux doigts voisins sont
+   séparés de ~2 mm d'air (1,96 unité entre deux centres de MCP pour 1,78 de demi-largeurs cumulées, mesuré sur
+   le squelette). Quand le poing se ferme, l'adduction ne referme rien — elle tourne autour du centre de la MCP,
+   qui est justement là où la fente est. Résultat : quatre fentes CLAIRES, chacune doublée du contour noir du
+   rendu, et le poing se lit comme quatre bananes posées sur une paume. Sur une vraie main (photos 2357, 2374)
+   les quatre jointures SE TOUCHENT et ce qu'on voit entre elles est une ombre, pas un trou.
+   L'os dit la même chose : la tête du métacarpien est la partie la plus LARGE de l'os, et elle ne sort qu'en
+   flexion (en extension ce sont les tendons qui occupent le dos). On élargit donc chaque tête, des deux côtés,
+   proportionnellement à la flexion de SA MCP. À la pose du dessin la flexion vaut 0 : rien ne bouge. */
+// Même chose à l'IPP : ses condyles sont larges, et c'est LE dos de la phalange moyenne qu'on voit quand on
+// regarde un poing côté paume (la P1 est vue en bout). Sans cet élargissement, la fente se refermait à la
+// jointure et restait ouverte sur toute la longueur du doigt replié.
+const KNL=.11;                 // élargissement latéral d'une jointure (× demi-largeur du doigt)
+FING.forEach(k=>[0,1].forEach(j=>{const J=ARCJ[k][j],hw=hwOf(HD.segs[k][j]),key=['mcp','pip'][j],
+    lt=J.u.clone().cross(J.f0).normalize();
+  // gaussiennes LONGUES le long de l'os : ce n'est pas la jointure seule qu'il faut fermer, c'est la fente sur
+  // TOUTE la longueur du doigt replié. Entre deux jointures, le creux restait ouvert et profond, et la coque des
+  // deux doigts s'y déchirait en lambeaux.
+  // rd = 2,2 × demi-largeur : le champ s'allume sur .55 × rd, donc sur TOUTE l'épaisseur du doigt au lieu d'un
+  // demi-millimètre. Une rampe courte sur un déplacement latéral étire les triangles (balayage : 8 400 triangles
+  // gonflés contre 4 300 sans l'élargissement) ; une rampe longue fait le même volume sans froisser la peau.
+  [1,-1].forEach(sg=>knAdd(J.C,J.u,lt.clone().multiplyScalar(sg),(j?1.6:2.0)*hw,1.15*hw,2.2*hw,KNL*(j?.85:1)*hw,
+    f=>clamp((f?f[k][key]||0:0)/CRMX[j],0,1)))}));
+['mcp','ip'].forEach((key,j)=>{const J=ARCJ.pouce[j],hw=hwOf(HD.segs.pouce[j]);
+  knAdd(J.C,J.u,J.f0,hw,1.2*hw,J.rd,KNK*.8*hw,f=>clamp((f?f.pouce[key]||0:0)/CRMXT[j],0,1))});
+/* ÉMINENCE THÉNAR. C'est le volume qui change le PLUS sur la paume quand on signe, et il était absolument fixe :
+   la peau suivait la base du pouce, mais le muscle dessous ne gonflait jamais. Les trois muscles de la base du
+   pouce (court abducteur, court fléchisseur, opposant) sont d'autant plus contractés que le pouce s'OPPOSE — pas
+   qu'il s'avance seul, pas qu'il se rapproche seul. On réutilise donc exactement la mesure d'opposition qui pilote
+   déjà la pronation (`pronOf`), et le même mécanisme que le relief des jointures, mais côté PAUME et sur toute la
+   longueur du métacarpien. À (0,0) la mesure vaut 0 : le dessin au repos ne bouge pas d'un pixel. */
+const THEN=.17;                 // hauteur du gonflement (× longueur du métacarpien du pouce)
+{const A=toM(CMC_IMG[0],CMC_IMG[1],0),B=toM(MCP_T[0],MCP_T[1],0),u=B.clone().sub(A),L=u.length();u.normalize();
+ knAdd(A.clone().lerp(B,.52),u,Z.clone().negate(),.62*L,.44*L,1.1,THEN*L,
+   f=>{if(!f)return 0;const t=f.pouce,a=clamp(t.av/LIMT.av[1],0,1),r=clamp(Math.max(t.rap,0)/LIMT.rap[1],0,1);
+       return clamp(a*(.35+.65*r)+.25*r*(1-a),0,1)});}
+/* LE DOS DE LA MAIN. Mesuré sur les rendus de contrôle : c'était une plaque lisse. Aucun relief, donc ni ombre
+   ni trait — le détecteur de plis lui-même n'y trouvait rien, parce qu'il n'y avait réellement rien à trouver.
+   Sur une vraie main (photos 2357, 2364, 2366, 2370) le dos montre trois choses, et elles vont par paires :
+     • les TENDONS EXTENSEURS, quatre cordes du poignet aux jointures, qui saillent quand les doigts s'étendent
+       et s'effacent quand on ferme le poing ;
+     • les VALLÉES entre ces cordes, qui se creusent en même temps ;
+     • les SILLONS entre deux doigts repliés, qui n'apparaissent qu'en flexion, quand les têtes des métacarpiens
+       sortent et que les doigts se serrent.
+   Tendons et vallées suivent donc l'EXTENSION, sillons et jointures la FLEXION : le dos n'est jamais plat, mais il
+   ne montre jamais les deux reliefs à la fois — c'est ce qui sépare une main d'un gant.
+   Tout passe par `rootBlend` : à la pose du dessin l'amplitude est nulle, le repos reste exact au pixel près. */
+// Amplitudes et LARGEURS réglées ensemble : une côte haute et étroite donne un versant trop raide, le maillage
+// (pas de 5 px) ne sait pas la lisser, et le détecteur de plis lit chaque facette comme un trait — le dos se
+// couvrait de griffures. Un tendon est un renflement DOUX : on le voit par l'ombre, pas par un trait.
+// Pente ≈ 2 × hauteur / largeur ; on la garde sous le seuil du détecteur (CRV = 0,55).
+// SILL = 0 : le sillon sculpté entre deux jointures repliées est ÉTEINT. Il creusait le dos là où, les P1 ne se
+// touchant pas, rien ne faisait d'ombre entre deux jointures ; depuis que les P1 se pressent l'une contre l'autre
+// (LEAN), la jointure fait son propre creux et la passe identité y trace UN trait. Le sillon ajoutait par-dessus
+// une rigole étroite dont la coque lisait le fond (1,2 à 2 × push derrière la crête) comme un second contour à
+// 2,5 px du premier, et dont les parois rasantes finissaient en bouquet d'échardes. Mesuré en dos34 (fenêtre des
+// jointures, fragments noirs isolés) : V (2) 46 → 23, Index (1) 44 → 24, Poing serré 39 → 25, et les jointures du
+// poing se lisent toujours (KNK et KNL inchangés). Le code du sillon reste en place, prêt si un jour les P1 se
+// séparent de nouveau.
+const TEND=.11,VALL=.075,SILL=0;
+{// poignet : barycentre des 4 % de sommets les plus bas (la main pointe vers +y)
+ let ymin=1e9,ymax=-1e9;for(let i=0;i<MN;i++){const y=MREST[3*i+1];if(y<ymin)ymin=y;if(y>ymax)ymax=y}
+ const yc=ymin+.04*(ymax-ymin);let wx=0,wy=0,wz=0,n=0;
+ for(let i=0;i<MN;i++)if(MREST[3*i+1]<yc){wx+=MREST[3*i];wy+=MREST[3*i+1];wz+=MREST[3*i+2];n++}
+ const W=new THREE.Vector3(wx/n,wy/n,wz/n);
+ const ext=k=>f=>f?rootBlend(f)*(1-clamp((f[k].mcp||0)/50,0,1)):0;
+ const MC=FING.map(k=>ARCJ[k][0].C);
+ const ecart=(MC[0].distanceTo(MC[1])+MC[1].distanceTo(MC[2])+MC[2].distanceTo(MC[3]))/3;
+ FING.forEach((k,i)=>{
+   const C=MC[i],u=C.clone().sub(W),L=u.length();u.normalize();
+   knAdd(W.clone().lerp(C,.70),u,Z,.34*L,.46*ecart,1.0,TEND*ecart,ext(k));          // corde du tendon
+   if(i<3){const b=FING[i+1],Cb=MC[i+1],ua=ARCJ[k][0].u.clone().add(ARCJ[b][0].u).normalize();
+     const lp=(HD.segs[k][0].len+HD.segs[b][0].len)/2/SC;
+     knAdd(C.clone().lerp(Cb,.5).addScaledVector(ua,.55*lp),ua,Z,.60*lp,.42*ecart,1.0,-SILL*ecart,   // sillon
+       f=>f?rootBlend(f)*(clamp((f[k].mcp||0)/80,0,1)+clamp((f[b].mcp||0)/80,0,1))/2:0);
+     const Cm=C.clone().lerp(Cb,.5),um=Cm.clone().sub(W),Lm=um.length();um.normalize();
+     knAdd(W.clone().lerp(Cm,.68),um,Z,.36*Lm,.40*ecart,1.0,-VALL*ecart,            // vallée intermétacarpienne
+       f=>(ext(k)(f)+ext(b)(f))/2);}
+ });}
+// Chaque sommet ne gardait que ses DEUX reliefs les plus forts. Avec quatorze bosses d'articulation bien
+// séparées, cela suffisait ; avec les champs du dos qui se recouvrent, la frontière où le classement bascule
+// d'un relief à l'autre rend le déplacement DISCONTINU — d'où des facettes, et le détecteur de plis qui lisait
+// chacune comme un trait : le dos se couvrait de griffures. Quatre emplacements repoussent la discontinuité
+// sur le quatrième relief, bien plus faible, et elle cesse de se voir.
+// (cinq depuis l'élargissement latéral des têtes : sur le flanc d'une jointure pliée se superposent la bosse
+// dorsale, l'élargissement de ce côté, le tendon, le sillon et la vallée.)
+const KNB=5;
+const KNN=KNJ.length,KNA=new Float32Array(KNN),KNI=new Uint8Array(KNB*MN),KNW=new Uint8Array(KNB*MN);
+{const bump=(J,x,y,z)=>{const rx=x-J.C.x,ry=y-J.C.y,rz=z-J.C.z,q=(rx*J.u.x+ry*J.u.y+rz*J.u.z)/J.s;
+   if(q*q>9)return 0;const d=rx*J.f.x+ry*J.f.y+rz*J.f.z,l=rx*J.lat.x+ry*J.lat.y+rz*J.lat.z;
+   return Math.exp(-q*q)*(1-smooth(J.w,1.7*J.w,Math.abs(l)))*smooth(0,.55*J.rd,-d)};   // côté dos seulement
+ const BV=new Float32Array(KNB*MN);let mx=0;const bv=new Float64Array(KNB),bi=new Int32Array(KNB);
+ for(let i=0;i<MN;i++){const x=MREST[3*i],y=MREST[3*i+1],z=MREST[3*i+2];bv.fill(0);bi.fill(0);
+   for(let j=0;j<KNN;j++){const v=bump(KNJ[j],x,y,z)*KNJ[j].amp;if(v<=bv[KNB-1])continue;
+     let q=KNB-1;while(q>0&&v>bv[q-1]){bv[q]=bv[q-1];bi[q]=bi[q-1];q--}bv[q]=v;bi[q]=j}
+   for(let q=0;q<KNB;q++){KNI[KNB*i+q]=bi[q];BV[KNB*i+q]=bv[q]}
+   if(bv[0]>mx)mx=bv[0]}
+ // le pas de quantification suit la plus forte amplitude : le thénar monte plus haut qu'une jointure et serait
+ // sinon écrêté à 0,25. On ne le diminue jamais, pour ne pas changer ce qui existait déjà.
+ KNQ=Math.max(.25,mx)/255;
+ for(let i=0;i<KNB*MN;i++)KNW[i]=Math.min(255,Math.round(BV[i]/KNQ));}
+const gArc=x=>Math.abs(x)<1e-3?x/6+x*x*x/360:2/x-1/Math.tan(x/2);
+function arcState(J,q){ // décomposition « pivot + torsion » autour de l'axe u du doigt
+  const u=J.u,tw=q.x*u.x+q.y*u.y+q.z*u.z,tn=Math.hypot(tw,q.w)||1;
+  const twq=new THREE.Quaternion(u.x*tw/tn,u.y*tw/tn,u.z*tw/tn,q.w/tn),sw=q.clone().multiply(twq.clone().conjugate());
+  if(sw.w<0){sw.x=-sw.x;sw.y=-sw.y;sw.z=-sw.z;sw.w=-sw.w}
+  const vs=Math.hypot(sw.x,sw.y,sw.z),th=2*Math.atan2(vs,sw.w),n=vs>1e-9?new THREE.Vector3(sw.x/vs,sw.y/vs,sw.z/vs):new THREE.Vector3(0,0,1);
+  return {C:J.C,u,n,f:n.clone().cross(u),th,al:2*Math.atan2(tw,q.w),gth:gArc(th),q:q.clone()};
+}
+function rotAx(n,a,v){const c=Math.cos(a),s=Math.sin(a),d=(n.x*v[0]+n.y*v[1]+n.z*v[2])*(1-c),cx=n.y*v[2]-n.z*v[1],cy=n.z*v[0]-n.x*v[2],cz=n.x*v[1]-n.y*v[0];
+  v[0]=v[0]*c+cx*s+n.x*d;v[1]=v[1]*c+cy*s+n.y*d;v[2]=v[2]*c+cz*s+n.z*d}
+function arcApply(S,tau,h,p){ // p : [x,y,z] modifié sur place
+  if(tau<=0)return;const C=S.C,r=[p[0]-C.x,p[1]-C.y,p[2]-C.z];
+  if(tau>=1){const q=S.q,x=q.x,y=q.y,z=q.z,w=q.w,ix=w*r[0]+y*r[2]-z*r[1],iy=w*r[1]+z*r[0]-x*r[2],iz=w*r[2]+x*r[1]-y*r[0],iw=-x*r[0]-y*r[1]-z*r[2];
+    p[0]=C.x+ix*w-iw*x-iy*z+iz*y;p[1]=C.y+iy*w-iw*y-iz*x+ix*z;p[2]=C.z+iz*w-iw*z-ix*y+iy*x;return}
+  if(Math.abs(S.al)>1e-6)rotAx(S.u,S.al*tau,r);
+  const ph=S.th*tau,F=tau*gArc(ph)-S.gth,a=h*(tau-1),b=h*F,u=S.u,f=S.f;
+  const ox=a*u.x+b*f.x,oy=a*u.y+b*f.y,oz=a*u.z+b*f.z;r[0]-=ox;r[1]-=oy;r[2]-=oz;rotAx(S.n,ph,r);
+  p[0]=C.x+ox+r[0];p[1]=C.y+oy+r[1];p[2]=C.z+oz+r[2];
+}
+function dqApply(b,s,p){ // base du pouce : mélange (paume, métacarpien) par quaternions duaux, part s du métacarpien
+  // signes (essai C) : le métacarpien est ramené dans l'hémisphère de l'identité (boneDQ1 : w ≥ 0), donc aligné sur l'os
+  // principal du sommet quel qu'il soit : le mélange prend toujours le court chemin (pas de peau retournée)
+  if(s<=0)return;if(b.r[3]<0)b={r:b.r.map(x=>-x),d:b.d.map(x=>-x)};const R0=s*b.r[0],R1=s*b.r[1],R2=s*b.r[2],R3=1-s+s*b.r[3],n=Math.hypot(R0,R1,R2,R3);
+  const x=R0/n,y=R1/n,z=R2/n,w=R3/n,dx=s*b.d[0]/n,dy=s*b.d[1]/n,dz=s*b.d[2]/n,dw=s*b.d[3]/n;
+  const tx=2*(-dw*x+dx*w-dy*z+dz*y),ty=2*(-dw*y+dx*z+dy*w-dz*x),tz=2*(-dw*z-dx*y+dy*x+dz*w),px=p[0],py=p[1],pz=p[2];
+  const ix=w*px+y*pz-z*py,iy=w*py+z*px-x*pz,iz=w*pz+x*py-y*px,iw=-x*px-y*py-z*pz;
+  p[0]=ix*w+iw*-x+iy*-z-iz*-y+tx;p[1]=iy*w+iw*-y+iz*-x-ix*-z+ty;p[2]=iz*w+iw*-z+ix*-y-iy*-x+tz;
+}
+function skinMesh(h,key,f){
+  const S_=h.skin;if(S_.key===key)return;S_.key=key;
+  const gR=f?rootBlend(f):0;
+  if(gR!==S_.gR){S_.gR=gR;S_.sm.uniforms.npose.value=gR;const rz=S_.g.attributes.rnz;for(let i=0;i<MN;i++)rz.array[i]=MRNZ[i]+(MRNZC[i]-MRNZ[i])*gR;rz.needsUpdate=true}
+  _inv.copy(h.root.matrixWorld).invert();
+  const ST={};CHN.forEach(k=>ST[k]=ARCJ[k].map((J,j)=>arcState(J,h.joints[k][j].quaternion)));
+  const BC=boneDQ1(h,h.joints.cmc,CMC),pa=S_.g.attributes.position.array,p=[0,0,0],K=1/65535;
+  pa.set(MREST);if(gR)for(let i=0;i<MN;i++)pa[3*i+2]+=gR*MDZ[i];   // racines sans col (voir MDZ)
+  // relief des jointures : bosse dorsale proportionnelle à la flexion, posée avant l'arc qui la transporte
+  {let knAny=false;for(let j=0;j<KNN;j++){const v=KNG*KNJ[j].sg*KNJ[j].drv(f);KNA[j]=v;if(v)knAny=true}
+   if(knAny)for(let i=0;i<MN;i++){const q=KNB*i,o=3*i;let dx=0,dy=0,dz=0;
+     for(let b=0;b<KNB;b++){const w=KNW[q+b];if(!w)break;const a=w*KNA[KNI[q+b]];if(!a)continue;
+       const F=KNJ[KNI[q+b]].f,v=a*KNQ;dx-=F.x*v;dy-=F.y*v;dz-=F.z*v}
+     if(dx||dy||dz){pa[o]+=dx;pa[o+1]+=dy;pa[o+2]+=dz}}}
+  for(let i=0;i<MN;i++){const c1=ACH[2*i];if(!c1)continue;
+    const o=3*i,c2=ACH[2*i+1],x0=pa[o],y0=pa[o+1],z0=pa[o+2];let dx=0,dy=0,dz=0;
+    for(let c=0;c<2;c++){const ch=c?c2:c1;if(!ch)continue;const S=ST[CHN[ch-1]],sh=ASH[2*i+c]*K;p[0]=x0;p[1]=y0;p[2]=z0;
+      if(c===0){const ta=ATA[2*i]*K,tb=ATA[2*i+1]*K;
+        if(ch===1){arcApply(S[1],tb,AH1[o+1],p);arcApply(S[0],ta,AH1[o],p);dqApply(BC,sh,p)}
+        else{arcApply(S[2],tb,AH1[o+2],p);arcApply(S[1],ta,AH1[o+1],p);arcApply(S[0],sh,AH1[o],p)}}
+      else if(ch===1)dqApply(BC,sh,p);else arcApply(S[0],sh,AH2[i],p);
+      dx+=p[0]-x0;dy+=p[1]-y0;dz+=p[2]-z0}
+    pa[o]=x0+dx;pa[o+1]=y0+dy;pa[o+2]=z0+dz}
+  // plis et rides (piste R) : effacement du trait dessiné, côté paume et côté dos, pour chaque sommet
+  let crAny=false;for(let j=0;j<CRN;j++){const v=CRJ[j].drv(f);CRA[2*j]=v[0];CRA[2*j+1]=v[1];if(v[0]||v[1])crAny=true}
+  if(crAny||!S_.crZ){S_.crZ=!crAny;const cf=S_.g.attributes.crf.array;
+    for(let i=0;i<MN;i++){const q=2*i;
+      const pp=(CRWP[q]*CRA[2*CRIP[q]+1]+CRWP[q+1]*CRA[2*CRIP[q+1]+1])*.498,dd=(CRWD[q]*CRA[2*CRID[q]]+CRWD[q+1]*CRA[2*CRID[q+1]])*.498;
+      cf[q]=pp<-127?-127:pp>127?127:pp;cf[q+1]=dd<-127?-127:dd>127?127:dd}
+    S_.g.attributes.crf.needsUpdate=true}
+  S_.g.attributes.position.needsUpdate=true;S_.g.computeVertexNormals();
+  const nn=S_.g.attributes.normal.array,hp=S_.hg.attributes.position.array,e=HULL/SC;for(let i=0;i<3*MN;i++)hp[i]=pa[i]+nn[i]*e;
+  S_.hg.attributes.position.needsUpdate=true;
+  const ip=S_.idg.attributes.position.array,ix=MINDEX.array;for(let t=0;t<3*NT;t++){const v=3*ix[t];ip[3*t]=pa[v];ip[3*t+1]=pa[v+1];ip[3*t+2]=pa[v+2]}
+  S_.idg.attributes.position.needsUpdate=true;
+}
+function applyPose(h,p,light){
+  setJoints(h,p);
+  if(light){h.root.updateMatrixWorld(true);return}
+  h.root.quaternion.fromArray(p.q);h.root.position.fromArray(p.pos);h.root.scale.x=h.side||1;h.root.updateMatrixWorld(true);
+  skinMesh(h,JSON.stringify(p.f),p.f);
+}
+function setLook(h,op){repaint();h.mats.forEach(m=>{if(m.uniforms)m.uniforms.opacity.value=op;else m.opacity=op;m.transparent=op<1;m.depthWrite=op>=1})}
+function lerpF(a,b,t){const o=clone(a);for(const k in o)for(const j in o[k])o[k][j]=a[k][j]+(b[k][j]-a[k][j])*t;return o}
+// Les fantômes et la lecture interpolaient les angles SANS butée ni solveur : entre deux poses valides, les
+// images intermédiaires pouvaient montrer le pouce dans la paume ou deux doigts qui se traversent. Une
+// interpolation résolue coûte quelques millisecondes — à ce prix-là, aucune image n'a d'excuse.
+const SAFE=new Map();
+function lerpPoseSafe(a,b,t,cache){
+  const o=lerpPose(a,b,t);
+  const k=cache?JSON.stringify([a.f,b.f,Math.round(t*1e4)]):null;
+  let f=k&&SAFE.get(k);
+  if(!f){const tg={f:lerpF(a.f,b.f,t)};constrain(tg);f=solve(a.f,tg.f);if(k){if(SAFE.size>300)SAFE.clear();SAFE.set(k,f)}}
+  o.f=clone(f);return o;
+}
+function lerpPose(a,b,t){const o=clone(a);o.f=lerpF(a.f,b.f,t);o.q=new THREE.Quaternion().fromArray(a.q).slerp(new THREE.Quaternion().fromArray(b.q),t).toArray();o.pos=a.pos.map((v,i)=>v+(b.pos[i]-v)*t);return o}
+
+/* ======================================================================
+   La main « réelle » ne se traverse pas, et reste dans des postures humaines
+   ====================================================================== */
+const probe=makeHand(true);probe.root.visible=false;
+function segLocal(h,k,i){const g=h.joints[k][i],next=h.joints[k][i+1]||h.joints[k].tip;return[g.getWorldPosition(new THREE.Vector3()),next.getWorldPosition(new THREE.Vector3())]}
+function ssd(p1,q1,p2,q2){const d1=q1.clone().sub(p1),d2=q2.clone().sub(p2),r=p1.clone().sub(p2),a=d1.dot(d1),e=d2.dot(d2),f=d2.dot(r);let s,t;
+  const c=d1.dot(r),b=d1.dot(d2),den=a*e-b*b;s=den>1e-9?clamp((b*f-c*e)/den,0,1):0;t=(b*s+f)/e;
+  if(t<0){t=0;s=clamp(-c/a,0,1)}else if(t>1){t=1;s=clamp((b-c)/a,0,1)}
+  return p1.clone().addScaledVector(d1,s).distanceTo(p2.clone().addScaledVector(d2,t))}
+const SOFT=12;
+// La pénétration rendue est celle du CONTACT LE PLUS PROFOND, pas la somme de tous les contacts. Avec la somme, le
+// budget du solveur (0,5 px) était un budget pour la main entière : dans les poses où un bout repose sur la paume
+// (poing : l'auriculaire demandé à 90° s'arrête à ≈ 76°, bout sur l'hypothénar, à 0,5 px par construction), il ne
+// restait RIEN pour le pouce ni pour un autre doigt — thumbReach rejetait tous ses pas, écarter l'auriculaire de
+// V (2) donnait −2° pour −8 demandés. La version précédente ne s'en apercevait pas parce que la grille de la paume
+// était un escalier (voir palmH) et que le hasard d'une cellule laissait 0,42 px. Deux contacts sont deux contacts :
+// chacun a son budget, et un bout posé sur la paume ne retire rien à la liberté du pouce.
+function penetration(f){
+  const h=probe;applyPose(h,{f,q:[0,0,0,1],pos:[0,0,0]},true);
+  const segs={};ALL.forEach(k=>segs[k]=HD.segs[k].map((_,i)=>segLocal(h,k,i)));
+  let mx=0;const tol=1.5/SC;const add=o=>{if(o>mx)mx=o};
+  // 1. pas d'enfoncement dans la paume (tissus mous : un peu d'appui permis)
+  ALL.forEach(k=>segs[k].forEach(([a,b],i)=>{
+    if(k!=='pouce'&&i===0)return;const r=SEGW[k][i]*.85;
+    [.25,.6,1].forEach(fr=>{const q=a.clone().lerp(b,fr),x=q.x*SC+CX,y=-q.y*SC+CY;
+      if(k==='pouce'&&thenarW(x,y)>.6)return;
+      const hh=palmH(x,y);if(!hh)return;const z=q.z*SC,rp=r*SC,front=(hh[0]-SOFT)-(z-rp),back=(z+rp)+hh[1]-SOFT;
+      if(front>0&&back>0)add(Math.min(front,back))})}));
+  // la partie cachée de la 1re phalange (dans la paume) ne compte pas entre doigts
+  const vis=k=>segs[k].map(([a,b],i)=>i?[a,b]:[a.clone().lerp(b,DEEP[k]/(DEEP[k]+HD.segs[k][0].len/SC)),b]);
+  
+  // 2. le pouce ne traverse pas les doigts
+  segs.pouce.forEach(([a,b],i)=>FING.forEach(k=>vis(k).forEach(([c,d],j)=>{const o=(SEGW.pouce[i]+SEGW[k][j])*.8-ssd(a,b,c,d)-tol;if(o>0)add(o*SC)})));
+  // 3. doigts voisins : ils peuvent se toucher, pas se traverser ; un doigt ne se replie pas dans lui-même
+  for(let n=0;n<3;n++){const A=vis(FING[n]),B=vis(FING[n+1]);A.forEach(([a,b],i)=>B.forEach(([c,d],j)=>{const o=(SEGW[FING[n]][i]+SEGW[FING[n+1]][j])*.68-ssd(a,b,c,d)-tol;if(o>0)add(o*SC)}))}
+  FING.forEach(k=>{const [a,b]=segs[k][2],[c,d]=vis(k)[0];const o=(SEGW[k][2]+SEGW[k][0])*.8-ssd(a,b,c,d)-tol;if(o>0)add(o*SC)});
+  // 4. posture du pouce : jamais le bout tourné vers le poignet
+  const [ta,tb]=segs.pouce[1],[pa,pb]=segs.pouce[0],dd=tb.clone().sub(ta).normalize(),dp=pb.clone().sub(pa).normalize();
+  if(dd.y<-.45)add((-.45-dd.y)*60);if(dp.y<-.2)add((-.2-dp.y)*60);
+  return mx;
+}
+// Budget du solveur : PEN_MAX est le plafond d'un geste (ce qu'un mouvement peut ajouter d'un coup), PEN_SEAT le
+// niveau où une articulation BLOQUÉE vient s'asseoir. Les deux valaient 0,5 px : une pose résolue (un bout posé sur
+// la paume) était rangée AU PLAFOND, et le geste suivant sur le même doigt n'avait plus aucune marge — écarter
+// l'auriculaire replié de V (2) à −8° donnait −3,5 (son bout monte de 0,6 px sur le bord arrondi de l'hypothénar).
+// S'asseoir à la moitié du budget laisse l'autre moitié à la marionnette ; la différence sur l'angle est de 0,2°
+// (0,25 px = 0,06 mm sur la peau), invisible. Et un bout posé sur la paume GLISSE : quand une articulation du doigt
+// (ab, IPP, IPD) est bloquée par ce contact, la MCP du même doigt se relâche de ce qu'il faut (≤ SLIDE degrés, le
+// plus petit relâchement trouvé par dichotomie) pour que la commande passe entière, au lieu de s'arrêter à mi-chemin.
+// Mesuré : V (2) auriculaire ab −8 → −8 (MCP 76,1 → 75,2), annulaire ab 1,8 → 1,8 ; le poing et les autres tests
+// inchangés. On ne relâche jamais plus que SLIDE, et jamais le pouce (ses couplages sont dans constrain).
+const PEN_MAX=.5,PEN_SEAT=.25,SLIDE=4;
+function solve(fromF,toF){
+  const p0=penetration(fromF),ref=Math.max(p0+.05,PEN_MAX),seat=Math.max(p0+.05,PEN_SEAT);
+  if(penetration(toF)<=ref)return toF;
+  // On ne recule JAMAIS sur toute la pose à la fois. L'ancien solveur commençait par ramener la pose entière en
+  // arrière le long d'une interpolation globale : bouger « rapprocher » du pouce ramenait aussi « avancer » et sa
+  // base, donc une seule commande en déplaçait trois et rien ne restait là où on l'avait mis. On part de la pose
+  // de départ et on pousse chaque articulation vers sa cible aussi loin que le contact le permet, la plus
+  // sollicitée d'abord ; un second tour rattrape celles qu'un voisin bloquait au premier.
+  let cur=clone(fromF);
+  const ch=[];for(const k in toF)for(const j in toF[k]){const d=Math.abs(toF[k][j]-fromF[k][j]);if(d<.5)continue;
+    // ce que cette articulation seule ferait à l'encombrement : négatif = elle DÉGAGE de la place
+    const t1=clone(fromF);t1[k][j]=toF[k][j];ch.push([k,j,d,penetration(t1)-p0])}
+  // Celles qui dégagent de la place passent d'abord, puis les autres de la plus sollicitée à la moins. C'est
+  // l'ordre que « settle » applique à la main depuis toujours (écarter le pouce, fermer les doigts, ramener le
+  // pouce) : en le déduisant ici, il vaut pour TOUTES les poses, pas seulement pour les configurations de départ.
+  ch.sort((a,b)=>(a[3]-b[3])||(b[2]-a[2]));
+  const pousse=([k,j])=>{
+    if(Math.abs(toF[k][j]-cur[k][j])<.25)return true;
+    const tgt=clone(cur);tgt[k][j]=toF[k][j];
+    if(penetration(tgt)<=ref){cur=tgt;return true}
+    const lim=Math.max(seat,penetration(cur));   // jamais pire que la pose courante, sinon le siège
+    if(k!=='pouce'&&j!=='mcp'){                  // le bout glisse sur la paume : la MCP se relâche de ce qu'il faut
+      const m0=cur[k].mcp,sl=Math.min(SLIDE,m0-LIMF.mcp[0]);tgt[k].mcp=m0-sl;
+      if(sl>0&&penetration(tgt)<=lim){let a=0,b=1;
+        for(let i=0;i<6;i++){const m=(a+b)/2;tgt[k].mcp=m0-sl*m;if(penetration(tgt)<=lim)b=m;else a=m}
+        tgt[k].mcp=m0-sl*b;cur=tgt;return true}
+      tgt[k].mcp=m0}
+    let a=0,b=1;const v0=cur[k][j];
+    for(let i=0;i<6;i++){const m=(a+b)/2;tgt[k][j]=v0+(toF[k][j]-v0)*m;if(penetration(tgt)<=lim)a=m;else b=m}
+    cur[k][j]=v0+(toF[k][j]-v0)*a;return a>.995};
+  const reste=ch.filter(c=>!pousse(c));
+  reste.forEach(pousse);
+  return cur;
+}
+function thumbReach(f,targetFn){
+  let cur=clone(f);const ref=Math.max(penetration(cur)+.05,.5),V=()=>new THREE.Vector3();
+  const at=ff=>{applyPose(probe,{f:ff,q:[0,0,0,1],pos:[0,0,0]},true);return{tip:probe.joints.pouce.tip.getWorldPosition(V()),tgt:targetFn(probe)}};
+  const cost=ff=>{const r=at(ff);return r.tip.distanceTo(r.tgt)};
+  let best=cost(cur);
+  for(const step of [12,6,3,1.5])for(let loop=0;loop<10;loop++){let moved=false;
+    for(const j of ['av','rap','mcp','ip'])for(const sg of [1,-1]){const c={f:clone(cur)};c.f.pouce[j]=clamp(c.f.pouce[j]+sg*step,...LIMT[j]);constrain(c);
+      if(c.f.pouce[j]===cur.pouce[j])continue;const v=cost(c.f);if(v<best-1e-3&&penetration(c.f)<=ref){cur=c.f;best=v;moved=true}}
+    if(!moved)break}
+  return cur;
+}
+const W3=()=>new THREE.Vector3();
+const REACH={
+  'O':h=>h.joints.index.tip.getWorldPosition(W3()),
+  'Pince':h=>h.joints.index.tip.getWorldPosition(W3())
+};   // pas de cible pour « 3 » : son pouce est TENDU, c'est le troisième doigt du chiffre, il ne se pose sur rien
+// Plus de cible pour V (2), Index (1) et Poing serré : leur pouce est celui du preset, validé par l'utilisateur
+// (Poing serré sur sa photo 2357). Mesuré en traçant thumbReach pas à pas : dans la version précédente il n'y
+// faisait RIEN — chacun de ses pas était rejeté (pénétration 0,77 > 0,5), parce que constrain() ramenait l'ab de
+// l'annulaire de −3,3 à −3,0 et que ce 0,3° faisait sauter le bout d'une cellule de la grille (escalier de palmH).
+// Les pouces « validés » étaient donc les valeurs brutes des presets. Une fois la grille continue et le budget par
+// contact, la montée reprenait et trouvait son optimum : V (2) 24,5/35/55/−8 (IP en hyperextension, coût 1,75
+// contre 3,05), Poing serré 11/1,5/39/80 (0,60 contre 1,29) — un pouce que l'utilisateur n'a jamais vu ni voulu.
+// passage d'une configuration à une autre : le pouce s'écarte d'abord (il ne bloque plus les doigts), puis chaque doigt,
+// puis le pouce rejoint sa place. Le résultat ne dépend donc pas de la pose précédente.
+function settle(fromF,toF){let cur=clone(fromF);
+  {const tgt=clone(cur);tgt.pouce={av:0,rap:-10,mcp:0,ip:0};cur=solve(cur,tgt)}
+  [...FING,'pouce'].forEach(k=>{const tgt=clone(cur);tgt[k]=clone(toF[k]);cur=solve(cur,tgt)});return cur}
+
+/* ======================================================================
+   Scène et rendu (couleurs + traits intérieurs là où une partie passe devant une autre)
+   ====================================================================== */
+const stage=$('stage');
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+renderer.setClearColor(0,0);renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+stage.prepend(renderer.domElement);
+renderer.domElement.style.cssText='display:block;width:100%;height:100%;touch-action:none;position:relative;z-index:1';
+const camera=new THREE.PerspectiveCamera(26,1,.5,500);
+const VIEWS={face:[0,0,52],signeur:[0,0,-52],profil:[52,0,0],dessus:[0,52,.1]};
+camera.position.fromArray(VIEWS.face);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.update();
+// Une main pleine par côté et une réserve de fantômes, créées seulement quand on s'en sert : une main coûte
+// 44 000 sommets à recalculer, donc rien n'existe tant qu'on n'affiche qu'une main sans mouvement.
+const HAND={D:Object.assign(makeHand(),{side:1,ghosts:[]})};
+const main=HAND.D;
+// Une main en miroir (scale.x = -1) : normalMatrix est l'inverse TRANSPOSÉE, donc elle retourne la normale.
+// Sans correction, la main gauche reçoit la lumière à l'envers (aplat uniforme, sans modelé) et la repeinte de
+// peau sous l'ongle se déclenche sur la face CACHÉE. On remet la normale à l'endroit dans le nuanceur.
+function mkHand(sg){const h=Object.assign(makeHand(),{side:sg,ghosts:[]});
+  // Main en miroir : on NE retourne PAS la normale. normalMatrix est l'inverse transposée de modelView ; pour une
+  // réflexion (matrice orthogonale de déterminant −1) c'est la matrice elle-même, donc la normale est réfléchie
+  // comme la position et reste sortante. Le « piège » noté plus bas (nflip = −1) faisait l'inverse de ce qu'il
+  // disait : mesuré sur la planche à deux mains, 98 % des pixels de la gauche tombaient dans le ton d'ombre
+  // (luminance moyenne 81 contre 95 pour la droite) ; à +1 les deux mains ont la même part d'ombre (0,34 / 0,39).
+  return h}
+function handOf(s){if(!HAND[s])HAND[s]=mkHand(s==='G'?-1:1);return HAND[s]}
+const act=()=>handOf(S.act);
+const MAXG=()=>S.mains==='DG'?5:8;
+function ghostOf(H,i){while(H.ghosts.length<=i){const g=mkHand(H.side);g.root.visible=false;H.ghosts.push(g)}return H.ghosts[i]}
+$('loading').hidden=true;
+// passe « identité » : chaque partie dans sa couleur, pour tracer les contours intérieurs
+let idRT=null,bgL=null,fgL=null;
+// On ne redessine que si quelque chose a bougé. Avec un référent, deux mains et plusieurs étapes, la scène peut
+// compter une dizaine de peaux de 44 000 sommets : repeindre 60 fois par seconde une image identique ferait
+// chauffer la machine pour rien. Deux images de marge, le temps que l'amortissement des contrôles se termine.
+let dirty=2;const repaint=()=>{dirty=2};
+function ensureRT(w,h){if(idRT&&idRT.width===w&&idRT.height===h)return;if(idRT){idRT.depthTexture.dispose();idRT.dispose()}
+  idRT=new THREE.WebGLRenderTarget(w,h,{minFilter:THREE.NearestFilter,magFilter:THREE.NearestFilter,depthBuffer:true});idRT.depthTexture=new THREE.DepthTexture(w,h);idRT.depthTexture.type=THREE.UnsignedIntType}
+const edgeMat=new THREE.ShaderMaterial({transparent:true,depthTest:false,depthWrite:false,
+  uniforms:{tId:{value:null},tDepth:{value:null},texel:{value:new THREE.Vector2()},cn:{value:.5},cf:{value:500},rad:{value:2},radmax:{value:2},emax:{value:EDMAX},
+    crad:{value:1.4},crv:{value:1e4},crmax:{value:CRMAX},wpx:{value:.001},cavR:{value:new THREE.Vector2(.4,.8)},cavT:{value:.8},cavA:{value:0},cavDbg:{value:0}},
+  vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
+  fragmentShader:`uniform sampler2D tId;uniform sampler2D tDepth;uniform vec2 texel;uniform float cn;uniform float cf;uniform float rad;uniform float radmax;uniform float emax;
+  uniform float crad;uniform float crv;uniform float crmax;uniform float wpx;uniform vec2 cavR;uniform float cavT;uniform float cavA;uniform float cavDbg;varying vec2 vUv;
+  float lin(float d){float z=d*2.-1.;return 2.*cn*cf/(cf+cn-z*(cf-cn));}
+  // creux le long d'une direction : les DEUX voisins remontent vers l'œil ⇒ arête rentrante. On prend le plus
+  // petit des deux écarts : à un bord d'occlusion un seul côté remonte, donc le minimum est nul et rien ne sort
+  // (ce bord-là est l'affaire de sep()). Rapporté au pas en unités du modèle, c'est la tangente du versant :
+  // sans dimension, le seuil ne dépend donc ni de la distance ni du zoom.
+  float fold(float d0,vec2 u,float pas){
+    vec2 pa=vUv+u,pb=vUv-u;
+    if(texture2D(tId,pa).a<.5||texture2D(tId,pb).a<.5)return 0.;
+    float a=lin(texture2D(tDepth,pa).r),b=lin(texture2D(tDepth,pb).r);
+    return 2.*min(min(d0-a,d0-b),crmax)/pas;}
+  // un trait intérieur là où la partie d'en face passe derrière
+  bool sep(vec4 c,float d0,vec2 p){vec4 q=texture2D(tId,p);if(q.a<.5)return false;
+    float dn=lin(texture2D(tDepth,p).r);
+    if(abs(q.r-c.r)>.02){bool fingers=c.g>.5&&q.g>.5;float thr=fingers?.12:.3;
+      // au-delà de emax, la partie d'en face n'est pas « derrière » mais au fond d'une crevasse : rien à tracer
+      return dn-d0<emax&&(dn-d0>thr||(fingers&&(dn-d0>.02||(abs(dn-d0)<=.02&&c.r<q.r))));}
+    return c.g>.5&&dn-d0>.7&&dn-d0<emax;}                 // un doigt replié devant lui-même
+  // Un seul échantillon sur les douze suffisait à noircir le pixel : là où deux peaux se touchent ou se croisent
+  // (jointures repliées pressées l'une contre l'autre, racine d'un doigt replié contre la base d'un doigt tendu),
+  // l'écart de profondeur oscille autour du seuil d'une facette à l'autre et le trait se terminait en échardes
+  // (mesuré en dos34 de V (2), fenêtre des jointures, coque cachée : 41 fragments isolés). Un vrai bord traverse
+  // l'anneau et y laisse au moins trois échantillons d'affilée ; on en exige deux : les pointes isolées
+  // disparaissent, le trait garde sa largeur (0,9 r au lieu de r sur le côté extérieur). Hors pose du dessin
+  // seulement (gr > 0), comme mesh.dz et le rayon du trait : au repos, un seul échantillon suffit toujours et
+  // « Dessin » reste exact au pixel près (vérifié : à deux échantillons partout, 1 et 2 pixels changeaient).
+  void main(){vec4 c=texture2D(tId,vUv);if(c.a<.5)discard;float d0=lin(texture2D(tDepth,vUv).r);float e=0.,ns=0.;
+    float gr=c.b,r=mix(rad,radmax,gr);                  // la part « hors pose » est celle de CETTE main (canal bleu)
+    // CREUX (hors pose). Un doigt replié ferme avec la paume un espace vide (P1, P2, P3 et la paume : le creux du
+    // poing, 1,6 × 1 unité, 1,5 de profondeur, mesuré en coupe sur « Index (1) ») ; vu de profil, on regarde dedans.
+    // Ses parois sont droites, la coque trace le rebord et cette passe traçait l'arête paroi / fond un peu plus
+    // loin : un RECTANGLE à double trait sur le flanc du majeur (« Index (1) », « L », « Y » de profil). Un
+    // illustrateur ne trace pas les arêtes d'un trou : il y pose une ombre. Deux lectures de la profondeur sur un
+    // anneau en unités du MODÈLE (0,4 puis 0,8 : la même chose à tout zoom) :
+    //  - « en retrait » (rec) : une surface nettement plus proche (> 1,1) à moins de 0,4 ⇒ le pixel est sur une
+    //    paroi ou au fond d'un trou, pas sur la couche de devant : aucun trait intérieur n'en part. Le flanc d'un
+    //    doigt vu à sa silhouette n'atteint pas ce seuil (cylindre de rayon 0,7 : 0,75 à 0,4 du bord ; pouce,
+    //    rayon 1 : 0,9), les traits de contact entre doigts restent.
+    //  - « au fond » (pit) : plus proche de > cavT des DEUX côtés d'un diamètre ⇒ ombre (cavA, noir translucide),
+    //    sans trait. ÉTEINT par défaut (cavA = 0) : essayé à 0,18 / 0,35 / 0,5 sur dix vues (window.__atelier.setCav,
+    //    mode couleurs cavDbg) ; le creux du poing s'assombrit bien, mais le test prend aussi les fentes entre deux
+    //    P2 devant la paume, la palmure entre deux doigts tendus (« O », « C ») et le coin entre le pouce et les
+    //    doigts repliés de « V (2) » : des taches à bords déchirés. Reste une piste (lisser le test) ; le rebord
+    //    du creux, lui, est un vrai contour que la coque trace, et le creux lui-même tient à l'anatomie du maillage
+    //    (doigts en tubes de rayon constant : une vraie P1 est plus charnue et masque le creux).
+    float pit=0.,rec=0.;
+    if(gr>.001){for(int k=0;k<2;k++){if(k==1&&cavA<=0.)break;float R=(k==0?cavR.x:cavR.y)/(wpx*d0);if(R<.5)continue;
+      for(int i=0;i<6;i++){float a=float(i)*.5235988;vec2 u=vec2(cos(a),sin(a))*R*texel;
+        float da=d0-lin(texture2D(tDepth,vUv+u).r),db=d0-lin(texture2D(tDepth,vUv-u).r);
+        if(k==0)rec=max(rec,max(da,db));if(cavA>0.&&da>cavT&&db>cavT)pit=1.;}}}
+    if(pit>.5){gl_FragColor=cavDbg>.5?vec4(1.,0.,0.,1.):vec4(0.,0.,0.,cavA);return;}
+    if(cavDbg>.5&&rec>1.1){gl_FragColor=vec4(0.,0.,1.,1.);return;}
+    for(int i=0;i<12;i++){float a=float(i)*.5235988;if(sep(c,d0,vUv+vec2(cos(a),sin(a))*r*texel))ns+=1.;}
+    if(ns>=(gr>.001?2.:1.)&&rec<1.1)e=1.;
+    if(e<.5&&gr>.001&&crv<100.){float pas=crad*wpx*d0,m=0.,sc=crv/gr;  // trois directions : un pli dans n'importe quel sens
+      for(int i=0;i<3;i++){float a=float(i)*1.0471976;m=max(m,fold(d0,vec2(cos(a),sin(a))*crad*texel,pas));}
+      if(m<sc)discard;e=1.;}
+    if(e<.5)discard;gl_FragColor=vec4(.067,.067,.067,1.);}`});
+const edgeQuad=new THREE.Mesh(new THREE.PlaneGeometry(2,2),edgeMat),edgeScene=new THREE.Scene(),edgeCam=new THREE.Camera();edgeScene.add(edgeQuad);
+function renderAll(){
+  const size=renderer.getDrawingBufferSize(new THREE.Vector2());ensureRT(size.x,size.y);
+  // 1. identités (mains pleines seulement)
+  const hidden=[];const hide=o=>{if(o.visible){o.visible=false;hidden.push(o)}};
+  const fulls=[];for(const k in HAND){const H=HAND[k];H.ghosts.forEach(g=>hide(g.root));if(H.root.visible)fulls.push(H)}
+  fulls.forEach(H=>{H.meshes.forEach(hide);H.skin.idm.visible=true;H.skin.im.uniforms.gr.value=H.skin.gR});
+  const cc=renderer.getClearColor(new THREE.Color()),ca=renderer.getClearAlpha();
+  renderer.setRenderTarget(idRT);renderer.setClearColor(0,0);renderer.clear();renderer.render(scene,camera);renderer.setRenderTarget(null);
+  fulls.forEach(H=>H.skin.idm.visible=false);hidden.forEach(o=>o.visible=true);
+  renderer.setClearColor(cc,ca);
+  // 2. image normale (coque de la main entière : voir hullMatProto), 3. traits intérieurs par-dessus
+  let gR=0;fulls.forEach(H=>{gR=Math.max(gR,H.skin.gR);
+    const hu=H.skin.hm.uniforms;hu.push.value=HPUSH*H.skin.gR*HULL/SC;hu.tId.value=idRT.texture;hu.tDepth.value=idRT.depthTexture;
+    hu.res.value.set(size.x,size.y);hu.cn.value=camera.near;hu.cf.value=camera.far});
+  renderer.render(scene,camera);
+  edgeMat.uniforms.tId.value=idRT.texture;edgeMat.uniforms.tDepth.value=idRT.depthTexture;edgeMat.uniforms.texel.value.set(1/size.x,1/size.y);
+  // poids de trait CONSTANT : le rayon du détecteur suit l'épaisseur RÉELLE du contour (la coque, épaisse de HULL
+  // en unités du modèle) au lieu d'être figé en pixels d'écran. De près, le trait intérieur n'est plus un filet gris
+  // posé à côté du gros trait noir de la coque (trait « fin et dédoublé ») : les deux se rejoignent en un seul trait.
+  // Comme mesh.dz, la correction n'entre qu'une fois la pose quittée (gR) : « Dessin » reste exact au pixel près.
+  const hd=Math.max(camera.position.distanceTo(controls.target),1e-3),r0=1.6*renderer.getPixelRatio();
+  const ppu=size.y/2/(hd*Math.tan(camera.fov*Math.PI/360));          // pixels de rendu par unité du modèle
+  edgeMat.uniforms.rad.value=r0;edgeMat.uniforms.radmax.value=clamp(.4*HULL/SC*ppu,r0,5.5);
+  // trait des ongles : les 2,4 px du dessin en pixels d'écran à la distance de la cible (voir FS, nailPx)
+  const npx=HD.nail.lw*ppu/SC,pxk=size.y/2/Math.tan(camera.fov*Math.PI/360);SKINMATS.forEach(m=>{m.uniforms.nailPx.value=npx;m.uniforms.pxk.value=pxk});
+  edgeMat.uniforms.emax.value=EDMAX;edgeMat.uniforms.cn.value=camera.near;edgeMat.uniforms.cf.value=camera.far;
+  // plis : rayon fin et fixe (le trait d'un creux est plus fin qu'un contour), et seuil qui s'ouvre avec gR, pour
+  // que la pose du dessin — une main à plat, sans aucun pli — reste exacte au pixel près.
+  edgeMat.uniforms.crad.value=Math.max(1.1,1.25*renderer.getPixelRatio());
+  edgeMat.uniforms.wpx.value=2*Math.tan(camera.fov*Math.PI/360)/size.y;
+  edgeMat.uniforms.crmax.value=CRMAX;edgeMat.uniforms.crv.value=CRV;
+  renderer.autoClear=false;renderer.render(edgeScene,edgeCam);renderer.autoClear=true;
+}
+let playing=null;
+// Les fantômes d'une main : les autres étapes clés, plus S.etapes images intermédiaires par intervalle.
+function ghostList(side){
+  const C=S.cles,out=[];
+  for(let i=0;i<C.length;i++)if(i!==S.cur&&C[i][side])out.push({p:C[i][side],op:.34});
+  // Les étapes CLÉS passent toujours : une pastille numérotée sans main dessous ne veut rien dire. Ce qui reste
+  // de budget va aux images intermédiaires, prises en tourniquet sur les intervalles : si on doit en couper,
+  // le mouvement reste régulier au lieu de ralentir au début et de sauter à la fin.
+  let libre=Math.max(0,MAXG()-out.length);
+  for(let j=1;j<=S.etapes&&libre>0;j++)
+    for(let i=0;i+1<C.length&&libre>0;i++){const a=C[i][side],b=C[i+1][side];if(!a||!b)continue;
+      out.push({p:lerpPoseSafe(a,b,j/(S.etapes+1),true),op:.17});libre--}
+  return out;
+}
+function render3D(){
+  if(playing)return;
+  const on=mainsOn();on.forEach(handOf);
+  for(const k in HAND){const H=HAND[k],show=on.indexOf(k)>=0;H.root.visible=show;if(!show)H.ghosts.forEach(g=>g.root.visible=false)}
+  on.forEach(side=>{
+    const H=handOf(side),set=curSet();if(!set[side])set[side]=mirror(set[side==='G'?'D':'G']);
+    setLook(H,1);applyPose(H,set[side]);
+    const L=S.mode==='pose'?[]:ghostList(side);
+    L.forEach((it,i)=>{const g=ghostOf(H,i);g.root.visible=true;setLook(g,it.op);applyPose(g,it.p)});
+    for(let i=L.length;i<H.ghosts.length;i++)H.ghosts[i].root.visible=false;
+  });
+  drawOverlays();
+}
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();drawOverlays()}
+new ResizeObserver(resize).observe(stage);resize();
+/* ======================================================================
+   Décor et flèches : deux calques plats, l'un derrière la main (fond, référent), l'autre devant (flèches).
+   Tout est dessiné en 2D : une flèche de dictionnaire LSF est un SYMBOLE, pas un objet de la scène — elle doit
+   rester lisible quel que soit l'angle de la caméra. Les deux calques partent avec l'image exportée.
+   ====================================================================== */
+bgL=$('bgL');fgL=$('fgL');
+// longueur de la main au repos, en unités du modèle : toutes les proportions du référent en découlent
+const HL=(()=>{let a=1e9,b=-1e9;for(let i=1;i<3*MN;i+=3){if(MREST[i]<a)a=MREST[i];if(MREST[i]>b)b=MREST[i]}return b-a})();
+const INK='#14201f';
+function projTo(v,W,H){const q=v.clone().project(camera);return{x:(q.x+1)/2*W,y:(1-q.y)/2*H}}
+// Un point derrière l'œil se projette en coordonnées RETOURNÉES, pas en NaN : sans ce garde-fou, le référent se
+// dessinerait à l'envers et une flèche partirait à l'autre bout de l'image dès qu'on entre dans la main.
+const devant=v=>v.clone().applyMatrix4(camera.matrixWorldInverse).z < -camera.near;
+function ppuAt(v,H){return H/2/(Math.max(camera.position.distanceTo(v),1e-3)*Math.tan(camera.fov*Math.PI/360))}
+const mixW=(c,k)=>{const n=parseInt(c.slice(1),16),r=n>>16&255,g=n>>8&255,b=n&255,m=v=>Math.round(v+(255-v)*k);
+  return '#'+((1<<24)+(m(r)<<16)+(m(g)<<8)+m(b)).toString(16).slice(1)};
+function rrect(x,p,y,w,h,r){x.beginPath();x.moveTo(p+r,y);x.arcTo(p+w,y,p+w,y+h,r);x.arcTo(p+w,y+h,p,y+h,r);x.arcTo(p,y+h,p,y,r);x.arcTo(p,y,p+w,y,r);x.closePath()}
+
+/* ---- le référent : un buste de face, à qui appartiennent les mains ----------------------------------------
+   Les proportions sont données en longueurs de main (1 main ≈ 18,5 cm) : c'est la mesure que l'on a sous les yeux,
+   donc la silhouette reste juste quel que soit le zoom. Le point d'ancrage est le creux du cou. */
+const refAnchor=()=>new THREE.Vector3(S.ref.x/100*2*HL,.35*HL+S.ref.h/100*2*HL,-.5*HL);
+const BODY={ep:1.15,yEp:.10,yTa:1.92,taille:.74,cou:.215,yCou:-.16,menton:-.58,tete:.60,tw:.40,yCoude:1.48};
+function drawRef(x,W,H){
+  const R=S.ref;if(R.style==='aucun')return;
+  const A=refAnchor();if(!devant(A))return;
+  const a=projTo(A,W,H),u=ppuAt(A,H)*HL*R.t;
+  if(u<4||!isFinite(u)||!isFinite(a.x)||!isFinite(a.y))return;
+  const P=(bx,by)=>[a.x+bx*u,a.y+by*u];
+  const B=BODY,plein=R.style==='plein',hy=B.menton-B.tete,T=B.tete,w=B.tw;
+  x.save();x.lineJoin='round';x.lineCap='round';x.lineWidth=Math.max(1.2,.021*u);x.strokeStyle=INK;
+  const FILL=plein?'#dbe8e6':'rgba(255,255,255,.62)';
+  // remplir la forme FERMÉE, puis ne retracer que le CONTOUR ouvert : sinon le trait de fermeture barre le cou
+  const piece=(f,fill=FILL)=>{x.beginPath();f();x.closePath();x.fillStyle=fill;x.fill();x.beginPath();f();x.closePath();x.stroke()};
+
+  /* --- un PERSONNAGE, pas un mannequin de vitrine ---------------------------------------------------------
+     Le premier référent était une pile de formes géométriques : calotte de cheveux en demi-dôme (un casque), cou en
+     tube, tronc en trapèze coupé droit à la taille, aucun bras (une cape). Un personnage de planche LSF se lit
+     par cinq choses : des CHEVEUX qui ont une forme (frange, volume, pattes), des OREILLES à moitié cachées par
+     la tête, un cou qui part des trapèzes, des ÉPAULES qui se prolongent en BRAS le long du corps (les avant-bras
+     viennent vers nous, c'est pourquoi les mains flottent devant la poitrine), un tee-shirt (encolure, manches)
+     et un bas arrondi. Ordre du papier découpé : bras, cou, oreilles, tronc, tête, cheveux, visage. */
+  const E=B.ep,YA=B.yEp,YT=B.yTa,TA=B.taille,C=B.cou,YC=B.yCou,M=B.menton;
+  // bras : du moignon d'épaule au coude, légèrement écartés du corps, bout arrondi (le coude), derrière le tronc
+  // (épaule à E, pas au-delà : un bras qui déborde de la ligne d'épaule fait des épaulettes de footballeur)
+  [-1,1].forEach(sg=>piece(()=>{x.moveTo(...P(sg*E*.72,YA+.24));
+    x.bezierCurveTo(...P(sg*E*.96,YA+.14),...P(sg*E*1.06,YA+.40),...P(sg*E*1.05,YA+.80));
+    x.lineTo(...P(sg*E*1.01,B.yCoude-.14));
+    x.bezierCurveTo(...P(sg*E*1.00,B.yCoude+.16),...P(sg*E*.78,B.yCoude+.18),...P(sg*E*.76,B.yCoude-.10));
+    x.lineTo(...P(sg*E*.76,YA+.70))}));
+  // cou : part des trapèzes, un peu plus étroit sous le menton
+  x.beginPath();x.moveTo(...P(-C*1.05,YC+.14));x.lineTo(...P(-C*.88,M+.02));x.lineTo(...P(C*.88,M+.02));x.lineTo(...P(C*1.05,YC+.14));
+    x.closePath();x.fillStyle=FILL;x.fill();
+  [-1,1].forEach(sg=>{x.beginPath();x.moveTo(...P(sg*C*1.05,YC+.14));x.lineTo(...P(sg*C*.88,M+.02));x.stroke()});
+  // oreilles : des demi-ovales, la tête en cache la moitié
+  [-1,1].forEach(sg=>{x.beginPath();x.ellipse(...P(sg*w*1.0,hy+.11),.058*u,.11*u,0,0,6.2832);x.fillStyle=FILL;x.fill();x.stroke()});
+  // tronc : encolure ronde, trapèzes, épaules rondes, flancs qui rentrent sous l'aisselle, bas arrondi (ourlet)
+  piece(()=>{x.moveTo(...P(-C*1.05,YC+.02));
+    x.bezierCurveTo(...P(-E*.45,YC-.02),...P(-E*.92,YA-.06),...P(-E*.98,YA+.22));
+    x.bezierCurveTo(...P(-E*.99,YA+.46),...P(-E*.90,YA+.66),...P(-E*.80,YA+.78));
+    x.bezierCurveTo(...P(-E*.76,YA+1.10),...P(-TA*1.06,YT-.60),...P(-TA*.98,YT-.08));
+    x.quadraticCurveTo(...P(0,YT+.14),...P(TA*.98,YT-.08));
+    x.bezierCurveTo(...P(TA*1.06,YT-.60),...P(E*.76,YA+1.10),...P(E*.80,YA+.78));
+    x.bezierCurveTo(...P(E*.90,YA+.66),...P(E*.99,YA+.46),...P(E*.98,YA+.22));
+    x.bezierCurveTo(...P(E*.92,YA-.06),...P(E*.45,YC-.02),...P(C*1.05,YC+.02));
+    x.quadraticCurveTo(...P(0,YC+.20),...P(-C*1.05,YC+.02))});
+  // tête : ovale à mâchoire fuyante (une ellipse donne un masque, pas un visage)
+  const tete=()=>{x.moveTo(...P(0,M-2*T));
+    x.bezierCurveTo(...P(w*1.04,M-2*T),...P(w*1.10,M-.95*T),...P(w*.97,M-.42*T));
+    x.bezierCurveTo(...P(w*.90,M-.11*T),...P(w*.50,M),...P(0,M));
+    x.bezierCurveTo(...P(-w*.50,M),...P(-w*.90,M-.11*T),...P(-w*.97,M-.42*T));
+    x.bezierCurveTo(...P(-w*1.10,M-.95*T),...P(-w*1.04,M-2*T),...P(0,M-2*T))};
+  x.beginPath();tete();x.closePath();x.fillStyle=FILL;x.fill();x.stroke();
+  // chevelure : une masse qui déborde un peu du crâne (volume), des pattes devant les oreilles, et une FRANGE
+  // à mèches (trois festons) — c'est elle qui fait lire « des cheveux » et non « un casque »
+  const YHL=M-1.30*T,YTOP=M-2*T;
+  const cheveux=()=>{x.moveTo(...P(-w*1.12,hy+.02));
+    x.bezierCurveTo(...P(-w*1.26,M-1.45*T),...P(-w*.95,YTOP-.14),...P(0,YTOP-.11));
+    x.bezierCurveTo(...P(w*.95,YTOP-.14),...P(w*1.26,M-1.45*T),...P(w*1.12,hy+.02));
+    x.lineTo(...P(w*.97,hy-.02));x.lineTo(...P(w*.99,YHL+.02));
+    const fr=[[w*.99,YHL+.02],[w*.52,YHL-.02],[w*.06,YHL+.04],[-w*.42,YHL-.03],[-w*.99,YHL+.02]];
+    for(let i=0;i+1<fr.length;i++){const [x0,y0]=fr[i],[x1,y1]=fr[i+1];x.quadraticCurveTo(...P((x0+x1)/2,Math.max(y0,y1)+.10),...P(x1,y1))}
+    x.lineTo(...P(-w*.97,hy-.02))};
+  piece(cheveux,plein?INK:FILL);
+  if(R.visage){
+    x.lineWidth=Math.max(1,.015*u);
+    [-1,1].forEach(sg=>{
+      const ex=sg*.175,ey=hy+.03;
+      x.beginPath();x.moveTo(...P(ex-.092,ey));x.quadraticCurveTo(...P(ex,ey-.090),...P(ex+.092,ey));
+      x.quadraticCurveTo(...P(ex,ey+.076),...P(ex-.092,ey));x.fillStyle='#fff';x.fill();x.stroke();
+      x.beginPath();x.arc(...P(ex,ey-.002),.034*u,0,6.2832);x.fillStyle=INK;x.fill();
+      x.beginPath();x.moveTo(...P(ex-.095,ey-.155));x.quadraticCurveTo(...P(ex,ey-.198),...P(ex+.095,ey-.158));x.stroke();
+    });
+    x.beginPath();x.moveTo(...P(-.045,hy+.25));x.quadraticCurveTo(...P(.005,hy+.30),...P(.055,hy+.23));x.stroke();   // nez
+    x.beginPath();x.moveTo(...P(-.125,hy+.39));x.quadraticCurveTo(...P(0,hy+.475),...P(.125,hy+.39));x.stroke();     // bouche
+  }
+  if(R.reperes){
+    x.save();x.setLineDash([.15*u,.12*u]);x.lineWidth=Math.max(1,.011*u);x.strokeStyle='rgba(20,32,31,.45)';
+    x.fillStyle='rgba(20,32,31,.6)';x.font='700 '+Math.max(9,.105*u)+'px '+getComputedStyle(document.body).fontFamily;x.textBaseline='bottom';
+    [[B.menton-1.24*T,'front'],[B.menton,'menton'],[B.yEp+.20,'épaules'],[(B.yEp+B.yTa)/2,'poitrine'],[B.yTa,'taille']].forEach(([by,lab])=>{
+      const [x0,y0]=P(-B.ep*1.38,by),[x1]=P(B.ep*1.38,by);
+      x.beginPath();x.moveTo(x0,y0);x.lineTo(x1,y0);x.stroke();x.fillText(lab,x0,y0-.03*u)});
+    x.restore();
+  }
+  x.restore();
+}
+
+/* ---- les flèches : une forme par manière de bouger ------------------------------------------------------- */
+const FLS=[['droite','Droite'],['arc','Arc'],['demi','Demi-cercle'],['vague','Vague'],['zigzag','Zigzag'],['boucle','Boucle']];
+function arrowPts(A,B,style,sens){
+  const dx=B.x-A.x,dy=B.y-A.y,L=Math.hypot(dx,dy)||1,nx=dx/L,ny=dy/L,px=-ny*sens,py=nx*sens,o=[];
+  const at=(t,k)=>({x:A.x+dx*t+px*k,y:A.y+dy*t+py*k});
+  if(style==='droite')return[{x:A.x,y:A.y},{x:B.x,y:B.y}];
+  if(style==='zigzag'){const n=5,amp=.11*L;for(let i=0;i<=n;i++)o.push(at(i/n,(i===0||i===n)?0:(i%2?1:-1)*amp));return o}
+  for(let i=0;i<=48;i++){const t=i/48;
+    if(style==='arc')o.push(at(t,Math.sin(Math.PI*t)*.20*L));
+    else if(style==='demi')o.push({x:(A.x+B.x)/2+(A.x-B.x)/2*Math.cos(Math.PI*t)+px*(L/2)*Math.sin(Math.PI*t),
+                                   y:(A.y+B.y)/2+(A.y-B.y)/2*Math.cos(Math.PI*t)+py*(L/2)*Math.sin(Math.PI*t)});
+    else if(style==='vague')o.push(at(t,Math.sin(2*Math.PI*2*t)*.10*L));
+    else if(style==='boucle'){
+      if(t<.3)o.push(at(t/.3*.34,0));
+      else if(t<.78){const a=(t-.3)/.48*6.2832,r=.22*L,c=at(.5,0);
+        o.push({x:c.x+nx*(-Math.sin(a))*r+px*(Math.cos(a)-1)*r,y:c.y+ny*(-Math.sin(a))*r+py*(Math.cos(a)-1)*r})}
+      else o.push(at(.66+(t-.78)/.22*.34,0));
+    }else o.push(at(t,0));
+  }
+  return o;
+}
+function head(x,p,q,lw){const dx=p.x-q.x,dy=p.y-q.y,l=Math.hypot(dx,dy)||1,ux=dx/l,uy=dy/l,h=3.6*lw,w=1.5*lw;
+  x.beginPath();x.moveTo(p.x,p.y);x.lineTo(p.x-ux*h+ -uy*w,p.y-uy*h+ux*w);x.lineTo(p.x-ux*h+uy*w,p.y-uy*h-ux*w);x.closePath();x.fill()}
+// la flèche qui part de l'étape i : chaque intervalle peut avoir la sienne (aller tout droit, puis revenir en
+// demi-cercle), sinon il prend le réglage courant. La couleur, elle, reste commune à toute la planche.
+const segFl=i=>(S.cles&&S.cles[i]&&S.cles[i].fl)||S.fl;
+const segIdx=()=>S.cles?Math.min(S.cur,S.cles.length-2):0;
+// raccourcir la ligne à ses deux bouts : la pointe ne doit pas finir sous la pastille de l'étape suivante
+function trim(p,d){
+  const cut=(q,d)=>{let r=d;while(q.length>2){const l=Math.hypot(q[1].x-q[0].x,q[1].y-q[0].y);
+    if(l>r){const t=r/l;q[0]={x:q[0].x+(q[1].x-q[0].x)*t,y:q[0].y+(q[1].y-q[0].y)*t};return q}r-=l;q.shift()}return q};
+  return cut(cut(p.slice(),d).reverse(),d).reverse()}
+function drawArrow(x,A,B,lw,F){
+  let pts=arrowPts(A,B,F.style,F.sens);if(pts.length<2)return;
+  if(pts.length>2)pts=trim(pts,lw*2.6);
+  // la pointe mange la fin du trait, sinon elle déborde
+  x.save();x.strokeStyle=S.fl.col;x.fillStyle=S.fl.col;x.lineWidth=lw;x.lineCap='round';x.lineJoin='round';
+  x.beginPath();x.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)x.lineTo(pts[i].x,pts[i].y);x.stroke();
+  head(x,pts[pts.length-1],pts[Math.max(0,pts.length-3)],lw);
+  if(F.double)head(x,pts[0],pts[Math.min(pts.length-1,2)],lw);
+  x.restore();
+}
+function badge(x,p,n,lw){x.save();x.fillStyle='#fff';x.strokeStyle=S.fl.col;x.lineWidth=lw*.55;
+  x.beginPath();x.arc(p.x,p.y,lw*1.9,0,6.2832);x.fill();x.stroke();
+  x.fillStyle=S.fl.col;x.font='700 '+(lw*2.3)+'px '+getComputedStyle(document.body).fontFamily;x.textAlign='center';x.textBaseline='middle';
+  x.fillText(String(n),p.x,p.y+lw*.08);x.restore()}
+function drawArrows(x,W,H){
+  if(S.mode!=='mouvement'||!S.fleche||!S.cles)return;
+  const lw=Math.max(2.4,.0105*Math.min(W,H)),off=new THREE.Vector3(0,-.38*HL,.28*HL);
+  mainsOn().forEach(side=>{
+    const W3=S.cles.map(c=>new THREE.Vector3().fromArray(((c[side]||c.D)||{pos:[0,0,0]}).pos).add(off));
+    const vus=W3.map(devant),pts=W3.map(v=>projTo(v,W,H));
+    let tracee=false;
+    for(let i=0;i+1<pts.length;i++)if(vus[i]&&vus[i+1]&&Math.hypot(pts[i+1].x-pts[i].x,pts[i+1].y-pts[i].y)>lw*3){drawArrow(x,pts[i],pts[i+1],lw,segFl(i));tracee=true}
+    // pastilles dès qu'il y a plus de deux étapes, et aussi quand la main ne se déplace pas : sans elles, rien
+    // ne dirait dans quel ordre lire deux configurations posées au même endroit
+    if(S.cles.length>2||!tracee)pts.forEach((p,i)=>{if(vus[i])badge(x,p,i+1,lw)});
+  });
+}
+
+/* ---- fond ---- */
+function drawFond(x,W,H){
+  const F=S.fond;if(F.type==='aucun')return;
+  x.save();
+  if(F.cadre){const r=Math.min(W,H)*.035,m=Math.min(W,H)*.012;rrect(x,m,m,W-2*m,H-2*m,r);x.clip()}
+  if(F.type==='degrade'){const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,mixW(F.col,.55));g.addColorStop(1,F.col);x.fillStyle=g}
+  else x.fillStyle=F.col;
+  x.fillRect(0,0,W,H);x.restore();
+}
+// ces deux-là n'effacent RIEN : à l'export elles peignent l'une après l'autre sur le même canvas, avec le rendu 3D
+// pris en sandwich. C'est l'appelant qui efface, parce que lui seul sait s'il repart d'une surface vide.
+function paintBack(x,W,H){drawFond(x,W,H);drawRef(x,W,H)}
+function paintFront(x,W,H){drawArrows(x,W,H)}
+function drawOverlays(){
+  repaint();
+  const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h||!bgL)return;
+  const r=Math.min(devicePixelRatio||1,2),W=Math.round(w*r),Hh=Math.round(h*r);
+  [bgL,fgL].forEach(c=>{if(c.width!==W||c.height!==Hh){c.width=W;c.height=Hh}else c.getContext('2d').clearRect(0,0,W,Hh)});
+  paintBack(bgL.getContext('2d'),W,Hh);paintFront(fgL.getContext('2d'),W,Hh);
+}
+controls.addEventListener('change',()=>{repaint();drawOverlays()});
+
+/* ---- cadrage : tout ce qui est à l'écran doit tenir dans l'image ----------------------------------------
+   Avec deux mains, plusieurs étapes et un buste de 3,7 longueurs de main, la vue de départ (une main plein cadre)
+   ne suffit plus. On recadre quand le contenu déborde, jamais au milieu d'un geste de l'utilisateur. */
+function contentBox(){
+  const b=new THREE.Box3(),V=THREE.Vector3,add=(p,r)=>{b.expandByPoint(new V(p.x-r,p.y-r,p.z-r));b.expandByPoint(new V(p.x+r,p.y+r,p.z+r))};
+  const sets=S.mode==='pose'?[S.pose]:(S.cles||[S.pose]);
+  mainsOn().forEach(side=>sets.forEach(c=>{if(c&&c[side])add(new V().fromArray(c[side].pos),.8*HL)}));
+  if(S.ref.style!=='aucun'){const A=refAnchor(),t=S.ref.t*HL;
+    add(new V(A.x,A.y+2.15*t,A.z),.02);add(new V(A.x,A.y-1.95*t,A.z),.02);
+    add(new V(A.x-1.25*t,A.y,A.z),.02);add(new V(A.x+1.25*t,A.y,A.z),.02)}
+  return b}
+function fitView(){
+  const b=contentBox();if(b.isEmpty())return;
+  const V=THREE.Vector3,c=b.getCenter(new V()),z=b.getSize(new V());
+  const vf=camera.fov*Math.PI/180,hf=2*Math.atan(Math.tan(vf/2)*camera.aspect);
+  const d=Math.max(z.y/2/Math.tan(vf/2),z.x/2/Math.tan(hf/2))*1.14+z.z/2;
+  const dir=camera.position.clone().sub(controls.target);if(dir.lengthSq()<1e-6)dir.set(0,0,1);
+  const D=Math.max(d,8);
+  // le plan éloigné vaut 500 : un buste à 170 % et des étapes très écartées peuvent demander plus, et tout ce qui
+  // dépasse serait simplement coupé. On le repousse au besoin (la profondeur reste largement assez précise).
+  const need=Math.ceil((D+z.length())*1.6/100)*100;
+  if(need>camera.far){camera.far=need;camera.updateProjectionMatrix()}
+  controls.target.copy(c);camera.position.copy(c).addScaledVector(dir.normalize(),D);controls.update()}
+function fitIfNeeded(force){
+  if(force)return fitView();
+  const b=contentBox();if(b.isEmpty())return;const V=THREE.Vector3;let m=0;
+  for(let i=0;i<8;i++){const q=new V(i&1?b.max.x:b.min.x,i&2?b.max.y:b.min.y,i&4?b.max.z:b.min.z).project(camera);m=Math.max(m,Math.abs(q.x),Math.abs(q.y))}
+  if(m>1)fitView()}
+$('fit').onclick=()=>fitView();
+
+renderer.setAnimationLoop(()=>{if(controls.update())dirty=2;if(dirty>0){dirty--;renderAll()}});
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{camera.position.fromArray(VIEWS[b.dataset.view]);controls.target.set(0,0,0);controls.update()});
+
+/* ======================================================================
+   Attraper
+   ====================================================================== */
+const cv=renderer.domElement;
+function scr(v){const p=v.clone().project(camera),r=cv.getBoundingClientRect();return new THREE.Vector2((p.x+1)/2*r.width,(1-p.y)/2*r.height)}
+const wp=o=>o.getWorldPosition(new THREE.Vector3());
+function segEnds(h,k,g){const j=h.joints[k];return[wp(j[g]),wp(j[g+1]||j.tip)]}
+function distSeg(p,a,b){const ab=b.clone().sub(a),t=clamp(p.clone().sub(a).dot(ab)/Math.max(ab.lengthSq(),1e-6),0,1);return p.distanceTo(a.clone().addScaledVector(ab,t))}
+function pxPerUnit(at){const cr=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0);return scr(at.clone().addScaledVector(cr,1)).distanceTo(scr(at))}
+function hull(P){P=P.slice().sort((a,b)=>a.x-b.x||a.y-b.y);const cr=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x),lo=[],up=[];
+  for(const p of P){while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p)}
+  for(const p of P.slice().reverse()){while(up.length>1&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p)}return lo.slice(0,-1).concat(up.slice(0,-1))}
+function inPoly(p,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++)if(((P[i].y>p.y)!==(P[j].y>p.y))&&(p.x<(P[j].x-P[i].x)*(p.y-P[i].y)/(P[j].y-P[i].y)+P[i].x))c=!c;return c}
+function pick(e){
+  const r=cv.getBoundingClientRect(),m=new THREE.Vector2(e.clientX-r.left,e.clientY-r.top);let best=null;
+  ALL.forEach(k=>SEGN[typ(k)].forEach((_,g)=>{const [a,b]=segEnds(act(),k,g),w=SEGW[k][g];
+    const tol=Math.max(10,pxPerUnit(a)*w*1.1),d=distSeg(m,scr(a),scr(b)),depth=a.clone().add(b).multiplyScalar(.5).distanceTo(camera.position);
+    if(d<tol){const sc=d/tol+depth*.02;if(!best||sc<best.sc)best={k,g,sc}}}));
+  if(best)return best;
+  const rim=hull(PALM_RIM.map(v=>scr(v.clone().applyMatrix4(act().root.matrixWorld))));
+  return inPoly(m,rim)?{k:null}:null;
+}
+const label=s=>!s?'':s.k===null?'Main · tourner (Maj : déplacer)':`${NOMS[s.k]} · ${SEGN[typ(s.k)][s.g]}${S.locks[s.k][s.g]?' 🔒':''}`;
+let hovered=null;
+function setHL(s){const key=s?(s.k===null?'paume':s.k):null;if(key===hovered)return;
+  hovered=key;repaint();const A=HAND[S.act];for(const k in HAND)HAND[k].skinMats.forEach(m=>{const on=key&&HAND[k]===A;m.uniforms.hl.value=on?1:0;m.uniforms.hlPart.value=on?ID[key]:-10})}
+
+/* ======================================================================
+   Marionnette
+   ====================================================================== */
+// tirer le bout du pouce vers la paume = vrai repli du pouce : il s'avance devant la paume en même temps qu'il plie
+const GRAB={doigt:[{mcp:1},{mcp:.85,pip:1},{mcp:.85,pip:1,dip:.7}],pouce:[{av:1},{av:.15,rap:.6,mcp:.5,ip:.8}]};
+const LOCKJ={doigt:[['mcp','ab'],['pip'],['dip']],pouce:[['av','rap','mcp'],['ip']]};
+const locked=(k,n)=>LOCKJ[typ(k)].some((g,gi)=>g.includes(n)&&S.locks[k][gi]);
+let drag=null;
+// glisser le long du doigt = plier ; glisser de côté = écarter / serrer contre les voisins (depuis n'importe quelle phalange)
+// Alt + glisser : les quatre doigts ensemble (plier, écarter en éventail ou serrer)
+const FAN={index:1,majeur:.15,annulaire:-.6,auriculaire:-1.2};
+function grabAxes(p,s,shift,group){
+  const k=s.k,t=typ(k),H=act(),axes=[],j=H.joints[k];group=group&&k!=='pouce';
+  let set=GRAB[t][s.g];
+  if(shift){set={};LOCKJ[t][s.g].forEach(n=>{if(n!=='ab'&&n!=='rap')set[n]=1})}
+  const js=Object.keys(set).filter(n=>shift||!locked(k,n));
+  const ks=group?FING.filter(f=>f===k||!S.locks[f].some(Boolean)):[k];
+  if(js.length){const st=ks.map(f=>js.map(n=>p.f[f][n]));axes.push({flex:true,set:c=>ks.forEach((f,fi)=>js.forEach((n,i)=>p.f[f][n]=st[fi][i]+c*set[n]))})}
+  if(!shift&&!S.locks[k][0]){const n=t==='pouce'?'rap':'ab';
+    if(group){const st=ks.map(f=>p.f[f].ab),sg=Math.sign(FAN[k])||1;axes.push({set:c=>ks.forEach((f,fi)=>p.f[f].ab=st[fi]+c*FAN[f]*sg)})}
+    else{const st=p.f[k][n];axes.push({set:c=>p.f[k][n]=st+c})}}
+  const end=()=>wp(j[s.g+1]||j.tip),base=wp(j[0]);
+  const snap=clone(p.f);
+  axes.forEach(a=>{p.f=clone(snap);applyPose(H,p);const w0=end(),e0=scr(w0);a.set(3);applyPose(H,p);const w1=end(),e1=scr(w1);p.f=clone(snap);applyPose(H,p);
+    a.dir=e1.clone().sub(e0).divideScalar(3);
+    if(a.flex){const toCam=camera.position.clone().sub(w0).normalize(),depth=Math.abs(w1.clone().sub(w0).dot(toCam))*pxPerUnit(w0)/3,ub=scr(base).sub(e0);
+      if(ub.lengthSq()>1)a.dir.addScaledVector(ub.normalize(),depth*.6)}});
+  return axes;
+}
+stage.addEventListener('pointerdown',e=>{
+  if(e.target!==cv||e.button===2||playing)return;const s=pick(e);if(!s)return;
+  e.stopPropagation();e.preventDefault();const p=editable();
+  drag={s,x0:e.clientX,y0:e.clientY,start:clone(p),shift:e.shiftKey,ok:clone(p.f)};if(s.k!==null)drag.axes=grabAxes(p,s,e.shiftKey,e.altKey);drag.group=e.altKey;
+  controls.enabled=false;cv.style.cursor='grabbing';
+},true);
+let pending=null;
+window.addEventListener('pointermove',e=>{
+  if(!drag){if(e.target!==cv){setHL(null);showTip(e,'');return}const s=pick(e);setHL(s);showTip(e,label(s));cv.style.cursor=s?'grab':'';return}
+  pending=e;requestAnimationFrame(()=>{if(!pending||!drag)return;const ev=pending;pending=null;onDrag(ev)});
+});
+function onDrag(e){
+  const dx=e.clientX-drag.x0,dy=e.clientY-drag.y0,p=editable();
+  const cr=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0),cu=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,1);
+  if(drag.s.k===null){
+    if(drag.shift){const k=1/pxPerUnit(new THREE.Vector3().fromArray(drag.start.pos));p.pos=new THREE.Vector3().fromArray(drag.start.pos).addScaledVector(cr,dx*k).addScaledVector(cu,-dy*k).toArray()}
+    else p.q=qa(cu,dx*.45).multiply(qa(cr,dy*.45)).multiply(new THREE.Quaternion().fromArray(drag.start.q)).normalize().toArray();
+  }else{
+    p.f=clone(drag.start.f);const A=drag.axes;
+    if(A.length===1){const d=A[0].dir,l=d.lengthSq();A[0].set(l>.01?(d.x*dx+d.y*dy)/l:0)}
+    else if(A.length===2){const a=A[0].dir,b=A[1].dir,lam=.02,aa=a.dot(a)+lam,bb=b.dot(b)+lam,ab=a.dot(b),am=a.x*dx+a.y*dy,bm=b.x*dx+b.y*dy,det=aa*bb-ab*ab;
+      A[0].set((bb*am-ab*bm)/det);A[1].set((aa*bm-ab*am)/det)}
+    constrain(p,drag.group?null:drag.s.k);
+    p.f=solve(drag.ok,p.f);drag.ok=clone(p.f);
+  }
+  syncSliders();render3D();showTip(e,label(drag.s));
+}
+function endDrag(){if(!drag)return;drag=null;pending=null;controls.enabled=true;cv.style.cursor='';$('tip').hidden=true;refresh()}
+window.addEventListener('pointerup',endDrag);window.addEventListener('pointercancel',endDrag);
+cv.addEventListener('contextmenu',e=>{e.preventDefault();const s=pick(e);if(s&&s.k){S.locks[s.k][s.g]=!S.locks[s.k][s.g];refresh();showTip(e,label(s))}});
+cv.addEventListener('dblclick',e=>{const s=pick(e);if(!s)return;const p=editable();
+  if(s.k===null)p.q=[0,0,0,1];else{const t=clone(p.f);if(s.k==='pouce')Object.assign(t.pouce,{mcp:0,ip:0});else Object.assign(t[s.k],{mcp:0,pip:0,dip:0});p.f=solve(p.f,t)}refresh()});
+function showTip(e,txt){const t=$('tip');if(!txt){t.hidden=true;return}const r=stage.getBoundingClientRect();t.textContent=txt;t.hidden=false;t.style.left=(e.clientX-r.left)+'px';t.style.top=(e.clientY-r.top)+'px'}
+
+/* ======================================================================
+   Panneau
+   ====================================================================== */
+const sliders=[];
+const JOINTS={doigt:[['mcp','Base',...LIMF.mcp,0],['pip','Milieu',...LIMF.pip,1],['dip','Bout',...LIMF.dip,2],['ab','Écart',-45,25,-1]],
+              pouce:[['av','Avancer',...LIMT.av,0],['rap','Rapprocher',...LIMT.rap,-1],['mcp','Base',...LIMT.mcp,-1],['ip','Bout',...LIMT.ip,1]]};
+function row(box,id,lab,mn,mx,get,set,lock,unit='°'){
+  const r=document.createElement('div');r.className='row'+(lock?'':' nolock');
+  r.innerHTML=`<label for="${id}">${lab}</label><input type="range" id="${id}" min="${mn}" max="${mx}" step="1"><output></output>`+(lock?`<button class="lockbtn" aria-label="Bloquer ${lab}" title="Bloquer">${LOCK_SVG}</button>`:'');
+  box.appendChild(r);const el=r.querySelector('input'),out=r.querySelector('output'),lb=r.querySelector('.lockbtn');
+  el.addEventListener('input',()=>{set(+el.value);syncSliders();render3D()});if(lb)lb.onclick=()=>{lock.toggle();refresh()};
+  sliders.push({el,out,get,unit,lb,lock});
+}
+ALL.forEach(k=>{
+  const b=document.createElement('div');b.className='block';b.innerHTML=`<h3>${NOMS[k]}</h3>`;$('jointBlocks').appendChild(b);const t=typ(k);
+  JOINTS[t].forEach(([j,lab,mn,mx,gi])=>{
+    const mm=j==='ab'?SPREAD[k]:[mn,mx];
+    row(b,`${k}-${j}`,lab,mm[0],mm[1],()=>editable().f[k][j],v=>{const p=editable(),tg=clone(p);tg.f[k][j]=v;constrain(tg,k);p.f=solve(p.f,tg.f)},
+      gi>=0?{get:()=>S.locks[k][gi],toggle:()=>S.locks[k][gi]=!S.locks[k][gi]}:null)});
+});
+const eul=()=>new THREE.Euler().setFromQuaternion(new THREE.Quaternion().fromArray(editable().q),'YXZ');
+const setE=(ax,deg)=>{const e=eul();e[ax]=deg*D;editable().q=new THREE.Quaternion().setFromEuler(e).toArray()};
+[['x','Bascule'],['y','Pivot'],['z','Roulis']].forEach(([a,l])=>row($('orientRows'),'o-'+a,l,-180,180,()=>eul()[a]/D,v=>setE(a,v),null));
+[['0','Gauche/droite'],['1','Bas/haut']].forEach(([i,l])=>row($('orientRows'),'p-'+i,l,-25,25,()=>editable().pos[+i],v=>editable().pos[+i]=v,null,''));
+$('presets').innerHTML=Object.keys(PRESETS).map(n=>`<button data-preset="${n}">${n}</button>`).join('');
+function applyPreset(name){const p=editable(),tg=constrain(clone(PRESETS[name]));p.f=settle(p.f,tg.f);if(REACH[name])p.f=thumbReach(p.f,REACH[name]);refresh()}
+document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>applyPreset(b.dataset.preset));
+function syncSliders(){sliders.forEach(s=>{const v=Math.round(s.get());s.el.value=v;s.out.textContent=v+s.unit;if(s.lb)s.lb.setAttribute('aria-pressed',s.lock.get())})}
+const press=(a,b,f)=>{a.setAttribute('aria-pressed',f);b.setAttribute('aria-pressed',!f)};
+const press3=(l,v)=>l.forEach(([b,k])=>$(b).setAttribute('aria-pressed',k===v));
+// Une main gauche n'existe que si on la demande : on la fabrique en miroir de la droite. On n'écarte QUE la
+// nouvelle : déplacer celle que l'utilisateur a déjà placée lui ferait perdre son réglage, et en mode mouvement
+// cela rallongerait la course d'une étape sans qu'il l'ait demandé.
+function ensureSide(side){const o=side==='G'?'D':'G',sg=side==='D'?-1:1;
+  const fix=set=>{if(okPose(set[side]))return;const b=okPose(set[o])?set[o]:(set[o]=clone(PRESETS['Dessin']));
+    // au-delà de TOUTES les étapes de l'autre main : avec trois étapes à 0 / 7 / 14 unités et une gauche posée à
+    // +18, les pastilles 3 et 1 se touchaient et les fantômes des deux mains se superposaient
+    const xs=(S.cles||[S.pose]).map(c=>okPose(c[o])?c[o].pos[0]:b.pos[0]),span=Math.max(...xs)-Math.min(...xs);
+    const m=mirror(b);if(Math.abs(m.pos[0]-b.pos[0])<12+span)m.pos[0]=b.pos[0]+sg*(18+span);set[side]=m};
+  fix(S.pose);if(S.cles)S.cles.forEach(fix);}
+function setMains(v){S.mains=v;mainsOn().forEach(ensureSide);if(mainsOn().indexOf(S.act)<0)S.act=mainsOn()[0];setHL(null);refresh();fitIfNeeded()}
+
+/* ---- bandeau des étapes clés ---- */
+function stepStrip(){
+  const box=$('stepStrip');if(S.mode!=='mouvement'||!S.cles){box.innerHTML='';$('stepDel').disabled=$('stepDup').disabled=true;return}
+  const n=S.cles.length;
+  box.innerHTML=S.cles.map((_,i)=>`<button data-step="${i}" aria-pressed="${i===S.cur}">${i===0?'Début':i===n-1?'Fin':'Étape '+(i+1)}</button>`).join('')
+    +(n<5?'<button class="add" id="stepAdd">+ étape</button>':'');
+  box.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{S.cur=+b.dataset.step;refresh()});
+  const a=$('stepAdd');if(a)a.onclick=()=>{
+    const i=S.cur,last=i===S.cles.length-1,c={};
+    // les deux côtés, pas seulement ceux qui sont à l'écran : sinon la main cachée sauterait à cette étape
+    ['D','G'].forEach(k=>{const a=S.cles[i][k];if(!a)return;const b=last?null:S.cles[i+1][k];
+      c[k]=b?lerpPose(a,b,.5):clone(a);if(!b)c[k].pos[0]+=12});
+    if(S.cles[i].fl)c.fl=clone(S.cles[i].fl);
+    S.cles.splice(i+1,0,c);S.cur=i+1;refresh();fitIfNeeded()};
+  $('stepDel').disabled=n<=2;$('stepDup').disabled=n>=5;
+}
+
+/* ---- styles et couleurs de flèche ---- */
+function flIcon(st){const A={x:5,y:20},B={x:47,y:20},pts=arrowPts(A,B,st,1),n=pts.length;
+  const q=pts[Math.max(0,n-3)],e=pts[n-1],g=Math.atan2(e.y-q.y,e.x-q.x),hd=(d)=>`${(e.x-7*Math.cos(g+d)).toFixed(1)},${(e.y-7*Math.sin(g+d)).toFixed(1)}`;
+  return `<svg viewBox="-3 -6 58 34" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">`
+    +`<polyline points="${pts.map(p=>p.x.toFixed(1)+','+p.y.toFixed(1)).join(' ')}"/>`
+    +`<polyline points="${hd(-.42)} ${e.x.toFixed(1)},${e.y.toFixed(1)} ${hd(.42)}"/></svg>`}
+const FLCOL=[['#14201f','Encre'],['#00857f','Vert INJS'],['#b3261e','Rouge'],['#1a5fb4','Bleu']];
+// Régler la flèche d'un intervalle ne doit pas changer celle des autres. Comme segFl() retombe sur S.fl quand
+// un intervalle n'a pas de style propre, on fige d'abord le style courant sur TOUS les intervalles, puis on ne
+// modifie que celui qui est visé.
+function flSet(k,v){
+  if(!S.cles||S.cles.length<2){S.fl[k]=v;return}
+  const i=segIdx();
+  for(let j=0;j+1<S.cles.length;j++)if(!S.cles[j].fl)S.cles[j].fl=Object.assign({},S.fl);
+  S.cles[i].fl[k]=v;S.fl[k]=v;}
+function flUI(){
+  const F=segFl(segIdx()),i=segIdx();
+  $('flSeg').textContent=S.cles&&S.cles.length>2?`Flèche de l'étape ${i+1} vers ${i+2}`:'Trajectoire';
+  $('flStyles').innerHTML=FLS.map(([k,l])=>`<button data-fls="${k}" aria-pressed="${F.style===k}" title="${l}">${flIcon(k)}<span>${l}</span></button>`).join('');
+  document.querySelectorAll('[data-fls]').forEach(b=>b.onclick=()=>{flSet('style',b.dataset.fls);refresh()});
+  $('flCols').innerHTML=FLCOL.map(([c,l])=>`<button data-flc="${c}" aria-pressed="${S.fl.col===c}" title="${l}" aria-label="${l}" style="background:${c}"></button>`).join('');
+  document.querySelectorAll('[data-flc]').forEach(b=>b.onclick=()=>{S.fl.col=b.dataset.flc;refresh()});
+}
+
+/* ---- décor ---- */
+const FONDC=[['#ffffff','Blanc'],['#fdf6e7','Crème'],['#e8f3f1','Vert pâle'],['#eef2f1','Gris'],['#e9f0f8','Bleu pâle'],['#14201f','Encre']];
+function decorUI(){
+  press3([['rf0','aucun'],['rf1','trait'],['rf2','plein']],S.ref.style);
+  press3([['fd0','aucun'],['fd1','uni'],['fd2','degrade']],S.fond.type);
+  $('refOpts').hidden=S.ref.style==='aucun';$('fondOpts').hidden=S.fond.type==='aucun';
+  $('refT').value=Math.round(S.ref.t*100);$('refTOut').textContent=Math.round(S.ref.t*100)+'%';
+  $('refH').value=S.ref.h;$('refHOut').textContent=S.ref.h;
+  $('refX').value=S.ref.x;$('refXOut').textContent=S.ref.x;
+  $('refVisage').checked=S.ref.visage;$('refRep').checked=S.ref.reperes;
+  $('fondCadre').checked=S.fond.cadre;$('fondPick').value=S.fond.col;
+  $('fondCols').innerHTML=FONDC.map(([c,l])=>`<button data-fc="${c}" aria-pressed="${S.fond.col.toLowerCase()===c}" title="${l}" aria-label="${l}" style="background:${c}"></button>`).join('');
+  document.querySelectorAll('[data-fc]').forEach(b=>b.onclick=()=>{S.fond.col=b.dataset.fc;if(S.fond.type==='aucun')S.fond.type='uni';refresh()});
+}
+
+function refresh(){
+  syncSliders();
+  press3([['mainD','D'],['mainG','G'],['mainDG','DG']],S.mains);
+  press($('modePose'),$('modeMvt'),S.mode==='pose');
+  $('actWrap').hidden=$('mirWrap').hidden=S.mains!=='DG';press($('actD'),$('actG'),S.act==='D');
+  $('mvtOn').hidden=S.mode!=='mouvement';$('mvtOff').hidden=S.mode==='mouvement';
+  $('etapes').value=S.etapes;$('etapesOut').textContent=S.etapes;
+  $('fleche').checked=S.fleche;$('flWrap').hidden=!S.fleche;$('flDouble').checked=segFl(segIdx()).double;
+  stepStrip();flUI();decorUI();
+  const nomMain={D:'droite',G:'gauche',DG:'les deux'}[S.mains];
+  $('status').innerHTML=`<span class="chip">Main ${nomMain}${S.mains==='DG'?' · je pose la '+(S.act==='D'?'droite':'gauche'):''}</span>`
+    +(S.mode==='pose'?`<span class="chip on">Pose fixe</span>`
+      :`<span class="chip ${S.cur===0?'debut':'fin'}">${S.cles.length>2?'Étape '+(S.cur+1)+'/'+S.cles.length:(S.cur===0?'Début':'Fin')}</span>`);
+  render3D();
+}
+$('mainD').onclick=()=>setMains('D');$('mainG').onclick=()=>setMains('G');$('mainDG').onclick=()=>setMains('DG');
+$('actD').onclick=()=>{S.act='D';setHL(null);refresh()};$('actG').onclick=()=>{S.act='G';setHL(null);refresh()};
+$('miroir').onclick=()=>{const o=S.act==='G'?'D':'G',set=curSet();set[o]=mirror(set[S.act]);refresh()};
+$('resetOrient').onclick=()=>{editable().q=[0,0,0,1];refresh()};
+$('unlockAll').onclick=()=>{for(const k in S.locks)S.locks[k]=S.locks[k].map(()=>false);refresh()};
+$('modePose').onclick=()=>{S.mode='pose';refresh()};
+$('modeMvt').onclick=()=>{if(playing)return;if(!S.cles){const a=clone(S.pose),b=clone(S.pose);['D','G'].forEach(k=>{if(b[k])b[k].pos[0]+=14});S.cles=[a,b]}
+  S.mode='mouvement';S.cur=Math.min(S.cur,S.cles.length-1);mainsOn().forEach(ensureSide);refresh();fitIfNeeded()};
+$('stepDup').onclick=()=>{if(playing||!S.cles||S.cles.length>=5)return;S.cles.splice(S.cur+1,0,clone(S.cles[S.cur]));S.cur++;refresh();fitIfNeeded()};
+$('stepDel').onclick=()=>{if(playing||!S.cles||S.cles.length<=2)return;S.cles.splice(S.cur,1);S.cur=Math.min(S.cur,S.cles.length-1);refresh()};
+$('etapes').oninput=e=>{S.etapes=+e.target.value;$('etapesOut').textContent=S.etapes;render3D()};
+$('fleche').onchange=e=>{S.fleche=e.target.checked;refresh()};
+$('flDouble').onchange=e=>{flSet('double',e.target.checked);refresh()};
+$('flSens').onclick=()=>{flSet('sens',-segFl(segIdx()).sens);refresh()};
+let camAvantRef=null;
+['rf0','rf1','rf2'].forEach((b,i)=>$(b).onclick=()=>{
+  const v=['aucun','trait','plein'][i],av=S.ref.style;if(v===av)return;S.ref.style=v;refresh();
+  if(av==='aucun'&&v!=='aucun'){camAvantRef={p:camera.position.toArray(),c:controls.target.toArray()};fitView()}
+  else if(v==='aucun'&&camAvantRef){camera.position.fromArray(camAvantRef.p);controls.target.fromArray(camAvantRef.c);controls.update();camAvantRef=null}});
+['fd0','fd1','fd2'].forEach((b,i)=>$(b).onclick=()=>{S.fond.type=['aucun','uni','degrade'][i];refresh()});
+$('refT').oninput=e=>{S.ref.t=+e.target.value/100;$('refTOut').textContent=e.target.value+'%';drawOverlays()};
+$('refH').oninput=e=>{S.ref.h=+e.target.value;$('refHOut').textContent=e.target.value;drawOverlays()};
+$('refX').oninput=e=>{S.ref.x=+e.target.value;$('refXOut').textContent=e.target.value;drawOverlays()};
+$('refVisage').onchange=e=>{S.ref.visage=e.target.checked;drawOverlays()};
+$('refRep').onchange=e=>{S.ref.reperes=e.target.checked;drawOverlays()};
+$('fondCadre').onchange=e=>{S.fond.cadre=e.target.checked;drawOverlays()};
+$('fondPick').oninput=e=>{S.fond.col=e.target.value;if(S.fond.type==='aucun')S.fond.type='uni';refresh()};
+$('play').onclick=()=>{if(playing||S.mode!=='mouvement'||!S.cles||S.cles.length<2)return;
+  for(const k in HAND)HAND[k].ghosts.forEach(g=>g.root.visible=false);
+  fgL.getContext('2d').clearRect(0,0,fgL.width,fgL.height);
+  const t0=performance.now(),dur=900*(S.cles.length-1);playing=true;
+  // La suite d'étapes peut changer SOUS la lecture (supprimer une étape, charger une configuration) : on relit donc
+  // sa longueur à chaque image, et toute erreur rend la main. Sans ça, une exception dans ce rappel laissait
+  // « playing » à true pour toujours — plus rien ne répondait et il fallait recharger la page.
+  const fini=()=>{playing=null;render3D()};
+  (function step(now){
+    try{
+      const C=S.cles;if(!playing||S.mode!=='mouvement'||!C||C.length<2)return fini();
+      const n=C.length-1,k=Math.min(1,(now-t0)/dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2,u=e*n,i=Math.min(n-1,Math.floor(u));
+      mainsOn().forEach(side=>{const a=C[i][side],b=C[i+1][side];if(a&&b)applyPose(handOf(side),lerpPoseSafe(a,b,u-i,false))});
+      repaint();if(k<1)return requestAnimationFrame(step);
+      setTimeout(fini,600);
+    }catch(err){console.error(err);fini()}
+  })(t0)};
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.querySelectorAll('[data-pane]').forEach(p=>p.hidden=p.dataset.pane!==b.dataset.tab)});
+
+/* ======================================================================
+   Sauvegarde, JSON, export
+   ====================================================================== */
+function snapshot(){const o={version:8,mode:S.mode,mains:S.mains,act:S.act,verrous:clone(S.locks),
+  decor:{fond:clone(S.fond),ref:clone(S.ref)},fl:clone(S.fl),fleche:S.fleche,etapes:S.etapes,
+  vue:{pos:camera.position.toArray().map(v=>+v.toFixed(2)),cible:controls.target.toArray().map(v=>+v.toFixed(2))}};
+  // on garde les deux : le mode ne dit pas lequel des deux travaux l'utilisateur veut conserver, et perdre
+  // quatre étapes clés parce qu'on avait repassé la main en « pose fixe » avant d'enregistrer serait brutal
+  o.pose=clone(S.pose);if(S.cles){o.cles=clone(S.cles);o.cur=S.cur}return o}
+const okPose=p=>p&&p.f&&ALL.every(k=>p.f[k])&&p.f.pouce.av!==undefined&&Array.isArray(p.q)&&Array.isArray(p.pos);
+const okSet=c=>c&&(okPose(c.D)||okPose(c.G));
+// Un JSON importé vient de l'extérieur : on ne lui fait confiance sur AUCUN champ. Une couleur qui serait un
+// nombre, un style inconnu, un verrou qui serait une chaîne — et c'est refresh() qui lève une exception à chaque
+// clic, pour toujours. On filtre, et on n'écrit dans S qu'une fois tout validé.
+const vHex=(v,d)=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v)?v:d;
+const vNum=(v,a,b,d)=>typeof v==='number'&&isFinite(v)?clamp(v,a,b):d;
+const vIn=(v,l,d)=>l.indexOf(v)>=0?v:d;
+const vBool=(v,d)=>typeof v==='boolean'?v:d;
+const vFl=(o,d)=>!o||typeof o!=='object'?clone(d):{style:vIn(o.style,FLS.map(f=>f[0]),d.style),
+  sens:o.sens<0?-1:1,double:vBool(o.double,d.double),col:vHex(o.col,d.col)};
+function load(o){
+  if(!o||[6,7,8].indexOf(o.version)<0)throw new Error('format d\'une ancienne version de l\'atelier');
+  const N={fl:clone(S.fl),fond:clone(S.fond),ref:clone(S.ref)};
+  if(o.version<8){   // versions 6-7 : une seule main, un début et une fin
+    const c=o.gauche?'G':'D';N.mains=c;N.act=c;N.cur=0;
+    if(o.mode==='mouvement'){if(!okPose(o.debut)||!okPose(o.fin))throw new Error('début ou fin manquant');
+      N.cles=[{[c]:clone(o.debut)},{[c]:clone(o.fin)}];N.pose={[c]:clone(o.fin)};N.mode='mouvement';N.etapes=Math.max(0,(o.etapes||2)-1)}
+    else{if(!okPose(o.pose))throw new Error('pose manquante');N.pose={[c]:clone(o.pose)};N.cles=null;N.mode='pose';N.etapes=S.etapes}
+    N.fleche=o.fleche!==false;
+  }else{
+    N.mains=vIn(o.mains,['D','G','DG'],'D');N.act=o.act==='G'?'G':'D';
+    N.cles=Array.isArray(o.cles)&&o.cles.length>1&&o.cles.every(okSet)?clone(o.cles):null;
+    if(o.mode==='mouvement'){if(!N.cles)throw new Error('étapes manquantes');
+      N.mode='mouvement';N.pose=okSet(o.pose)?clone(o.pose):clone(N.cles[N.cles.length-1])}
+    else{if(!okSet(o.pose))throw new Error('pose manquante');N.pose=clone(o.pose);N.mode='pose'}
+    N.cur=N.cles?Math.max(0,Math.min(vNum(o.cur,0,99,0),N.cles.length-1)):0;
+    N.etapes=vNum(o.etapes,0,3,1);N.fleche=o.fleche!==false;
+    N.fl=vFl(o.fl,S.fl);
+    const D=o.decor||{},F=D.fond||{},R=D.ref||{};
+    N.fond={type:vIn(F.type,['aucun','uni','degrade'],'aucun'),col:vHex(F.col,'#ffffff'),cadre:vBool(F.cadre,false)};
+    N.ref={style:vIn(R.style,['aucun','trait','plein'],'aucun'),t:vNum(R.t,.6,1.7,1),h:vNum(R.h,-60,60,0),
+           x:vNum(R.x,-60,60,0),visage:vBool(R.visage,true),reperes:vBool(R.reperes,false)};
+    if(N.cles)N.cles.forEach(c=>{c.fl=c.fl?vFl(c.fl,N.fl):undefined});
+  }
+  // une pose incomplète doit Être absente, pas « présente et vide » : ensureSide la refabriquerait sinon à moitié
+  const net=set=>['D','G'].forEach(k=>{if(set[k]!==undefined&&!okPose(set[k]))delete set[k]});
+  net(N.pose);if(N.cles)N.cles.forEach(net);
+  if(['D','G','DG'].indexOf(N.mains)<0)N.mains='D';
+  const on=N.mains==='DG'?['D','G']:[N.mains];if(on.indexOf(N.act)<0)N.act=on[0];
+  // tout est validé : on peut écrire
+  Object.assign(S,{mains:N.mains,act:N.act,mode:N.mode,pose:N.pose,cles:N.cles,cur:N.cur,
+    etapes:N.etapes,fleche:N.fleche,fl:N.fl,fond:N.fond,ref:N.ref});
+  mainsOn().forEach(ensureSide);mainsOn().forEach(handOf);
+  for(const k in S.locks){const v=o.verrous&&o.verrous[k];S.locks[k]=SEGN[typ(k)].map((_,i)=>!!(Array.isArray(v)&&v[i]))}
+  if(o.vue&&Array.isArray(o.vue.pos)&&o.vue.pos.length===3&&o.vue.pos.every(v=>typeof v==='number'&&isFinite(v))){
+    camera.position.fromArray(o.vue.pos);
+    const t=o.vue.cible;controls.target.fromArray(Array.isArray(t)&&t.length===3?t:[0,0,0]);controls.update()}
+  refresh();
+}
+let db=null,items=[];const libMsg=h=>$('lib').innerHTML=h;
+(async()=>{try{if(!window.claude||!window.claude.use)throw 0;db=await window.claude.use('db');if(!db)throw 0;
+  db.collection('configurations').orderBy('creeLe','desc').onSnapshot(s=>{items=s.docs;renderLib()},e=>libMsg(`<div class="empty">La bibliothèque ne répond plus (${e.code}). Recharge la page.</div>`));
+}catch(e){db=null;$('save').disabled=true;libMsg('<div class="empty">Bibliothèque indisponible dans cet affichage. Utilise « Échanger en JSON » pour garder une configuration.</div>')}})();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function renderLib(){
+  if(!items.length){libMsg('<div class="empty">Aucune configuration enregistrée. Pose une main, donne-lui un nom et clique sur « Enregistrer » : elle apparaîtra ici.</div>');return}
+  libMsg(items.map(d=>{const v=d.data(),date=v.creeLe?new Date(v.creeLe).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):'';
+    return `<div class="item"><b>${esc(v.nom||'Sans nom')}<span class="tag">${v.etat&&v.etat.mode==='mouvement'?'mouvement':'pose'}</span></b><div class="actions"><button class="btn" data-load="${d.id}">Charger</button><button class="btn danger" data-del="${d.id}">Suppr.</button></div><small>${esc(v.note||'')}${v.note&&date?' · ':''}${date}</small></div>`}).join(''));
+  document.querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>{const d=items.find(x=>x.id===b.dataset.load);try{load(d.data().etat);$('saveMsg').textContent=''}catch(e){$('saveMsg').textContent='Impossible de charger : '+e.message}});
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Confirmer';setTimeout(()=>{b.dataset.armed='';b.textContent='Suppr.'},3000);return}
+    b.disabled=true;try{await db.collection('configurations').doc(b.dataset.del).delete()}catch(e){b.disabled=false;$('saveMsg').textContent='Suppression impossible.'}});
+}
+$('save').onclick=async()=>{const nom=$('nom').value.trim(),m=$('saveMsg');m.className='msg';
+  if(!nom){m.textContent='Donne un nom à la configuration.';m.className='msg err';$('nom').focus();return}if(!db)return;$('save').disabled=true;
+  try{await db.collection('configurations').add({nom,note:$('noteIn').value.trim(),etat:snapshot(),creeLe:Date.now()});m.textContent=`« ${nom} » enregistrée.`;$('nom').value='';$('noteIn').value=''}
+  catch(e){m.className='msg err';m.textContent=e&&e.code==='invalid_argument'?'Tu n\'as pas les droits d\'écriture sur cette bibliothèque.':'Enregistrement impossible, réessaie.'}$('save').disabled=false};
+$('copyJson').onclick=()=>{const txt=JSON.stringify(snapshot());$('json').value=txt;const ok=()=>$('jsonMsg').textContent='Copiée dans le presse-papiers.',fb=()=>{$('json').select();$('jsonMsg').textContent='Sélectionnée : copie-la avec Ctrl+C.'};
+  try{navigator.clipboard.writeText(txt).then(ok,fb)}catch(e){fb()}};
+$('importJson').onclick=()=>{try{load(JSON.parse($('json').value));$('jsonMsg').textContent='Configuration chargée.'}catch(e){$('jsonMsg').textContent='JSON illisible : '+(e.message||'format inattendu')}};
+let downloads=null;(async()=>{try{if(window.claude&&window.claude.use)downloads=await window.claude.use('downloads')}catch(e){}})();
+let lastURL=null,exporting=false;
+$('export').onclick=async()=>{
+  if(exporting)return;const m=$('exportMsg');m.className='msg';m.textContent='Rendu en cours…';
+  exporting=true;$('export').disabled=true;
+  const size=+$('taille').value,w=stage.clientWidth,h=stage.clientHeight,old=renderer.getPixelRatio();
+  let blob=null;
+  try{
+    setHL(null);renderer.setPixelRatio(size/Math.max(w,h));renderer.setSize(w,h,false);renderAll();
+    // 1. le CONTENU seul : référent, rendu 3D, flèches. C'est lui qu'on mesure pour recadrer — si on peignait le
+    //    fond d'abord, toute l'image serait opaque et « recadrer au plus juste » ne couperait jamais rien.
+    const gl=renderer.domElement,A=document.createElement('canvas');A.width=gl.width;A.height=gl.height;
+    const xa=A.getContext('2d');drawRef(xa,A.width,A.height);xa.drawImage(gl,0,0);drawArrows(xa,A.width,A.height);
+    // 2. la boîte utile, puis le fond à la taille de SORTIE (son dégradé et son cadre suivent l'image finale)
+    const bx=$('recadre').checked?alphaBox(A):null,W=bx?bx.w:A.width,H=bx?bx.h:A.height;
+    const out=document.createElement('canvas');out.width=W;out.height=H;const xo=out.getContext('2d');
+    drawFond(xo,W,H);xo.drawImage(A,bx?bx.x:0,bx?bx.y:0,W,H,0,0,W,H);
+    blob=await new Promise(r=>out.toBlob(r,'image/png'));
+  }catch(e){m.className='msg err';m.textContent='Export impossible : '+(e&&e.message||'erreur inattendue')}
+  finally{renderer.setPixelRatio(old);resize();drawOverlays();exporting=false;$('export').disabled=false}
+  if(!blob)return;
+  // le repli n'arrive qu'APRÈS le nettoyage : un nom fait de caractères écartés donnait un fichier « .png »
+  const nom=$('nom').value.trim().replace(/[^\w\-àâäéèêëîïôöùûüç ]/gi,'').replace(/\s+/g,'-')||'main-lsf';
+  if(downloads){try{await downloads.save({filename:nom+'.png',data:blob});m.textContent='Image enregistrée.';return}catch(e){if(e&&e.code==='declined'){m.textContent='Export annulé.';return}}}
+  if(lastURL)URL.revokeObjectURL(lastURL);
+  lastURL=URL.createObjectURL(blob);$('imgOut').src=lastURL;if(!$('imgDlg').open)$('imgDlg').showModal();m.textContent='';
+};
+$('closeDlg').onclick=()=>{$('imgDlg').close();$('imgOut').removeAttribute('src');if(lastURL){URL.revokeObjectURL(lastURL);lastURL=null}};
+// boîte englobante de ce qui est dessiné, avec une marge ÉGALE sur les deux axes (une marge calculée sur la
+// largeur seule décentre la planche dans son cadre dès que le format s'allonge)
+function alphaBox(src){const W=src.width,H=src.height,d=src.getContext('2d').getImageData(0,0,W,H).data;
+  let x0=W,y0=H,x1=-1,y1=-1;
+  for(let y=0;y<H;y+=2)for(let i=0;i<W;i+=2)if(d[(y*W+i)*4+3]>8){if(i<x0)x0=i;if(i>x1)x1=i;if(y<y0)y0=y;if(y>y1)y1=y}
+  if(x1<0)return null;
+  const pad=Math.round(Math.min(W,H)*.02)+2;
+  x0=Math.max(0,x0-pad);y0=Math.max(0,y0-pad);x1=Math.min(W,x1+pad);y1=Math.min(H,y1+pad);
+  return{x:x0,y:y0,w:x1-x0,h:y1-y0}}
+
+window.__atelier={renderer,setCav:(r1,r2,t,a,dbg)=>{const u=edgeMat.uniforms;u.cavR.value.set(r1,r2);u.cavT.value=t;u.cavA.value=a;u.cavDbg.value=dbg?1:0;repaint()},setPron:v=>{PRONA=v;for(const k in HAND)HAND[k].skin.key=''},setKnk:v=>{KNG=v;for(const k in HAND)HAND[k].skin.key=''},setEdmax:v=>{EDMAX=v;edgeMat.uniforms.emax.value=v},setCrv:v=>{CRV=v},setCrmax:v=>{CRMAX=v},S,refresh,main,HAND,handOf,act,camera,controls,PRESETS,PAR,applyPreset,penetration,editable,curSet,mirror,constrain,solve,renderAll,drawOverlays,load,snapshot,
+  // surface de mise au point (balayage anti-déformation, mesures) : rien de tout cela n'est utilisé par l'interface
+  applyPose,settle,lerpF,palmH,SC,HD,MN,NT,MREST,MINDEX,ALL,FING,SEGW,probe,thumbReach,REACH,LEAN,setLean,edgeMat};
+refresh();
+})();
+</script>

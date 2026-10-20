@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personnage M4 — essai</title>
+<style>
+  :root { --fond: #eef3f2; --papier: #ffffff; --encre: #14201f; --discret: #5b6b69; --bord: #c9d6d4; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --fond: #182120; --papier: #222c2b; --encre: #e7efee; --discret: #9fb1ae; --bord: #3a4948; }
+  }
+  :root[data-theme="dark"] { --fond: #182120; --papier: #222c2b; --encre: #e7efee; --discret: #9fb1ae; --bord: #3a4948; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--encre); font: 15px/1.4 system-ui, sans-serif; }
+  header { padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+  header h1 { font-size: 17px; margin: 0 12px 0 0; }
+  label { display: inline-flex; gap: 6px; align-items: center; color: var(--discret); }
+  select, input { font: inherit; }
+  #scene { display: block; margin: 0 16px 16px; max-width: calc(100% - 32px); background: var(--papier); border: 1px solid var(--bord); border-radius: 8px; }
+  #info { margin: 0 16px 16px; color: var(--discret); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Référent (M4)</h1>
+  <label>Expression
+    <select id="expr"><option value="neutre">neutre</option><option value="sourire">sourire</option>
+      <option value="sourcils_leves">sourcils levés</option><option value="sourcils_fronces">sourcils froncés</option></select></label>
+  <label>Vue <select id="vue"><option value="face">face</option><option value="dos">dos</option></select></label>
+  <label>Style <select id="style"><option value="A">A (cape)</option><option value="B">B (simple)</option></select></label>
+  <label>Main (px) <input id="hl" type="range" min="25" max="220" value="140"></label>
+  <label><input id="rep" type="checkbox"> repères</label>
+</header>
+<canvas id="scene" width="900" height="760"></canvas>
+<p id="info"></p>
+<script src="personnage.js"></script>
+<script>
+'use strict';
+const P = window.AtelierPersonnage;
+const $ = id => document.getElementById(id);
+
+/* Scène de contrôle (utilisée aussi par v2/tests/personnage.py) :
+   spec = { w, h, fond, dpr, items: [{x, y, HLpx, vue, expression, style, reperes, repli, couleurs, legende}],
+            images: [{src, x, y, w, h}] }   images posées APRÈS les personnages (la main passe devant, comme dans l'atelier) */
+async function scene(spec, canvas) {
+  const c = canvas || $('scene');
+  const dpr = spec.dpr || 1;
+  c.width = Math.round(spec.w * dpr); c.height = Math.round(spec.h * dpr);
+  c.style.width = spec.w + 'px';
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = spec.fond || '#ffffff';
+  ctx.fillRect(0, 0, spec.w, spec.h);
+  const infos = [];
+  for (const it of spec.items || []) {
+    const t0 = performance.now();
+    const r = P.draw(ctx, it);
+    if (!r) { infos.push(null); continue; }       // HLpx invalide : rien n'est dessiné
+    r.ms = performance.now() - t0;
+    infos.push(r);
+    if (it.legende) {
+      ctx.font = '600 14px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillStyle = '#14201f';
+      ctx.fillText(it.legende, it.x, it.y + P.BOITE_HL.y1 * it.HLpx + 10);
+    }
+  }
+  for (const im of spec.images || []) {
+    const img = new Image();
+    await new Promise((ok, ko) => { img.onload = ok; img.onerror = ko; img.src = im.src; });
+    ctx.drawImage(img, im.x, im.y, im.w, im.h);
+  }
+  return infos;
+}
+window.scene = scene;
+
+function interactif() {
+  const HL = +$('hl').value, W = 900, H = 760;
+  const r = scene({ w: W, h: H, fond: '#ffffff', items: [{
+    x: W / 2, y: 40 + 2.1 * HL + (H - 80 - 4.3 * HL) / 2, HLpx: HL,
+    expression: $('expr').value, vue: $('vue').value, style: $('style').value, reperes: $('rep').checked }] });
+  r.then(([i]) => {
+    $('info').textContent = `style dessiné : ${i.style}${i.repli ? ' (repli : buste ' + Math.round(HL * P.HAUT_BUSTE_HL) + ' px < ' + P.SEUIL_REPLI + ' px)' : ''}` +
+      ` · trait ${i.trait.toFixed(2)} px · ${i.ms.toFixed(2)} ms`;
+  });
+}
+for (const id of ['expr', 'vue', 'style', 'hl', 'rep']) $(id).addEventListener('input', interactif);
+if (!location.hash.includes('auto')) interactif();
+</script>
+</body>
+</html>

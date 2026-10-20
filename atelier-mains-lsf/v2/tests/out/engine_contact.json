@@ -1,0 +1,504 @@
+{
+ "apres": {
+  "30 px/cm · L · index / majeur · dos": {
+   "noir": 69,
+   "epaisseur": 2.56
+  },
+  "30 px/cm · L · index / majeur · dos ¾": {
+   "noir": 142,
+   "epaisseur": 3.94
+  },
+  "30 px/cm · L · majeur / annulaire · dos": {
+   "noir": 126,
+   "epaisseur": 3.15
+  },
+  "30 px/cm · L · majeur / annulaire · dos ¾": {
+   "noir": 142,
+   "epaisseur": 3.55
+  },
+  "30 px/cm · L · annulaire / auriculaire · dos": {
+   "noir": 110,
+   "epaisseur": 3.06
+  },
+  "30 px/cm · L · annulaire / auriculaire · dos ¾": {
+   "noir": 69,
+   "epaisseur": 3.29
+  },
+  "30 px/cm · Index (1) · index / majeur · dos": {
+   "noir": 70,
+   "epaisseur": 2.59
+  },
+  "30 px/cm · Index (1) · index / majeur · dos ¾": {
+   "noir": 140,
+   "epaisseur": 3.89
+  },
+  "30 px/cm · Index (1) · majeur / annulaire · dos": {
+   "noir": 126,
+   "epaisseur": 3.15
+  },
+  "30 px/cm · Index (1) · majeur / annulaire · dos ¾": {
+   "noir": 139,
+   "epaisseur": 3.56
+  },
+  "30 px/cm · Index (1) · annulaire / auriculaire · dos": {
+   "noir": 109,
+   "epaisseur": 3.03
+  },
+  "30 px/cm · Index (1) · annulaire / auriculaire · dos ¾": {
+   "noir": 65,
+   "epaisseur": 3.25
+  },
+  "30 px/cm · V (2) · majeur / annulaire · dos": {
+   "noir": 101,
+   "epaisseur": 2.52
+  },
+  "30 px/cm · V (2) · majeur / annulaire · dos ¾": {
+   "noir": 176,
+   "epaisseur": 3.67
+  },
+  "30 px/cm · V (2) · annulaire / auriculaire · dos": {
+   "noir": 111,
+   "epaisseur": 3.17
+  },
+  "30 px/cm · V (2) · annulaire / auriculaire · dos ¾": {
+   "noir": 74,
+   "epaisseur": 3.36
+  },
+  "30 px/cm · Poing serré · index / majeur · dos": {
+   "noir": 87,
+   "epaisseur": 3.22
+  },
+  "30 px/cm · Poing serré · index / majeur · dos ¾": {
+   "noir": 96,
+   "epaisseur": 3.84
+  },
+  "30 px/cm · Poing serré · majeur / annulaire · dos": {
+   "noir": 127,
+   "epaisseur": 3.17
+  },
+  "30 px/cm · Poing serré · majeur / annulaire · dos ¾": {
+   "noir": 145,
+   "epaisseur": 3.62
+  },
+  "30 px/cm · Poing serré · annulaire / auriculaire · dos": {
+   "noir": 109,
+   "epaisseur": 3.03
+  },
+  "30 px/cm · Poing serré · annulaire / auriculaire · dos ¾": {
+   "noir": 67,
+   "epaisseur": 2.91
+  },
+  "30 px/cm · Main plate (B) · index / majeur · dos": {
+   "noir": 186,
+   "epaisseur": 2.24
+  },
+  "30 px/cm · Main plate (B) · index / majeur · dos ¾": {
+   "noir": 138,
+   "epaisseur": 2.94
+  },
+  "30 px/cm · Main plate (B) · index / majeur · paume": {
+   "noir": 175,
+   "epaisseur": 2.16
+  },
+  "30 px/cm · Main plate (B) · majeur / annulaire · dos": {
+   "noir": 265,
+   "epaisseur": 3.53
+  },
+  "30 px/cm · Main plate (B) · majeur / annulaire · dos ¾": {
+   "noir": 260,
+   "epaisseur": 2.63
+  },
+  "30 px/cm · Main plate (B) · majeur / annulaire · paume": {
+   "noir": 214,
+   "epaisseur": 3.63
+  },
+  "30 px/cm · Main plate (B) · annulaire / auriculaire · dos": {
+   "noir": 184,
+   "epaisseur": 3.17
+  },
+  "30 px/cm · Main plate (B) · annulaire / auriculaire · dos ¾": {
+   "noir": 340,
+   "epaisseur": 4.05
+  },
+  "30 px/cm · Main plate (B) · annulaire / auriculaire · paume": {
+   "noir": 178,
+   "epaisseur": 3.49
+  },
+  "90 px/cm · L · index / majeur · dos": {
+   "noir": 808,
+   "epaisseur": 9.98
+  },
+  "90 px/cm · L · index / majeur · dos ¾": {
+   "noir": 1194,
+   "epaisseur": 8.98
+  },
+  "90 px/cm · L · majeur / annulaire · dos": {
+   "noir": 1169,
+   "epaisseur": 9.28
+  },
+  "90 px/cm · L · majeur / annulaire · dos ¾": {
+   "noir": 1318,
+   "epaisseur": 8.73
+  },
+  "90 px/cm · L · annulaire / auriculaire · dos": {
+   "noir": 1145,
+   "epaisseur": 9.23
+  },
+  "90 px/cm · L · annulaire / auriculaire · dos ¾": {
+   "noir": 794,
+   "epaisseur": 7.42
+  },
+  "90 px/cm · Index (1) · index / majeur · dos": {
+   "noir": 797,
+   "epaisseur": 9.72
+  },
+  "90 px/cm · Index (1) · index / majeur · dos ¾": {
+   "noir": 1193,
+   "epaisseur": 8.4
+  },
+  "90 px/cm · Index (1) · majeur / annulaire · dos": {
+   "noir": 1164,
+   "epaisseur": 9.17
+  },
+  "90 px/cm · Index (1) · majeur / annulaire · dos ¾": {
+   "noir": 1305,
+   "epaisseur": 9.0
+  },
+  "90 px/cm · Index (1) · annulaire / auriculaire · dos": {
+   "noir": 1144,
+   "epaisseur": 9.3
+  },
+  "90 px/cm · Index (1) · annulaire / auriculaire · dos ¾": {
+   "noir": 795,
+   "epaisseur": 7.43
+  },
+  "90 px/cm · V (2) · majeur / annulaire · dos": {
+   "noir": 1060,
+   "epaisseur": 8.62
+  },
+  "90 px/cm · V (2) · majeur / annulaire · dos ¾": {
+   "noir": 1568,
+   "epaisseur": 9.5
+  },
+  "90 px/cm · V (2) · annulaire / auriculaire · dos": {
+   "noir": 1143,
+   "epaisseur": 8.93
+  },
+  "90 px/cm · V (2) · annulaire / auriculaire · dos ¾": {
+   "noir": 800,
+   "epaisseur": 7.62
+  },
+  "90 px/cm · Poing serré · index / majeur · dos": {
+   "noir": 825,
+   "epaisseur": 9.71
+  },
+  "90 px/cm · Poing serré · index / majeur · dos ¾": {
+   "noir": 873,
+   "epaisseur": 7.53
+  },
+  "90 px/cm · Poing serré · majeur / annulaire · dos": {
+   "noir": 1164,
+   "epaisseur": 9.17
+  },
+  "90 px/cm · Poing serré · majeur / annulaire · dos ¾": {
+   "noir": 1338,
+   "epaisseur": 8.92
+  },
+  "90 px/cm · Poing serré · annulaire / auriculaire · dos": {
+   "noir": 1144,
+   "epaisseur": 9.01
+  },
+  "90 px/cm · Poing serré · annulaire / auriculaire · dos ¾": {
+   "noir": 796,
+   "epaisseur": 7.37
+  },
+  "90 px/cm · Main plate (B) · index / majeur · dos": {
+   "noir": 1897,
+   "epaisseur": 7.3
+  },
+  "90 px/cm · Main plate (B) · index / majeur · dos ¾": {
+   "noir": 1329,
+   "epaisseur": 8.63
+  },
+  "90 px/cm · Main plate (B) · index / majeur · paume": {
+   "noir": 1645,
+   "epaisseur": 5.92
+  },
+  "90 px/cm · Main plate (B) · majeur / annulaire · dos": {
+   "noir": 2242,
+   "epaisseur": 5.52
+  },
+  "90 px/cm · Main plate (B) · majeur / annulaire · dos ¾": {
+   "noir": 2570,
+   "epaisseur": 7.56
+  },
+  "90 px/cm · Main plate (B) · majeur / annulaire · paume": {
+   "noir": 1826,
+   "epaisseur": 6.38
+  },
+  "90 px/cm · Main plate (B) · annulaire / auriculaire · dos": {
+   "noir": 1636,
+   "epaisseur": 8.75
+  },
+  "90 px/cm · Main plate (B) · annulaire / auriculaire · dos ¾": {
+   "noir": 3066,
+   "epaisseur": 11.61
+  },
+  "90 px/cm · Main plate (B) · annulaire / auriculaire · paume": {
+   "noir": 1604,
+   "epaisseur": 8.53
+  }
+ },
+ "erreurs_js": [],
+ "avant": {
+  "30 px/cm · L · index / majeur · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · L · index / majeur · dos ¾": {
+   "noir": 77,
+   "epaisseur": 3.08
+  },
+  "30 px/cm · L · majeur / annulaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · L · majeur / annulaire · dos ¾": {
+   "noir": 1,
+   "epaisseur": null
+  },
+  "30 px/cm · L · annulaire / auriculaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · L · annulaire / auriculaire · dos ¾": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · Index (1) · index / majeur · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · Index (1) · index / majeur · dos ¾": {
+   "noir": 76,
+   "epaisseur": 3.04
+  },
+  "30 px/cm · Index (1) · majeur / annulaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · Index (1) · majeur / annulaire · dos ¾": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · Index (1) · annulaire / auriculaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · Index (1) · annulaire / auriculaire · dos ¾": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · V (2) · majeur / annulaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · V (2) · majeur / annulaire · dos ¾": {
+   "noir": 48,
+   "epaisseur": 4.36
+  },
+  "30 px/cm · V (2) · annulaire / auriculaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · V (2) · annulaire / auriculaire · dos ¾": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · Poing serré · index / majeur · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · Poing serré · index / majeur · dos ¾": {
+   "noir": 14,
+   "epaisseur": null
+  },
+  "30 px/cm · Poing serré · majeur / annulaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · Poing serré · majeur / annulaire · dos ¾": {
+   "noir": 1,
+   "epaisseur": null
+  },
+  "30 px/cm · Poing serré · annulaire / auriculaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · Poing serré · annulaire / auriculaire · dos ¾": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "30 px/cm · Main plate (B) · index / majeur · dos": {
+   "noir": 189,
+   "epaisseur": 2.3
+  },
+  "30 px/cm · Main plate (B) · index / majeur · dos ¾": {
+   "noir": 138,
+   "epaisseur": 2.94
+  },
+  "30 px/cm · Main plate (B) · index / majeur · paume": {
+   "noir": 196,
+   "epaisseur": 2.48
+  },
+  "30 px/cm · Main plate (B) · majeur / annulaire · dos": {
+   "noir": 183,
+   "epaisseur": 2.47
+  },
+  "30 px/cm · Main plate (B) · majeur / annulaire · dos ¾": {
+   "noir": 227,
+   "epaisseur": 2.64
+  },
+  "30 px/cm · Main plate (B) · majeur / annulaire · paume": {
+   "noir": 196,
+   "epaisseur": 2.61
+  },
+  "30 px/cm · Main plate (B) · annulaire / auriculaire · dos": {
+   "noir": 184,
+   "epaisseur": 3.17
+  },
+  "30 px/cm · Main plate (B) · annulaire / auriculaire · dos ¾": {
+   "noir": 340,
+   "epaisseur": 4.05
+  },
+  "30 px/cm · Main plate (B) · annulaire / auriculaire · paume": {
+   "noir": 178,
+   "epaisseur": 3.49
+  },
+  "90 px/cm · L · index / majeur · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · L · index / majeur · dos ¾": {
+   "noir": 658,
+   "epaisseur": 8.02
+  },
+  "90 px/cm · L · majeur / annulaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · L · majeur / annulaire · dos ¾": {
+   "noir": 35,
+   "epaisseur": 3.5
+  },
+  "90 px/cm · L · annulaire / auriculaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · L · annulaire / auriculaire · dos ¾": {
+   "noir": 38,
+   "epaisseur": 3.45
+  },
+  "90 px/cm · Index (1) · index / majeur · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · Index (1) · index / majeur · dos ¾": {
+   "noir": 653,
+   "epaisseur": 7.26
+  },
+  "90 px/cm · Index (1) · majeur / annulaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · Index (1) · majeur / annulaire · dos ¾": {
+   "noir": 25,
+   "epaisseur": 2.78
+  },
+  "90 px/cm · Index (1) · annulaire / auriculaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · Index (1) · annulaire / auriculaire · dos ¾": {
+   "noir": 35,
+   "epaisseur": 3.18
+  },
+  "90 px/cm · V (2) · majeur / annulaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · V (2) · majeur / annulaire · dos ¾": {
+   "noir": 408,
+   "epaisseur": 9.27
+  },
+  "90 px/cm · V (2) · annulaire / auriculaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · V (2) · annulaire / auriculaire · dos ¾": {
+   "noir": 22,
+   "epaisseur": 2.75
+  },
+  "90 px/cm · Poing serré · index / majeur · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · Poing serré · index / majeur · dos ¾": {
+   "noir": 72,
+   "epaisseur": 3.43
+  },
+  "90 px/cm · Poing serré · majeur / annulaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · Poing serré · majeur / annulaire · dos ¾": {
+   "noir": 34,
+   "epaisseur": 3.78
+  },
+  "90 px/cm · Poing serré · annulaire / auriculaire · dos": {
+   "noir": 0,
+   "epaisseur": null
+  },
+  "90 px/cm · Poing serré · annulaire / auriculaire · dos ¾": {
+   "noir": 37,
+   "epaisseur": 3.36
+  },
+  "90 px/cm · Main plate (B) · index / majeur · dos": {
+   "noir": 1824,
+   "epaisseur": 6.99
+  },
+  "90 px/cm · Main plate (B) · index / majeur · dos ¾": {
+   "noir": 1329,
+   "epaisseur": 8.63
+  },
+  "90 px/cm · Main plate (B) · index / majeur · paume": {
+   "noir": 1656,
+   "epaisseur": 5.79
+  },
+  "90 px/cm · Main plate (B) · majeur / annulaire · dos": {
+   "noir": 1751,
+   "epaisseur": 7.24
+  },
+  "90 px/cm · Main plate (B) · majeur / annulaire · dos ¾": {
+   "noir": 2098,
+   "epaisseur": 8.29
+  },
+  "90 px/cm · Main plate (B) · majeur / annulaire · paume": {
+   "noir": 1626,
+   "epaisseur": 3.76
+  },
+  "90 px/cm · Main plate (B) · annulaire / auriculaire · dos": {
+   "noir": 1636,
+   "epaisseur": 8.75
+  },
+  "90 px/cm · Main plate (B) · annulaire / auriculaire · dos ¾": {
+   "noir": 3066,
+   "epaisseur": 11.61
+  },
+  "90 px/cm · Main plate (B) · annulaire / auriculaire · paume": {
+   "noir": 1604,
+   "epaisseur": 8.53
+  }
+ },
+ "erreurs_js_avant": []
+}
