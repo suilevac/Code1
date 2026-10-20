@@ -3,140 +3,140 @@
  "poses": {},
  "contour": {
   "Repos": {
-   "paume": 4.735821619001454,
-   "dos": 4.75230694511899,
-   "profil radial": 5.017145738779627,
-   "profil cubital": 4.9286073403720465,
-   "paume ¾ radial": 4.938656795346377,
-   "paume ¾ cubital": 4.868331441543701,
-   "dos ¾ radial": 4.819662921348314,
-   "dos ¾ cubital": 4.70356572645024,
-   "plongée paume": 4.872204472843451,
-   "contre-plongée paume": 4.83394495412844,
-   "dessus (bouts)": 5.109174311926606,
-   "dos plongée": 4.807009558488849,
-   "dessous (poignet)": 5.169953051643192
+   "paume": 4.704836709384043,
+   "dos": 4.684640522875817,
+   "profil radial": 5.042857142857143,
+   "profil cubital": 4.976686507936508,
+   "paume ¾ radial": 4.847408829174664,
+   "paume ¾ cubital": 4.858421936205931,
+   "dos ¾ radial": 4.86497175141243,
+   "dos ¾ cubital": 4.711246200607903,
+   "plongée paume": 4.872376630743052,
+   "contre-plongée paume": 4.786898503841488,
+   "dessus (bouts)": 5.052281368821292,
+   "dos plongée": 4.70145726664041,
+   "dessous (poignet)": 5.105365853658537
   },
   "Main ouverte (5)": {
-   "paume": 4.94304010785305,
-   "dos": 4.940283400809717,
-   "profil radial": 4.656947890818858,
-   "profil cubital": 4.591705607476635,
-   "paume ¾ radial": 4.788393209632846,
-   "paume ¾ cubital": 4.913805970149253,
-   "dos ¾ radial": 4.858305586385498,
-   "dos ¾ cubital": 4.855268236202239,
-   "plongée paume": 5.0284396617986165,
-   "contre-plongée paume": 5.11723602484472,
-   "dessus (bouts)": 4.800318217979316,
-   "dos plongée": 5.127659574468085,
-   "dessous (poignet)": 4.864227642276423
+   "paume": 5.045316198850186,
+   "dos": 4.968697968697969,
+   "profil radial": 4.664211172498465,
+   "profil cubital": 4.770795930580491,
+   "paume ¾ radial": 4.810479375696767,
+   "paume ¾ cubital": 4.886429608127721,
+   "dos ¾ radial": 4.87513611615245,
+   "dos ¾ cubital": 4.8161764705882355,
+   "plongée paume": 5.048257372654155,
+   "contre-plongée paume": 5.1423017107309485,
+   "dessus (bouts)": 4.914004914004914,
+   "dos plongée": 5.1508336564559905,
+   "dessous (poignet)": 4.946887966804979
   },
   "Main plate (B)": {
-   "paume": 4.659547738693467,
-   "dos": 4.671284634760705,
-   "profil radial": 4.777585210860774,
-   "profil cubital": 4.756772334293948,
-   "paume ¾ radial": 4.658103975535168,
-   "paume ¾ cubital": 4.82780612244898,
-   "dos ¾ radial": 4.5884127942063975,
-   "dos ¾ cubital": 4.734862970044614,
-   "plongée paume": 4.779505300353357,
-   "contre-plongée paume": 4.792560801144492,
-   "dessus (bouts)": 4.885796545105566,
-   "dos plongée": 4.819942611190818,
-   "dessous (poignet)": 5.076690211907165
+   "paume": 4.678684376976597,
+   "dos": 4.616344354335621,
+   "profil radial": 4.790017211703959,
+   "profil cubital": 4.817080207732256,
+   "paume ¾ radial": 4.679035250463822,
+   "paume ¾ cubital": 4.7174887892376685,
+   "dos ¾ radial": 4.559195402298851,
+   "dos ¾ cubital": 4.729936305732484,
+   "plongée paume": 4.822603719599428,
+   "contre-plongée paume": 4.799856011519078,
+   "dessus (bouts)": 4.848684210526316,
+   "dos plongée": 4.823871906841339,
+   "dessous (poignet)": 5.05533199195171
   },
   "Poing serré": {
-   "paume": 4.826311263972485,
-   "dos": 4.9115308151093435,
-   "profil radial": 4.886042402826855,
-   "profil cubital": 4.845689655172414,
-   "paume ¾ radial": 4.754686226568867,
-   "paume ¾ cubital": 4.782383419689119,
-   "dos ¾ radial": 4.905263157894737,
-   "dos ¾ cubital": 5.018072289156627,
-   "plongée paume": 4.980392156862745,
-   "contre-plongée paume": 4.8305647840531565,
-   "dessus (bouts)": 4.994944388270981,
-   "dos plongée": 4.9311531841652325,
-   "dessous (poignet)": 5.115183246073299
+   "paume": 4.778148457047539,
+   "dos": 4.778154106689247,
+   "profil radial": 4.787595581988105,
+   "profil cubital": 4.838599487617421,
+   "paume ¾ radial": 4.7211690363349135,
+   "paume ¾ cubital": 4.763681592039801,
+   "dos ¾ radial": 4.930495221546481,
+   "dos ¾ cubital": 5.010887772194305,
+   "plongée paume": 4.944194419441944,
+   "contre-plongée paume": 4.861781848459617,
+   "dessus (bouts)": 4.933734939759036,
+   "dos plongée": 4.8691983122362865,
+   "dessous (poignet)": 5.065762004175365
   },
   "Index (1)": {
-   "paume": 4.716540404040404,
-   "dos": 4.698863636363637,
-   "profil radial": 4.7036328871892925,
-   "profil cubital": 4.738263665594856,
-   "paume ¾ radial": 4.669543773119606,
-   "paume ¾ cubital": 4.706521739130435,
-   "dos ¾ radial": 4.7199496538703585,
-   "dos ¾ cubital": 4.772135416666667,
-   "plongée paume": 4.8212058212058215,
-   "contre-plongée paume": 4.823867721063983,
-   "dessus (bouts)": 4.990644490644491,
-   "dos plongée": 4.803824362606233,
-   "dessous (poignet)": 5.120689655172414
+   "paume": 4.743142144638404,
+   "dos": 4.701851851851852,
+   "profil radial": 4.73303457106274,
+   "profil cubital": 4.706743002544529,
+   "paume ¾ radial": 4.647058823529412,
+   "paume ¾ cubital": 4.685079365079365,
+   "dos ¾ radial": 4.732120451693852,
+   "dos ¾ cubital": 4.806701030927835,
+   "plongée paume": 4.8338983050847455,
+   "contre-plongée paume": 4.809794180269694,
+   "dessus (bouts)": 4.866537717601547,
+   "dos plongée": 4.851513019000704,
+   "dessous (poignet)": 5.090349075975359
   },
   "V (2)": {
-   "paume": 4.80565371024735,
-   "dos": 4.785065590312815,
-   "profil radial": 4.75208734746307,
-   "profil cubital": 4.703173615432483,
-   "paume ¾ radial": 4.732116428219043,
-   "paume ¾ cubital": 4.808846761453396,
-   "dos ¾ radial": 4.7112024665981505,
-   "dos ¾ cubital": 4.858342077649528,
-   "plongée paume": 4.939481268011527,
-   "contre-plongée paume": 4.929887106357695,
-   "dessus (bouts)": 4.909811694747274,
-   "dos plongée": 4.933609958506224,
-   "dessous (poignet)": 5.018423746161719
+   "paume": 4.774371859296482,
+   "dos": 4.767803410230692,
+   "profil radial": 4.701965757767914,
+   "profil cubital": 4.6079219288174516,
+   "paume ¾ radial": 4.74559686888454,
+   "paume ¾ cubital": 4.7984375,
+   "dos ¾ radial": 4.713333333333333,
+   "dos ¾ cubital": 4.836839404822986,
+   "plongée paume": 4.949113779302459,
+   "contre-plongée paume": 4.906457453228726,
+   "dessus (bouts)": 4.862,
+   "dos plongée": 4.929993964996982,
+   "dessous (poignet)": 4.968847352024922
   },
   "O": {
-   "paume": 4.843598055105349,
-   "dos": 4.957666980244591,
-   "profil radial": 4.972431077694235,
-   "profil cubital": 4.902518277822908,
-   "paume ¾ radial": 4.769511305616338,
-   "paume ¾ cubital": 4.673047473200612,
-   "dos ¾ radial": 4.837209302325581,
-   "dos ¾ cubital": 4.8744292237442925,
-   "plongée paume": 4.822773972602739,
-   "contre-plongée paume": 4.804783950617284,
-   "dessus (bouts)": 4.928020565552699,
-   "dos plongée": 4.958704453441295,
-   "dessous (poignet)": 5.053763440860215
+   "paume": 4.85084202085004,
+   "dos": 4.9820754716981135,
+   "profil radial": 4.9299835255354205,
+   "profil cubital": 4.952575633687653,
+   "paume ¾ radial": 4.813008130081301,
+   "paume ¾ cubital": 4.716463414634147,
+   "dos ¾ radial": 4.868548387096774,
+   "dos ¾ cubital": 4.848623853211009,
+   "plongée paume": 4.8517241379310345,
+   "contre-plongée paume": 4.857585139318886,
+   "dessus (bouts)": 4.939810834049871,
+   "dos plongée": 4.915348101265823,
+   "dessous (poignet)": 5.144688644688645
   },
   "Pince": {
-   "paume": 4.7465753424657535,
-   "dos": 4.738317757009346,
-   "profil radial": 4.719714964370547,
-   "profil cubital": 4.772422208663819,
-   "paume ¾ radial": 4.641666666666667,
-   "paume ¾ cubital": 4.671309192200557,
-   "dos ¾ radial": 4.662551440329218,
-   "dos ¾ cubital": 4.742019543973941,
-   "plongée paume": 4.834759710335748,
-   "contre-plongée paume": 4.917630057803469,
-   "dessus (bouts)": 4.946717411988582,
-   "dos plongée": 4.924746743849494,
-   "dessous (poignet)": 5.032384690873405
+   "paume": 4.774292742927429,
+   "dos": 4.759532595325953,
+   "profil radial": 4.6954954954954955,
+   "profil cubital": 4.782503037667071,
+   "paume ¾ radial": 4.641269841269842,
+   "paume ¾ cubital": 4.603487064116985,
+   "dos ¾ radial": 4.6727594339622645,
+   "dos ¾ cubital": 4.768729641693811,
+   "plongée paume": 4.834537097833224,
+   "contre-plongée paume": 4.935460992907801,
+   "dessus (bouts)": 4.955265610438024,
+   "dos plongée": 4.912921348314606,
+   "dessous (poignet)": 5.082926829268293
   }
  },
  "ombre": {
-  "paume": 0.18764126029961062,
-  "dos": 0.17242030547926882,
-  "profil radial": 0.32878766071771254,
-  "profil cubital": 0.24169720436055223,
-  "paume ¾ radial": 0.29319707974046333,
-  "paume ¾ cubital": 0.21555888875596985,
-  "dos ¾ radial": 0.18620601243510032,
-  "dos ¾ cubital": 0.11572625370859672,
-  "plongée paume": 0.29585850456233576,
-  "contre-plongée paume": 0.13219227967953387,
-  "dessus (bouts)": 0.353110456619978,
-  "dos plongée": 0.4458747247793901,
-  "dessous (poignet)": 0.3774767902658654
+  "paume": 0.18509601925983987,
+  "dos": 0.16822854772975604,
+  "profil radial": 0.3336488749726935,
+  "profil cubital": 0.251929124264612,
+  "paume ¾ radial": 0.28927068055846555,
+  "paume ¾ cubital": 0.2113564090580009,
+  "dos ¾ radial": 0.19090582678905163,
+  "dos ¾ cubital": 0.11512881417869542,
+  "plongée paume": 0.2852336886037191,
+  "contre-plongée paume": 0.12985457803508046,
+  "dessus (bouts)": 0.3692823608316566,
+  "dos plongée": 0.4411054609772275,
+  "dessous (poignet)": 0.3748051080258371
  },
  "fragments": {
   "Repos": {
@@ -573,8 +573,8 @@
   }
  },
  "temps": {
-  "render_660_mediane_ms": 1009.8999999985099,
-  "render_planches_mediane_ms": 845.5499999970198
+  "render_660_mediane_ms": 1497.1999999997206,
+  "render_planches_mediane_ms": 1045.2999999998137
  },
  "defauts": {
   "Repos": {
@@ -588,7 +588,13 @@
    },
    "profil radial": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      72,
+      223,
+      4.4
+     ]
+    ]
    },
    "profil cubital": {
     "fragments": [],
@@ -596,11 +602,23 @@
    },
    "paume ¾ radial": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      61,
+      164,
+      5.6
+     ]
+    ]
    },
    "paume ¾ cubital": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      123,
+      163,
+      3.4
+     ]
+    ]
    },
    "dos ¾ radial": {
     "fragments": [],
@@ -620,11 +638,28 @@
    },
    "dessus (bouts)": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      238,
+      144,
+      5.4
+     ],
+     [
+      195,
+      173,
+      4.4
+     ]
+    ]
    },
    "dos plongée": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      302,
+      110,
+      5.8
+     ]
+    ]
    },
    "dessous (poignet)": {
     "fragments": [],
@@ -642,7 +677,18 @@
    },
    "profil radial": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      136,
+      291,
+      4.1
+     ],
+     [
+      119,
+      316,
+      3.4
+     ]
+    ]
    },
    "profil cubital": {
     "fragments": [],
@@ -676,19 +722,9 @@
     "fragments": [],
     "echardes": [
      [
-      260,
-      76,
-      4.4
-     ],
-     [
-      175,
-      77,
-      3.4
-     ],
-     [
-      233,
-      88,
-      3.4
+      283,
+      94,
+      3.0
      ]
     ]
    },
@@ -708,7 +744,18 @@
    },
    "dos": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      175,
+      36,
+      4.4
+     ],
+     [
+      189,
+      95,
+      4.0
+     ]
+    ]
    },
    "profil radial": {
     "fragments": [],
@@ -724,13 +771,7 @@
    },
    "paume ¾ cubital": {
     "fragments": [],
-    "echardes": [
-     [
-      158,
-      85,
-      2.0
-     ]
-    ]
+    "echardes": []
    },
    "dos ¾ radial": {
     "fragments": [],
@@ -738,13 +779,7 @@
    },
    "dos ¾ cubital": {
     "fragments": [],
-    "echardes": [
-     [
-      170,
-      234,
-      5.4
-     ]
-    ]
+    "echardes": []
    },
    "plongée paume": {
     "fragments": [],
@@ -756,11 +791,28 @@
    },
    "dessus (bouts)": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      232,
+      123,
+      5.4
+     ],
+     [
+      105,
+      152,
+      2.0
+     ]
+    ]
    },
    "dos plongée": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      188,
+      78,
+      3.6
+     ]
+    ]
    },
    "dessous (poignet)": {
     "fragments": [],
@@ -778,13 +830,7 @@
    },
    "profil radial": {
     "fragments": [],
-    "echardes": [
-     [
-      173,
-      159,
-      2.4
-     ]
-    ]
+    "echardes": []
    },
    "profil cubital": {
     "fragments": [],
@@ -798,15 +844,21 @@
     "fragments": [],
     "echardes": [
      [
-      261,
-      156,
-      4.8
+      74,
+      71,
+      3.0
      ]
     ]
    },
    "dos ¾ radial": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      62,
+      138,
+      5.8
+     ]
+    ]
    },
    "dos ¾ cubital": {
     "fragments": [],
@@ -814,33 +866,11 @@
    },
    "plongée paume": {
     "fragments": [],
-    "echardes": [
-     [
-      203,
-      184,
-      2.6
-     ],
-     [
-      219,
-      201,
-      5.2
-     ]
-    ]
+    "echardes": []
    },
    "contre-plongée paume": {
     "fragments": [],
-    "echardes": [
-     [
-      211,
-      56,
-      5.4
-     ],
-     [
-      193,
-      165,
-      2.8
-     ]
-    ]
+    "echardes": []
    },
    "dessus (bouts)": {
     "fragments": [],
@@ -858,7 +888,13 @@
   "Index (1)": {
    "paume": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      100,
+      358,
+      2.0
+     ]
+    ]
    },
    "dos": {
     "fragments": [],
@@ -866,7 +902,13 @@
    },
    "profil radial": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      281,
+      301,
+      2.8
+     ]
+    ]
    },
    "profil cubital": {
     "fragments": [],
@@ -880,55 +922,48 @@
     "fragments": [],
     "echardes": [
      [
+      74,
+      274,
+      3.0
+     ],
+     [
       250,
-      383,
-      3.2
+      380,
+      4.8
      ]
     ]
    },
    "dos ¾ radial": {
     "fragments": [],
-    "echardes": [
-     [
-      175,
-      45,
-      2.4
-     ]
-    ]
+    "echardes": []
    },
    "dos ¾ cubital": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      64,
+      45,
+      3.0
+     ]
+    ]
    },
    "plongée paume": {
     "fragments": [],
-    "echardes": [
-     [
-      174,
-      368,
-      3.4
-     ]
-    ]
+    "echardes": []
    },
    "contre-plongée paume": {
     "fragments": [],
     "echardes": [
      [
-      194,
-      267,
-      2.8
+      189,
+      163,
+      2.0
      ]
     ]
    },
    "dessus (bouts)": {
     "fragments": [],
-    "echardes": [
-     [
-      267,
-      99,
-      2.0
-     ]
-    ]
+    "echardes": []
    },
    "dos plongée": {
     "fragments": [],
@@ -936,23 +971,7 @@
    },
    "dessous (poignet)": {
     "fragments": [],
-    "echardes": [
-     [
-      163,
-      77,
-      2.9
-     ],
-     [
-      194,
-      81,
-      4.0
-     ],
-     [
-      155,
-      85,
-      3.8
-     ]
-    ]
+    "echardes": []
    }
   },
   "V (2)": {
@@ -966,7 +985,13 @@
    },
    "profil radial": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      167,
+      381,
+      5.1
+     ]
+    ]
    },
    "profil cubital": {
     "fragments": [],
@@ -992,19 +1017,36 @@
     "fragments": [],
     "echardes": [
      [
-      137,
-      400,
-      5.8
+      138,
+      397,
+      2.0
      ]
     ]
    },
    "contre-plongée paume": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      154,
+      197,
+      2.8
+     ]
+    ]
    },
    "dessus (bouts)": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      110,
+      74,
+      4.0
+     ],
+     [
+      151,
+      305,
+      4.7
+     ]
+    ]
    },
    "dos plongée": {
     "fragments": [],
@@ -1036,9 +1078,19 @@
     "fragments": [],
     "echardes": [
      [
-      224,
-      110,
-      3.0
+      188,
+      149,
+      4.8
+     ],
+     [
+      107,
+      157,
+      3.6
+     ],
+     [
+      190,
+      182,
+      5.2
      ]
     ]
    },
@@ -1046,9 +1098,14 @@
     "fragments": [],
     "echardes": [
      [
-      319,
-      139,
-      5.8
+      317,
+      141,
+      2.4
+     ],
+     [
+      237,
+      168,
+      3.4
      ]
     ]
    },
@@ -1066,18 +1123,7 @@
    },
    "contre-plongée paume": {
     "fragments": [],
-    "echardes": [
-     [
-      87,
-      122,
-      4.4
-     ],
-     [
-      78,
-      159,
-      2.2
-     ]
-    ]
+    "echardes": []
    },
    "dessus (bouts)": {
     "fragments": [],
@@ -1085,11 +1131,23 @@
    },
    "dos plongée": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      84,
+      183,
+      2.4
+     ]
+    ]
    },
    "dessous (poignet)": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      91,
+      159,
+      3.4
+     ]
+    ]
    }
   },
   "Pince": {
@@ -1103,13 +1161,7 @@
    },
    "profil radial": {
     "fragments": [],
-    "echardes": [
-     [
-      220,
-      337,
-      4.4
-     ]
-    ]
+    "echardes": []
    },
    "profil cubital": {
     "fragments": [],
@@ -1117,18 +1169,7 @@
    },
    "paume ¾ radial": {
     "fragments": [],
-    "echardes": [
-     [
-      100,
-      371,
-      3.8
-     ],
-     [
-      170,
-      519,
-      5.8
-     ]
-    ]
+    "echardes": []
    },
    "paume ¾ cubital": {
     "fragments": [],
@@ -1136,7 +1177,13 @@
    },
    "dos ¾ radial": {
     "fragments": [],
-    "echardes": []
+    "echardes": [
+     [
+      279,
+      101,
+      4.4
+     ]
+    ]
    },
    "dos ¾ cubital": {
     "fragments": [],
@@ -1144,31 +1191,15 @@
    },
    "plongée paume": {
     "fragments": [],
-    "echardes": [
-     [
-      100,
-      190,
-      2.4
-     ],
-     [
-      250,
-      407,
-      3.0
-     ]
-    ]
+    "echardes": []
    },
    "contre-plongée paume": {
     "fragments": [],
     "echardes": [
      [
-      105,
-      135,
-      3.0
-     ],
-     [
-      259,
-      165,
-      4.4
+      220,
+      157,
+      5.2
      ]
     ]
    },
@@ -1176,19 +1207,24 @@
     "fragments": [],
     "echardes": [
      [
-      115,
-      153,
-      2.0
+      90,
+      117,
+      2.4
      ],
      [
-      110,
+      59,
+      155,
+      2.8
+     ],
+     [
+      109,
       157,
       3.4
      ],
      [
       247,
-      306,
-      3.2
+      307,
+      2.4
      ]
     ]
    },
@@ -1326,58 +1362,58 @@
  },
  "fragments_avec_plis": {
   "Repos": {
-   "paume": 6,
-   "dos": 2,
+   "paume": 4,
+   "dos": 5,
    "profil radial": 7,
-   "profil cubital": 7,
-   "paume ¾ radial": 0,
-   "paume ¾ cubital": 2,
-   "dos ¾ radial": 1,
+   "profil cubital": 1,
+   "paume ¾ radial": 3,
+   "paume ¾ cubital": 5,
+   "dos ¾ radial": 3,
    "dos ¾ cubital": 1,
    "plongée paume": 7,
-   "contre-plongée paume": 7,
-   "dessus (bouts)": 3,
-   "dos plongée": 0,
-   "dessous (poignet)": 4
+   "contre-plongée paume": 6,
+   "dessus (bouts)": 1,
+   "dos plongée": 2,
+   "dessous (poignet)": 0
   },
   "Main ouverte (5)": {
-   "paume": 99,
-   "dos": 2,
-   "profil radial": 0,
-   "profil cubital": 6,
-   "paume ¾ radial": 58,
-   "paume ¾ cubital": 46,
-   "dos ¾ radial": 1,
-   "dos ¾ cubital": 0,
-   "plongée paume": 46,
-   "contre-plongée paume": 105,
-   "dessus (bouts)": 1,
-   "dos plongée": 0,
-   "dessous (poignet)": 1
-  },
-  "Main plate (B)": {
-   "paume": 30,
-   "dos": 1,
+   "paume": 86,
+   "dos": 0,
    "profil radial": 2,
-   "profil cubital": 8,
-   "paume ¾ radial": 25,
-   "paume ¾ cubital": 10,
+   "profil cubital": 7,
+   "paume ¾ radial": 59,
+   "paume ¾ cubital": 48,
    "dos ¾ radial": 0,
    "dos ¾ cubital": 0,
-   "plongée paume": 18,
-   "contre-plongée paume": 54,
+   "plongée paume": 39,
+   "contre-plongée paume": 91,
    "dessus (bouts)": 2,
+   "dos plongée": 3,
+   "dessous (poignet)": 2
+  },
+  "Main plate (B)": {
+   "paume": 35,
+   "dos": 0,
+   "profil radial": 2,
+   "profil cubital": 14,
+   "paume ¾ radial": 36,
+   "paume ¾ cubital": 14,
+   "dos ¾ radial": 8,
+   "dos ¾ cubital": 0,
+   "plongée paume": 15,
+   "contre-plongée paume": 48,
+   "dessus (bouts)": 1,
    "dos plongée": 0,
    "dessous (poignet)": 13
   },
   "Poing serré": {
    "paume": 0,
    "dos": 0,
-   "profil radial": 2,
-   "profil cubital": 2,
+   "profil radial": 1,
+   "profil cubital": 4,
    "paume ¾ radial": 0,
-   "paume ¾ cubital": 1,
-   "dos ¾ radial": 0,
+   "paume ¾ cubital": 2,
+   "dos ¾ radial": 1,
    "dos ¾ cubital": 0,
    "plongée paume": 0,
    "contre-plongée paume": 0,
@@ -1391,122 +1427,122 @@
    "profil radial": 4,
    "profil cubital": 3,
    "paume ¾ radial": 0,
-   "paume ¾ cubital": 0,
+   "paume ¾ cubital": 1,
    "dos ¾ radial": 0,
    "dos ¾ cubital": 0,
-   "plongée paume": 4,
-   "contre-plongée paume": 17,
+   "plongée paume": 6,
+   "contre-plongée paume": 14,
    "dessus (bouts)": 0,
    "dos plongée": 0,
-   "dessous (poignet)": 3
+   "dessous (poignet)": 1
   },
   "V (2)": {
-   "paume": 71,
+   "paume": 66,
    "dos": 0,
-   "profil radial": 0,
-   "profil cubital": 3,
+   "profil radial": 2,
+   "profil cubital": 1,
    "paume ¾ radial": 49,
-   "paume ¾ cubital": 27,
+   "paume ¾ cubital": 31,
    "dos ¾ radial": 0,
-   "dos ¾ cubital": 1,
-   "plongée paume": 31,
-   "contre-plongée paume": 61,
+   "dos ¾ cubital": 0,
+   "plongée paume": 30,
+   "contre-plongée paume": 52,
    "dessus (bouts)": 0,
-   "dos plongée": 1,
-   "dessous (poignet)": 4
+   "dos plongée": 0,
+   "dessous (poignet)": 2
   },
   "O": {
-   "paume": 2,
+   "paume": 1,
    "dos": 0,
-   "profil radial": 8,
+   "profil radial": 3,
    "profil cubital": 2,
-   "paume ¾ radial": 2,
-   "paume ¾ cubital": 2,
-   "dos ¾ radial": 2,
-   "dos ¾ cubital": 3,
-   "plongée paume": 0,
-   "contre-plongée paume": 4,
-   "dessus (bouts)": 0,
-   "dos plongée": 4,
-   "dessous (poignet)": 8
+   "paume ¾ radial": 3,
+   "paume ¾ cubital": 0,
+   "dos ¾ radial": 5,
+   "dos ¾ cubital": 2,
+   "plongée paume": 4,
+   "contre-plongée paume": 9,
+   "dessus (bouts)": 2,
+   "dos plongée": 1,
+   "dessous (poignet)": 17
   },
   "Pince": {
    "paume": 21,
-   "dos": 1,
-   "profil radial": 9,
+   "dos": 0,
+   "profil radial": 4,
    "profil cubital": 6,
-   "paume ¾ radial": 16,
-   "paume ¾ cubital": 8,
-   "dos ¾ radial": 3,
+   "paume ¾ radial": 21,
+   "paume ¾ cubital": 10,
+   "dos ¾ radial": 10,
    "dos ¾ cubital": 0,
-   "plongée paume": 18,
-   "contre-plongée paume": 54,
+   "plongée paume": 16,
+   "contre-plongée paume": 48,
    "dessus (bouts)": 0,
    "dos plongée": 0,
-   "dessous (poignet)": 8
+   "dessous (poignet)": 4
   }
  },
  "erreurs_js": [],
  "synthese_contour": {
   "Repos": {
-   "contour_median": 4.87,
-   "min": 4.7,
-   "max": 5.17,
-   "ecart_max_pct": 6.2
+   "contour_median": 4.86,
+   "min": 4.68,
+   "max": 5.11,
+   "ecart_max_pct": 5.1
   },
   "Main ouverte (5)": {
-   "contour_median": 4.86,
-   "min": 4.59,
-   "max": 5.13,
-   "ecart_max_pct": 5.6
+   "contour_median": 4.91,
+   "min": 4.66,
+   "max": 5.15,
+   "ecart_max_pct": 5.1
   },
   "Main plate (B)": {
-   "contour_median": 4.78,
-   "min": 4.59,
-   "max": 5.08,
-   "ecart_max_pct": 6.3
+   "contour_median": 4.79,
+   "min": 4.56,
+   "max": 5.06,
+   "ecart_max_pct": 5.5
   },
   "Poing serré": {
-   "contour_median": 4.91,
-   "min": 4.75,
-   "max": 5.12,
-   "ecart_max_pct": 4.3
+   "contour_median": 4.86,
+   "min": 4.72,
+   "max": 5.07,
+   "ecart_max_pct": 4.2
   },
   "Index (1)": {
    "contour_median": 4.74,
-   "min": 4.67,
-   "max": 5.12,
-   "ecart_max_pct": 8.1
+   "min": 4.65,
+   "max": 5.09,
+   "ecart_max_pct": 7.3
   },
   "V (2)": {
-   "contour_median": 4.81,
-   "min": 4.7,
-   "max": 5.02,
-   "ecart_max_pct": 4.4
+   "contour_median": 4.8,
+   "min": 4.61,
+   "max": 4.97,
+   "ecart_max_pct": 4.0
   },
   "O": {
    "contour_median": 4.87,
-   "min": 4.67,
-   "max": 5.05,
-   "ecart_max_pct": 4.1
+   "min": 4.72,
+   "max": 5.14,
+   "ecart_max_pct": 5.7
   },
   "Pince": {
-   "contour_median": 4.75,
-   "min": 4.64,
-   "max": 5.03,
-   "ecart_max_pct": 6.0
+   "contour_median": 4.77,
+   "min": 4.6,
+   "max": 5.08,
+   "ecart_max_pct": 6.5
   }
  },
  "fragments_total": 0,
  "defauts_total": {
   "fragments": 0,
-  "echardes": 34,
+  "echardes": 40,
   "vues": 104
  },
  "defauts_par_pose": {
   "Repos": [
    0,
-   0
+   6
   ],
   "Main ouverte (5)": [
    0,
@@ -1514,29 +1550,29 @@
   ],
   "Main plate (B)": [
    0,
-   2
+   5
   ],
   "Poing serré": [
    0,
-   6
+   2
   ],
   "Index (1)": [
    0,
-   8
+   6
   ],
   "V (2)": [
    0,
-   1
+   5
   ],
   "O": [
    0,
-   4
+   7
   ],
   "Pince": [
    0,
-   10
+   6
   ]
  },
  "fragments_total_lum70": 0,
- "fragments_total_avec_plis": 1042
+ "fragments_total_avec_plis": 1031
 }

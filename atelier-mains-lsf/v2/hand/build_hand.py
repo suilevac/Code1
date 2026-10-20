@@ -1221,6 +1221,9 @@ Y_AB = (-1.2, 0.8)     # cm : zone de passage avant-bras (os « poignet ») → 
 # doigt aux IP (une zone plus large fait « mollir » la phalange, plus étroite plie la peau en accordéon) ; MCP plus
 # large (tête du métacarpien, jointure et coussinet palmaire)
 H_MELANGE = {'mcp': 0.70, 'ipp': 0.45, 'ipd': 0.35, 'mcp_pouce': 0.60, 'ip_pouce': 0.40}
+# pli de la 1re commissure : voir (3b) de poids_propres — ESSAYÉ ET ÉCARTÉ (20 octobre 2026), None = éteint ; réglage
+# essayé : dict(c=0.4, w=0.7, wp=1.0, y0=4.5)
+COMMISSURE = None
 
 def poids_propres(V, F2, Wmh, sq):
     C, bout = sq['C'], sq['bout']; n = len(V); W = Wmh.copy(); rap = {}
@@ -1291,6 +1294,32 @@ def poids_propres(V, F2, Wmh, sq):
         web = web2
     W = lisser(W, nbr, iters=8, lam=0.5, masque=web)
     rap['palmure_sommets'] = int(web.sum())
+    # (3b) PLI DE LA 1re COMMISSURE — ESSAYÉ ET ÉCARTÉ (20 octobre 2026 ; `COMMISSURE = None`). Grief « L » vu de dos : « le
+    # pouce fait 40 cm de large ». Largeur perpendiculaire à P1 du pouce, vue de dos (banc d'essai sur les poids) : 39,6 mm à
+    # la MCP, 27,9 au quart de P1 (photo 2361 à la même ouverture, 53° : ≈ 27 et ≈ 25 mm). Idée : contraster la part du
+    # pouce dans la palmure autour de 0,4 (part' = s((part − 0,4)/w + 0,5)) pour que l'étirement se fasse sur une bande
+    # étroite. Mesuré : quart de P1 27,9 → 25,2 mm (« 5 » 27,6 → 26,0), MCP 39,6 → 39,8 (inchangé) ; mais au rendu Cycles
+    # (`checks/e11_commissure_avant_apres.jpg`) le bord libre de la palmure devient une DROITE de la tête de MC II au pouce
+    # (le coin s'agrandit au lieu de se creuser) et un pli horizontal marque le bord radial en V. Écarté. Essayés aussi,
+    # sans gain à la MCP : recette v1 côté dos (part annulée en deçà de la ligne tête de MC II → trapèze, pli XW(y)) :
+    # bord radial concave 0,4 → 1,7 mm ; part de MC I renforcée dès sa base ; apex de la commissure tiré vers le pouce
+    # (0,9 → MCP 45,8 mm) ou laissé à la main (0,1 → 42,0). La largeur à la MCP vient de la GÉOMÉTRIE : l'apex de la
+    # commissure de SON dessin est 1,4 cm au-delà de la MCP du pouce, et une peau à poids fixes ne glisse pas le long du
+    # pouce quand il s'écarte (il faudrait un correctif piloté par « rapprocher » < 0 : 9e morph, hors contrat).
+    rap['commissure_sommets'], rap['commissure_dmax'] = 0, 0.0
+    if COMMISSURE:
+        ccols = [OSI[b] for b in CHAINES['pouce']]; th = W[:, ccols].sum(1)
+        idx_ = W[:, [OSI[b] for b in CHAINES['index'][1:]]].sum(1)
+        zc = sstep((V[:, 0] - 2.4) / 0.5) * sstep((V[:, 1] - COMMISSURE['y0']) / 0.6) * sstep((9.0 - V[:, 1]) / 0.6) * (idx_ < 0.3)
+        # contraste plus doux côté paume (largeur w → wp de z = 0,3 à 1,1 cm) : avec 0,8 partout, l'apex PALMAIRE de la
+        # commissure (4,5 ; 6,6 ; 1,3) se repliait au repos (1 triangle retourné, pouce av 25 / rap 10)
+        wv = COMMISSURE['w'] + (COMMISSURE['wp'] - COMMISSURE['w']) * sstep((V[:, 2] - 0.3) / 0.8)
+        th2 = th + zc * (sstep((th - COMMISSURE['c']) / wv + 0.5) - th)
+        Wt = np.where(th[:, None] > 1e-4, W[:, ccols] / np.maximum(th[:, None], 1e-12), np.array([0.5, 0.5, 0.0]))
+        Wo = W.copy(); Wo[:, ccols] = 0; so = Wo.sum(1, keepdims=True); fb3 = np.zeros(W.shape[1]); fb3[OSI['mc2']] = 1
+        Wo = np.where(so > 1e-4, Wo / np.maximum(so, 1e-12), fb3)
+        W = Wo * (1 - th2)[:, None]; W[:, ccols] = Wt * th2[:, None]
+        rap['commissure_sommets'] = int((np.abs(th2 - th) > 0.02).sum()); rap['commissure_dmax'] = float(np.abs(th2 - th).max())
     # (4) ≤ 4 os, normalisés
     J = np.argsort(-W, 1)[:, :4]; w4 = np.take_along_axis(W, J, 1); w4[w4 < 1e-3] = 0; w4 /= w4.sum(1, keepdims=True)
     Wf = np.zeros_like(W); np.put_along_axis(Wf, J, w4, 1)
@@ -1316,6 +1345,8 @@ def etape5(s1, sq, op, s4):
     log('- 1er métacarpien limité au thénar (au-delà du trapèze ; rampe radiale de 3,0 à 1,2 cm de son axe) : jusqu’à %.2f de poids '
         'rendu aux os voisins ; 4e et 5e métacarpiens limités à la paume au-delà de leur base : jusqu’à %.2f rendu au 3e'
         % (rap['mc1_retire'], rap['mc45_retire']))
+    if COMMISSURE: log('- pli de la 1re commissure (part du pouce contrastée autour de %.2f, largeur %.2f côté dos → %.2f côté paume, dès y = %.1f cm) : '
+        '%d sommets, part changée de %.2f au plus' % (COMMISSURE['c'], COMMISSURE['w'], COMMISSURE['wp'], COMMISSURE['y0'], rap['commissure_sommets'], rap['commissure_dmax']))
     # image : os dominant (couleur) + poids d'un os en dégradé
     rng = np.random.default_rng(5); pal = (rng.random((20, 3)) * 200 + 40).astype(float)
     pal[OSI['poignet']] = (120, 120, 120)

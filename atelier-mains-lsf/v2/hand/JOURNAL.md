@@ -76,6 +76,43 @@ réglés par `reach` sur ces axes ; `checks/e11_pinces_moteur_avant_apres.png` m
 avant). Résultat dans le moteur, « L » de dos : pouce P1 / IP / P2 = ×1,48 / ×1,28 / ×1,23 l'index (photo 2361 :
 ×1,62 / ×1,53 / ×1,27) ; « 5 » : ×1,40 / ×1,23 / ×1,20.
 
+### 4. Base du pouce dans « L » de dos (palmure de la 1re commissure) — traitée, NON résolue par les poids
+
+Mesure : largeur de la silhouette perpendiculaire à P1 du pouce (vue de dos, DQS + correctifs, banc d'essai sur les poids
+finaux). Dans « L » (rap −28 : 53° entre pouce et index, vue paume) : **39,6 mm à la MCP**, 27,9 au quart de P1, 23,5 à la
+moitié ; « 5 » : 27,6 au quart (à la MCP la corde rentre dans la main). Sa photo 2361 (pouce à 50° de l'index, échelle
+par la P3 de l'index, 14,7 mm) : ≈ 27 mm à la MCP, ≈ 25 sur P1, ≈ 24 à l'IP. L'excès est À LA MCP SEULEMENT (+12 mm) ;
+au-delà, le pouce a sa largeur. Les bouts de la corde à la MCP : bord radial du pouce (part du pouce 0,97) et l'APEX de la
+commissure (repos (4,34 ; 6,65 ; 0,93), part 0,51).
+
+Essayé (part du pouce = mc1 + P1 + P2 ; L / 5 / V / Quatre / B / repos / opposition / rapprocher ; arêtes > 60° et
+triangles retournés comptés DANS la commissure ; bord radial vu de dos pouce replié : flèche concave / bosse, mm) :
+
+| variante | L : MCP / ¼ P1 (mm) | 5 : ¼ P1 | bord radial V / Quatre / B | replis commissure V / Quatre / B / repos / opp. / rapp. |
+|---|---|---|---|---|
+| livrée | 39,6 / 27,9 | 27,6 | 0,4/6,7 · 0,3/7,0 · 0,3/8,3 | 18/0 · 24/3 · 13/1 · 0/0 · 19/3 · 14/1 |
+| recette v1 côté dos (part annulée en deçà de la ligne tête de MC II → trapèze, pli XW(y) 0,46–2,17 cm, tranche z ±0,45) | 39,6 / 27,9 | 27,6 | 1,7/5,7 · 1,7/6,3 · 1,3/8,4 | 45/0 · 46/5 · 25/1 · — |
+| part de MC I renforcée dès sa base (peau à < 1,3–2,0 cm de l'axe) | 40,4 / 25,9 | 27,6 | 0,4/5,8 · 0,3/6,3 · 0,3/7,6 | plus de plis (V 353 arêtes au total) |
+| apex tiré vers le pouce (0,9) / laissé à la main (0,1) | 45,8 / 26,4 · 42,0 / 34,9 | 26,3 · 32,2 | — | — |
+| part contrastée dans la palmure (autour de 0,4, w 0,7 dos → 1,0 paume, dès y 4,5) — **construite et rendue** | 39,8 / 25,2 | 26,0 | 0,0/6,4 · 0,0/6,7 · 0,0/8,0 | 24/2 · 37/2 · 16/0 · 0/0 · 18/2 · 10/0 |
+
+La dernière variante a été construite (`--depuis 5`) et rendue en Cycles (`checks/e11_commissure_avant_apres.jpg`, L, 5, V
+de dos) : les chiffres s'améliorent au quart de P1, mais à l'œil le bord libre de la palmure devient une DROITE de la tête
+de MC II au pouce (le coin s'agrandit au lieu de se creuser) et un pli horizontal marque le bord radial en V. **Écartée**
+(`COMMISSURE = None`, code gardé et commenté dans `poids_propres`) ; la reconstruction redonne les fichiers à l'octet près
+(`hand_v2.glb` d8e4cc47…, `hand_v2.json` a7da8256…).
+
+Diagnostic : la largeur à la MCP vient de la GÉOMÉTRIE, pas des poids. L'apex de la commissure de SON dessin (686, 525 px)
+est à 1,4 cm au-delà de la MCP du pouce ; quand le pouce s'écarte, la vraie peau de la palmure GLISSE le long du pouce
+vers sa MCP (photo 2361 : le bord libre rejoint le pouce à la MCP), alors qu'une peau à poids fixes reste accrochée au
+même endroit du pouce. Aucun mélange de poids ne fait glisser : dans « L » (MCP du pouce à 0°) mc1 et P1 bougent
+ensemble. Ce qu'il faudrait : un correctif (morph) de la palmure piloté par « rapprocher » < 0 (le bord libre ramené vers
+la MCP, ≈ 1 cm), c'est-à-dire un 9e morph target — hors du contrat actuel (8 morphs aux noms fixés). À décider par
+l'orchestrateur (le moteur applique déjà les correctifs sur le CPU, la limite de 8 morphs de three.js r128 ne le gêne pas).
+Le bord radial de la main vue de dos, pouce replié (V, Quatre, B), reste droit au sens de la v1 (flèche concave 0,3–0,4
+mm) ; la bosse de 6,7 / 7,0 / 8,3 mm au-dessus de la corde poignet → tête de MC II est la base du pouce (MC I et thénar
+autour du trapèze, qui ne bouge pas : v1 en gardait 2,8–4,3 mm, « le contour dessiné du poignet »).
+
 ### Ce qui change pour le moteur (v2/engine, non touché)
 
 - `hand_v2.glb` : mêmes noms d'os, attributs, morphs (8, mêmes noms) et format. Changent : les repères de liaison des P1
@@ -92,10 +129,9 @@ avant). Résultat dans le moteur, « L » de dos : pouce P1 / IP / P2 = ×1,48 /
 
 ### Ce qui reste
 
-- **La base du pouce en « L » vue de dos reste un coin large** : 41 mm à la MCP (×2,6 la P2 de l'index ; photo 2361 :
-  ×1,72). C'est la palmure dorsale de la 1re commissure, qui suit le pouce jusqu'à sa MCP quand il s'écarte (poids de
-  l'étape 5, rampe de MC I) : à traiter par les poids de la commissure (bord libre de la palmure qui rejoint le pouce à
-  mi-P1), pas par les largeurs.
+- **La base du pouce en « L » vue de dos reste un coin large** : 39,6 mm à la MCP contre ≈ 27 sur sa photo 2361 (voir 4 :
+  cinq familles de poids essayées, aucune ne la réduit ; il faut un correctif de la palmure piloté par « rapprocher » < 0,
+  hors contrat).
 - Tunnel du poing vu de profil : 52 → 74 mm² (doigts plus minces, mêmes angles) ; poing 2,6 mm de pénétration (bout de
   l'index sur la paume), V 2,3 mm.
 - Petite fissure de peau à la base dorsale du majeur dans V (dos en plongée), présente AVANT (vérifié au même rendu).
@@ -461,6 +497,6 @@ chant sous 20 échantillons. `cycles_bpy.DEBRUITAGE` permet de couper le débrui
 
 - lecture : les arêtes nouvelles > 60° d’une pose fléchie sont surtout les plis PALMAIRES (la peau se replie au pli de flexion, c’est un vrai pli) ; un triangle retourné est une peau qui se traverse : ils sont au fond de ces plis
 - poing (DQS + correctifs) : distance de l’extrémité de l’axe de chaque doigt à la peau de la paume : index 2.3 mm, majeur 6.3 mm, annulaire 3.6 mm, auriculaire 1.8 mm (demi-épaisseur de la pulpe 5,5–6,8 mm : le bout appuie)
-- 78 rendus Cycles (CPU, 20 à 32 échantillons) en 272 s : e10_cycles.jpg, e10_pouce.jpg, e8_correctifs.jpg, e10_bouts.jpg, e10_gros_plans.jpg, e10_signes.jpg, e10_jointures_dos.jpg
+- 78 rendus Cycles (CPU, 20 à 32 échantillons) en 399 s : e10_cycles.jpg, e10_pouce.jpg, e8_correctifs.jpg, e10_bouts.jpg, e10_gros_plans.jpg, e10_signes.jpg, e10_jointures_dos.jpg
 - three.js r128 (GLTFLoader) : 1 SkinnedMesh, 20 os (noms du contrat : oui), 26610 sommets, 53216 triangles, attributs _region, _ongle, _masques, position, normal, skinIndex, skinWeight, color, morphTarget0, morphNormal0, morphTarget1, morphNormal1, morphTarget2, morphNormal2, morphTarget3, morphNormal3, morphTarget4, morphNormal4, morphTarget5, morphNormal5, morphTarget6, morphNormal6, morphTarget7, morphNormal7 ; régions (sommets) [22286, 1597, 430, 850, 1447] ; index_p1.rotateX(90°) : bout de l’index (2.85, 17.72, -0.11) → (1.79, 9.11, 8.54) cm — checks/e10_three.png
 <!-- MESURES AUTOMATIQUES : FIN -->

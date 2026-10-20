@@ -373,6 +373,7 @@ uniform float dGraze;
 uniform float porte;
 uniform float porteDoigts;
 uniform float rContact;    // px de la cible : demi-anneau du trait de contact entre deux doigts (≈ ½ r)
+uniform float occlDoigts;  // cm : au-delà de cet écart de profondeur, un doigt passe DEVANT l'autre (occlusion, pas contact)
 uniform float ortho;
 uniform float cn;
 uniform float cf;
@@ -440,9 +441,11 @@ void main(){
       }
     }
     if (id != id0 && id < 6.5 && id0 < 6.5) {
-      // deux doigts (pouce compris) : ni la marche de profondeur ni la porte ne décident — c'est le trait de contact
-      // centré, compté à part (cntC) ; paume / doigt : porte de profondeur (la racine d'un doigt tendu reste sans trait)
-      if (id0 > 1.5 && id > 1.5) e = 0.0;   // (identités lues + 1 : paume 1, pouce 2, doigts 3 à 6)
+      // deux doigts (pouce compris) : AU CONTACT (écart de profondeur < occlDoigts), ni la marche de profondeur ni la
+      // porte ne décident — c'est le trait centré, compté à part (cntC) ; au-delà, un doigt passe nettement devant
+      // l'autre et la marche de profondeur trace son bord, du côté du doigt de devant (comme avant). Paume / doigt :
+      // porte de profondeur (la racine d'un doigt tendu reste sans trait)
+      if (id0 > 1.5 && id > 1.5) { if (d - d0 < occlDoigts) e = 0.0; }   // (identités lues + 1 : paume 1, pouce 2, doigts 3 à 6)
       // jointure / paume : la même peau continue (seule l'identité change) — ni porte ni trait ; une vraie occlusion y
       // reste tracée par la marche de profondeur (plus haut, si les normales ne l'expliquent pas)
       else if (jointure) {}
@@ -480,6 +483,10 @@ void main(){
     }
     if (creuxOn > 0.5 && texture2D(tCreux, vUv + o).r > 0.5) continue;
     float id = floor(g.a * 8.0 + 0.5);
+    // l'autre doigt passe nettement DEVANT moi (occlusion) : c'est son bord, tracé de son côté par la marche de
+    // profondeur ; pas de moitié de trait de mon côté (Pince de profil : l'annulaire, bande plus étroite que l'anneau
+    // devant l'auriculaire à 1,5 cm derrière — le trait centré s'y éteignait, le bord tracé d'un côté reste continu)
+    if (id != id0 && id > 1.5 && id < 6.5 && lin(texture2D(tD, vUv + o).r) < d0 - occlDoigts) continue;
     if (id != id0 && id > 1.5 && id < 6.5) {
       // ANTI-LAMELLE (vues de profil et en rasant : la jointure du majeur qui dépasse de 1 à 2 px derrière celle de
       // l'index, l'entre-deux des racines vu par la tranche — le trait centré soulignait ces lamelles en tirets : 4 → 11
@@ -497,7 +504,7 @@ void main(){
   // entre elles ; fond d'une commissure), chaque moitié du trait longeait son bord du coin et la fin se fendait en deux
   // pointes (« queue de poisson », vue ×3). Le trait s'éteint avec la part de l'anneau qui voit la paume : une seule
   // pointe, effilée sur ≈ rContact
-  float aC = smoothstep(1.0, 3.0, cntC) * clamp(1.0 - cntP / 4.0, 0.0, 1.0);
+  float aC = smoothstep(1.0, 3.0, cntC);
   // au moins deux échantillons sur douze (règle v1 contre les échardes), mais en fondu de 1 à 3 : le bord de la bande
   // de trait, où le compte hésite d'un pixel à l'autre, s'adoucit au lieu de hachurer
   if (cnt < 1.0 && aC < 0.01) discard;

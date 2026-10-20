@@ -1011,6 +1011,9 @@ const RENDU = {
   // TRAIT DE CONTACT entre deux doigts (pouce compris) : centré sur la frontière d'identité, tracé par les DEUX côtés
   // sur un anneau de contactK × r (shaders.js 4a), sans aucune porte de profondeur. À RÉGLER : voir JOURNAL.md.
   contactK: 0.5,
+  // cm : écart de profondeur entre deux doigts au-delà duquel l'un passe DEVANT l'autre (son bord, tracé d'un seul côté
+  // par la marche de profondeur) au lieu de le toucher (trait centré). À RÉGLER : voir JOURNAL.md.
+  occlDoigts: 0.6,
   // jointures à l'identité de leur doigt (decoder, Pipeline.poser) : abscisse le long du rayon (1 = centre de la MCP) où
   // s'arrête, MCP pliée à fond, le trait de la vallée entre deux têtes métacarpiennes. À RÉGLER : voir JOURNAL.md.
   jointureT: 0.88,
@@ -1124,7 +1127,7 @@ function Pipeline(renderer) {
     pxPli: {value: 3}, plancher: {value: 1.25}, decolle: {value: RENDU.decolle}, coupeY: {value: RENDU.coupeY}, debug: {value: 0}, bandeOn: {value: 0},
     tL: {value: null}, voisinsMin: {value: 7.5}, cmPx: {value: 0.01}, continuite: {value: 1}, enveloppe: {value: 0.15}, presFond: {value: 1}, fonduFond: {value: 0}, masque: {value: 0},
     tCreux: {value: null}, creuxOn: {value: 0}, rCreux: {value: 1.2}, dCreux: {value: 0.5}, nCreux: {value: 6.5}, rOcc: {value: 0}, dOcc: {value: 0.3},
-    tJointure: {value: new THREE.Vector4(9, 9, 9, 9)}, finJointure: {value: new THREE.Vector3(0.3, 0.15, 0.06)}, rContact: {value: 2}
+    tJointure: {value: new THREE.Vector4(9, 9, 9, 9)}, occlDoigts: {value: 0.6}, finJointure: {value: new THREE.Vector3(0.3, 0.15, 0.06)}, rContact: {value: 2}
   };
   const mat = (vs, fs, extra) => new THREE.ShaderMaterial(Object.assign({uniforms: u, vertexShader: vs, fragmentShader: fs, extensions: {derivatives: true}}, extra || {}));
   this.mG = mat(SH.gVertex, SH.gFragment);
@@ -1353,7 +1356,7 @@ Pipeline.prototype.dessiner = function (cam, W, H, st, px, sortie, rapide, netto
   u.continuite.value = RENDU.continuite; u.enveloppe.value = RENDU.enveloppe; u.presFond.value = RENDU.presFond; u.fonduFond.value = RENDU.fonduFond;
   u.px.value = px.contour; u.onglePx.value = px.ongle; u.plancherPx.value = px.plancher; u.plancher.value = px.plancher;
   u.r.value = px.interne / 0.85; u.pxPli.value = px.plis;
-  u.rContact.value = RENDU.contactK * u.r.value;
+  u.rContact.value = RENDU.contactK * u.r.value; u.occlDoigts.value = RENDU.occlDoigts;
   u.finJointure.value.set(RENDU.jointurePente, RENDU.jointureDescente, RENDU.jointureEffile);
   u.rOcc.value = (RENDU.reserveOcc || 0) * px.contour; u.dOcc.value = RENDU.dOcc;
   const rt = this.cible(W, H);
