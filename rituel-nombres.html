@@ -192,9 +192,9 @@ main{padding:18px 20px 28px; max-width:1060px; margin:0 auto}
 .tk--rond .tk__t{padding:0 .13em}
 .tk--rond{margin:0 .04em}
 .tk__forme{position:absolute; left:0; right:0; top:.05em; bottom:.03em; overflow:visible; pointer-events:none}
-.tk--muette .tk__t{text-decoration:underline; text-decoration-thickness:.05em; text-underline-offset:.14em}
+.tk--muette .tk__t{text-decoration:none}
 .scene--muettes-grises .tk--muette{color:#8c959f}
-.tk--siff .tk__t{text-decoration:underline double; text-decoration-thickness:.045em; text-underline-offset:.13em}
+.tk--siff .tk__t{text-decoration:none}
 
 /* la décomposition */
 .decomp{
@@ -1019,14 +1019,14 @@ dialog{border:3px solid #c3ccd6; border-radius:20px; box-shadow:none}
       gardent que la couleur : le rond alourdissait des mots déjà colorés par leur rang.</p>
     <div class="memo" id="memo-nasales"></div>
     <h3>Les traits</h3>
-    <p><strong>Trait simple</strong> sous une lettre : elle ne se dit pas — le <em>p</em> de <em>sept</em>,
-      le <em>g</em> et le <em>t</em> de <em>vingt</em>, le <em>s</em> de <em>quatre-vingts</em>.<br>
-      <strong>Double trait</strong> : la lettre fait le son [s] — le <em>c</em> de <em>cinq</em> et de <em>cent</em>,
-      le <em>x</em> de <em>six</em>, <em>dix</em> et <em>soixante</em>.</p>
-    <p>Une lettre muette garde la couleur et la forme de son son : le <em>e</em> final de <em>quatre</em> reste
-      dans la famille du [e], avec son trait. Les réglages permettent de les afficher en gris à la place.</p>
-    <p>Le codage des mots-nombres est celui de l’affichage de la classe, repris de <em>Lire en couleurs</em> :
-      dans <em>vingt-deux</em>, le <em>t</em> garde son trait de lettre muette, comme sur l’affiche.</p>
+    <p>Sur l’affiche de la classe : <strong>trait simple</strong> sous une lettre qui ne se dit pas — le
+      <em>p</em> de <em>sept</em>, le <em>g</em> et le <em>t</em> de <em>vingt</em>, le <em>s</em> de
+      <em>quatre-vingts</em> ; <strong>double trait</strong> quand la lettre fait le son [s] — le <em>c</em>
+      de <em>cinq</em> et de <em>cent</em>, le <em>x</em> de <em>six</em>, <em>dix</em> et <em>soixante</em>.</p>
+    <p>Le rituel, lui, ne montre plus que les couleurs : ni rond, ni trait. Chaque lettre porte la couleur de
+      son son, les muettes comprises — le <em>e</em> final de <em>quatre</em> reste dans la famille du [e].
+      Pour les faire ressortir quand même, les réglages peuvent afficher les <strong>lettres muettes en
+      gris</strong> : c’est le seul repère qui reste pour elles.</p>
   </div>
 </dialog>
 
@@ -1080,7 +1080,7 @@ dialog{border:3px solid #c3ccd6; border-radius:20px; box-shadow:none}
     <h3>Le déroulé</h3>
     <ol>
       <li>Le nombre s’affiche écrit en lettres, codé comme sur l’affichage de la classe : chaque lettre garde
-        la couleur et la forme de son son, les lettres muettes comprises, soulignées d’un trait simple.
+        la couleur de son son, les lettres muettes comprises.
         Les élèves l’écrivent en chiffres sur l’ardoise.</li>
       <li>On lève les ardoises, puis <strong>Correction</strong> : les mots glissent dans les cases et deviennent
         des chiffres. Un élève peut aussi venir écrire dans les cases avant la correction — si c’est juste,
