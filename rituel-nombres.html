@@ -1014,7 +1014,9 @@ dialog{border:3px solid #c3ccd6; border-radius:20px; box-shadow:none}
     <p>Les sons-voyelles des mots-nombres, avec la couleur de la classe. Les consonnes restent noires.</p>
     <h3>Les sons-voyelles</h3>
     <div class="memo" id="memo-voyelles"></div>
-    <h3>Les sons nasaux (entourés d’un rond)</h3>
+    <h3>Les sons nasaux</h3>
+    <p>Sur l’affiche de la classe, ils sont entourés d’un rond. Dans le rituel, les mots-nombres n’en
+      gardent que la couleur : le rond alourdissait des mots déjà colorés par leur rang.</p>
     <div class="memo" id="memo-nasales"></div>
     <h3>Les traits</h3>
     <p><strong>Trait simple</strong> sous une lettre : elle ne se dit pas — le <em>p</em> de <em>sept</em>,
@@ -1251,7 +1253,7 @@ function elJetons(jetons){
     if(tk.k==='v' || (tk.k==='m' && tk.fam)){
       sp.classList.add('tk--v');
       sp.style.setProperty('--c', FAMILLES[tk.fam]);
-      if(tk.forme==='rond'){ sp.classList.add('tk--rond'); sp.appendChild(formeRond()); }
+      /* les mots-nombres gardent la couleur du son, pas la forme qui l'entoure */
     }
     if(tk.k==='m') sp.classList.add('tk--muette');
     if(tk.mark==='double') sp.classList.add('tk--siff');
