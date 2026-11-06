@@ -336,6 +336,8 @@ main{padding:18px 20px 28px; max-width:1060px; margin:0 auto}
 }
 @media (hover:hover){.signe-btn:hover{background:var(--fond-2)}}
 .bouche{width:100%; height:100%; overflow:visible}
+.signe-vide{display:inline-block; width:.6em; height:.78em; border:.07em dashed currentColor;
+  border-radius:.14em; opacity:.55}
 .bouche line{stroke:var(--accent); stroke-width:9; stroke-linecap:round; fill:none}
 .bouche--droite{transform:scaleX(-1)}
 .bouche__haut,.bouche__bas{transform-box:view-box; transform-origin:10px 30px}
@@ -1629,7 +1631,7 @@ function dessinerDroite(L,opts){
     if(fort){
       const t=sv('text',{x:x,y:y+62,class:'etiquette'});
       /* la graduation qu'on cherche ne dit pas son nom */
-      if(opts.cacher!=null && v===opts.cacher){ t.classList.add('etiquette--cachee'); t.textContent='?'; }
+      if(opts.cacher!=null && v===opts.cacher){ t.classList.add('etiquette--cachee'); t.textContent=''; }
       else t.textContent=v;
       svg.appendChild(t);
     }
@@ -1641,8 +1643,6 @@ function dessinerDroite(L,opts){
     g.appendChild(sv('line',{x1:0,y1:y-58,x2:0,y2:y-86,class:'fleche__tige'}));
     if(opts.etiquette!=null){
       const t=sv('text',{x:0,y:y-98,class:'fleche__nb'}); t.textContent=opts.etiquette; g.appendChild(t);
-    }else{
-      const t=sv('text',{x:0,y:y-98,class:'fleche__nb fleche__nb--vide'}); t.textContent='?'; g.appendChild(t);
     }
     svg.appendChild(g);
   }
@@ -2119,7 +2119,7 @@ function trouSaisie(aide){
   const t=el('span','trou');
   const i=document.createElement('input');
   i.type='text'; i.inputMode='numeric'; i.autocomplete='off'; i.maxLength=4;
-  i.setAttribute('aria-label',aide); i.placeholder='?';
+  i.setAttribute('aria-label',aide); i.placeholder='';
   t.appendChild(i); return t;
 }
 function caseReponse(nom){
@@ -2321,7 +2321,9 @@ function majRanger(sc,it){
       const sg=it.signes[i-1]||'?';
       const b=el('button','signe-btn'); b.type='button';
       b.setAttribute('aria-label','signe entre la case '+i+' et la case '+(i+1)+' : '+(sg==='?'?'à choisir':sg));
-      if(sg==='<'||sg==='>') b.appendChild(bouche(sg)); else b.textContent=sg;
+      if(sg==='<'||sg==='>') b.appendChild(bouche(sg));
+      else if(sg==='=') b.textContent='=';
+      else b.appendChild(el('span','signe-vide'));
       b.addEventListener('click',()=>{
         it.signes[i-1]=SIGNES[(SIGNES.indexOf(sg)+1)%SIGNES.length];
         majRanger(sc,it);
@@ -2818,7 +2820,7 @@ function corrigerPose(sc,it){
 /* ---------- le milieu d'un segment ---------- */
 function rendreMilieu(sc,it){
   const c=consigne('Où est le <em>milieu</em> du segment [AB] ? Clique sur la bonne graduation.',it); c.appendChild(chipNotion(it)); sc.appendChild(c);
-  const d = it.propose!=null ? dessinerDroite(it.ligne,{fleche:it.propose,etiquette:'M ?'}) : dessinerDroite(it.ligne,{});
+  const d = it.propose!=null ? dessinerDroite(it.ligne,{fleche:it.propose,etiquette:'M'}) : dessinerDroite(it.ligne,{});
   if(it.propose!=null) $('svg',d).classList.add('droite--propose');
   pointsSurDroite($('svg',d),it.ligne,[{v:it.A,nom:'A'},{v:it.B,nom:'B'}]); sc.appendChild(d);
   const svg=$('svg',d); svg.style.cursor='pointer';
@@ -3797,7 +3799,7 @@ function genSuite(p,rnd){
 function filR_suite(sc,it){
   filConsigne(sc,'Quel nombre manque ? On avance <em>de '+it.pas+' en '+it.pas+'</em>.',it);
   const row=el('div','fil-suite');
-  it.suite.forEach((v,k)=>{ if(k===it.trou){ const r=caseReponse('?'); r.classList.add('fil-suite__trou'); row.appendChild(r); }
+  it.suite.forEach((v,k)=>{ if(k===it.trou){ const r=caseReponse(''); r.classList.add('fil-suite__trou'); row.appendChild(r); }
     else { const b=el('div','fil-suite__n'); b.innerHTML=filNbHtml(v); row.appendChild(b); } });
   sc.appendChild(row);
   brancherSaisie($('input',row),()=>filC_suite(sc,it));
@@ -3837,7 +3839,10 @@ function filR_comparer(sc,it){
     else { w.innerHTML='<span class="fil-comp__big">'+filNbHtml(v)+'</span>'; } return w; };
   row.appendChild(cote(it.a,it.colA,'A'));
   const sg=el('button','signe-btn fil-comp__s'); sg.type='button';
-  const maj=()=>{ sg.textContent=''; const v=it.signe||'?'; if(v==='<'||v==='>') sg.appendChild(bouche(v)); else sg.textContent=v; };
+  const maj=()=>{ sg.textContent=''; const v=it.signe||'?';
+    if(v==='<'||v==='>') sg.appendChild(bouche(v));
+    else if(v==='=') sg.textContent='=';
+    else sg.appendChild(el('span','signe-vide')); };
   sg.addEventListener('click',()=>{ if(it.corrige) return; it.signe=SIGNES[(SIGNES.indexOf(it.signe||'?')+1)%SIGNES.length]; maj(); }); maj();
   row.appendChild(sg); row.appendChild(cote(it.b,it.colB,'B'));
   sc.appendChild(row);
@@ -4420,11 +4425,11 @@ function filR_somme(sc,it){
   else if(it.m==='cent' || it.m==='cdu'){ const t=[it.c*100,it.d*10,it.u].filter(v=>v); cons='Combien font <em>'+t.join(' + ')+'</em> ?'; expr=t.map(N).join(' + '); }
   else if(it.m==='diz'){ cons='<em>'+filNom(it.D,'d')+' et '+filNom(it.u,'u')+'</em> : quel nombre ?'; expr=filNomC(it.D,'d')+' et '+filNomC(it.u,'u'); }
   else if(it.m==='combienDiz'){ cons='Combien de <em>dizaines en tout</em> dans ce nombre ?'; expr=N(it.n); }
-  else if(it.m==='centDiz'){ cons='<em>'+filNom(it.c,'c')+'</em>, c’est combien de dizaines ?'; expr=filNomC(it.c,'c')+' = ? dizaines'; }
+  else if(it.m==='centDiz'){ cons='<em>'+filNom(it.c,'c')+'</em>, c’est combien de dizaines ?'; expr=filNomC(it.c,'c')+' = <span class="fil-calc__trou">&#160;</span> dizaines'; }
   else if(it.m==='mix'){ cons='Quel nombre ?'; expr = it.forme==='u' ? filNomC(it.c,'c')+' et '+filNomC(it.X,'u') : filNomC(it.c,'c')+', '+filNomC(it.D,'d')+' et '+filNomC(it.u,'u'); }
   else { cons='Calcule <em>'+it.a+' + '+it.b+'</em> : les dizaines ensemble, les unités ensemble.'; expr=N(it.a)+' + '+N(it.b); }
   filConsigne(sc,cons,it);
-  const c=el('div','fil-calc'+((it.m==='diz'||it.m==='mix'||it.m==='centDiz')?' fil-calc--mots':'')); c.innerHTML=expr+(it.m==='centDiz'||it.m==='combienDiz'||it.m==='diz'||it.m==='mix'?'':' = <span class="fil-calc__trou">?</span>');
+  const c=el('div','fil-calc'+((it.m==='diz'||it.m==='mix'||it.m==='centDiz')?' fil-calc--mots':'')); c.innerHTML=expr+(it.m==='centDiz'||it.m==='combienDiz'||it.m==='diz'||it.m==='mix'?'':' = <span class="fil-calc__trou">&#160;</span>');
   sc.appendChild(c); filAjuster(c, it.m==='diz'||it.m==='mix'||it.m==='centDiz'?22:26);
   reponseNum(sc, it.m==='combienDiz'||it.m==='centDiz' ? 'Dizaines' : it.m==='dudu'||it.m==='du'||it.m==='dix'||it.m==='cent'||it.m==='cdu' ? 'Le résultat' : 'Le nombre', ()=>filC_somme(sc,it));
   barre(sc,[{txt:'Correction',cls:'btn btn--plein',fn:()=>filC_somme(sc,it)}]);
