@@ -1447,6 +1447,7 @@ function pieger(v,rnd,max){
   const v2=c+choix(rnd,[6,7,8,9])*10+u;
   return v2<=max ? v2 : v;
 }
+const MEM_NB=new Map();
 function genNombres(n,k,o){
   o=o||{};
   const p = (o.palierIdx!=null && PALIERS_NB[o.palierIdx]) ? PALIERS_NB[o.palierIdx] : palier(PALIERS_NB,n);
@@ -1454,23 +1455,49 @@ function genNombres(n,k,o){
   const sens = o.sens || 'auto';
   const sel = (o.palierIdx!=null?(o.palierIdx+1)*331:0) + (fams?fams.length*37+11:0)
             + (sens==='lettres'?2:sens==='chiffres'?3:sens==='deux'?5:0);
+  const cle=n+'|'+k+'|'+sel;
+  if(MEM_NB.has(cle)) return MEM_NB.get(cle).map(i=>({nb:i.nb, sens:i.sens}));
   const rnd=graine(n*7919+101+sel);
+  /* On ecarte ce qui est deja sorti les jours d'avant : jamais le nombre de la veille,
+     et si le palier est assez large, pas non plus celui de l'avant-veille. Les tirages
+     des jours precedents sont ceux reellement servis, gardes en memoire. */
+  let hier=null, avant=null;
+  if(n>1){
+    hier=new Set(genNombres(n-1,k,o).map(i=>i.nb));
+    avant=new Set(hier);
+    if(n>2) genNombres(n-2,k,o).forEach(i=>avant.add(i.nb));
+  }
   const vus=new Set(), liste=[];
-  const pose=v=>{ if(v==null||vus.has(v)) return false; vus.add(v); liste.push(v); return true; };
-  let garde=0;
+  /* niveau 2 : ni hier ni avant-hier · niveau 1 : pas hier · niveau 0 : au pire, on reprend */
+  const pose=(v,niv)=>{
+    if(v==null||vus.has(v)) return false;
+    if(niv>=2 && avant && avant.has(v)) return false;
+    if(niv>=1 && hier && hier.has(v)) return false;
+    vus.add(v); liste.push(v); return true;
+  };
+  const poseChoix=(arr)=>{
+    const l=brasser(arr.slice(),rnd);
+    for(const niv of [2,1,0]) for(const v of l) if(pose(v,niv)) return true;
+    return false;
+  };
+  const poseTire=(f)=>{
+    for(const niv of [2,1,0]) for(let t=0;t<40;t++) if(pose(f(),niv)) return true;
+    return false;
+  };
   if(fams){
-    fams.forEach(f=>{ if(liste.length<k) pose(tirerFam(f,rnd)); });
-    while(liste.length<k && garde++<400) pose(tirerFam(choix(rnd,fams),rnd));
+    fams.forEach(f=>{ if(liste.length<k) poseTire(()=>tirerFam(f,rnd)); });
+    while(liste.length<k) if(!poseTire(()=>tirerFam(choix(rnd,fams),rnd))) break;
   }else{
-    if(p.vedettes) pose(choix(rnd,p.vedettes));
-    if(p.fixes) p.fixes.forEach(f=>{ if(liste.length<k) pose(choix(rnd,f)); });
-    if(p.rappel && liste.length<k) pose(tire(rnd,p.rappel[0],p.rappel[1]));
-    if(p.vedettes && k>=5 && liste.length<k) pose(choix(rnd,p.vedettes));
-    while(liste.length<k && garde++<400){
+    const duPool=()=>{
       let v=tire(rnd,p.pool[0],p.pool[1]);
       if(p.piege && rnd()<0.45) v=pieger(v,rnd,p.pool[1]);
-      pose(v);
-    }
+      return v;
+    };
+    if(p.vedettes) poseChoix(p.vedettes);
+    if(p.fixes) p.fixes.forEach(f=>{ if(liste.length<k) poseChoix(f); });
+    if(p.rappel && liste.length<k) poseTire(()=>tire(rnd,p.rappel[0],p.rappel[1]));
+    if(p.vedettes && k>=5 && liste.length<k) poseChoix(p.vedettes);
+    while(liste.length<k) if(!poseTire(duPool)) break;
   }
   brasser(liste,rnd);
   const part = sens==='lettres'?0 : sens==='chiffres'?1 : sens==='deux'?0.5 : p.inverse;
@@ -1481,7 +1508,8 @@ function genNombres(n,k,o){
     if(!items.some(i=>i.sens==='chiffres')) items[items.length-1].sens='chiffres';
     if(!items.some(i=>i.sens==='lettres'))  items[0].sens='lettres';
   }
-  return items;
+  MEM_NB.set(cle, items.map(i=>({nb:i.nb, sens:i.sens})));
+  return items.map(i=>({nb:i.nb, sens:i.sens}));
 }
 
 /* =============================================================
@@ -1658,6 +1686,7 @@ function dessinerDroite(L,opts){
 const CLE='rituel.nombres.v1';
 const ETAT={ rituel:1, onglet:'nombres', son:true, nbNombres:5, nbDroite:0,
   muettes:'couleur', auto:true, palierNb:0, palierDr:0, familles:[], sens:'auto', notion:'',
+  avanceFait:null, avanceDe:null,
   idx:{nombres:0,droite:0,fil:0}, items:{nombres:[],droite:[],fil:[]}, res:{nombres:[],droite:[],fil:[]},
   histo:{nombres:{},droite:{},fil:{}}, revoir:{nombres:[],droite:[],fil:[]},
   notionsDr:false, ongletDroite:false, filJour:'', resJour:{} };
@@ -1682,6 +1711,8 @@ function charger(){
     if(Number.isFinite(o.palierDr)) ETAT.palierDr=o.palierDr|0;
     if(Array.isArray(o.familles)) ETAT.familles=o.familles.filter(c=>FAM_NB.some(f=>f.cle===c));
     if(['auto','lettres','chiffres','deux'].indexOf(o.sens)>=0) ETAT.sens=o.sens;
+    if(typeof o.avanceFait==='string') ETAT.avanceFait=o.avanceFait;
+    if(Number.isFinite(o.avanceDe)) ETAT.avanceDe=o.avanceDe;
     if(o.revoir&&Array.isArray(o.revoir.nombres)) ETAT.revoir=o.revoir;
     if(o.histo&&o.histo.nombres) ETAT.histo=o.histo;
     if(o.enCours===ETAT.rituel && o.idx && o.res){ ETAT.idx=o.idx; ETAT.res=o.res; ETAT.reprise=true; }
@@ -1692,7 +1723,7 @@ function sauver(){
     localStorage.setItem(CLE, JSON.stringify({ rituel:ETAT.rituel, onglet:ETAT.onglet, son:ETAT.son,
       nbNombres:ETAT.nbNombres, nbDroite:ETAT.nbDroite, muettes:ETAT.muettes, auto:ETAT.auto,
       palierNb:ETAT.palierNb, palierDr:ETAT.palierDr, familles:ETAT.familles, sens:ETAT.sens, notion:ETAT.notion,
-      revoir:ETAT.revoir, histo:ETAT.histo, enCours:ETAT.rituel, idx:ETAT.idx, res:ETAT.res,
+      revoir:ETAT.revoir, histo:ETAT.histo, avanceFait:ETAT.avanceFait, avanceDe:ETAT.avanceDe, enCours:ETAT.rituel, idx:ETAT.idx, res:ETAT.res,
       notionsDr:ETAT.notionsDr, ongletDroite:ETAT.ongletDroite, filJour:ETAT.filJour, resJour:ETAT.resJour }));
   }catch(e){}
 }
@@ -4662,7 +4693,22 @@ function filApresNote(){ filSauver(); filReplanifier(); majFait(); majFrise(); i
 function filMarquerFait(){
   const e=filEntree(); e.envoye=false; FIL_FAITS[e.date]=e; FIL_ANNULER=null;
   filApresNote(); filEnvoyer(e.date);
+  avancerApresFait(e.date);
   filOuvrir(e.date);
+}
+/* le rituel note : on passe au jour suivant, pour que demain ne redonne pas les memes nombres.
+   Une seule fois par date, et le retour en arriere si on annule. */
+function avancerApresFait(date){
+  if(!date || ETAT.avanceFait===date) return;
+  ETAT.avanceFait=date; ETAT.avanceDe=ETAT.rituel;
+  reglerRituel(ETAT.rituel+1);
+  motFlash('Rituel noté. Les nombres passent au jour '+ETAT.rituel+'.');
+}
+function reculerApresAnnulation(date){
+  if(!date || ETAT.avanceFait!==date) return;
+  const n=ETAT.avanceDe;
+  ETAT.avanceFait=null; ETAT.avanceDe=null;
+  if(Number.isFinite(n)) reglerRituel(n);
 }
 function filNoterSansDetail(date){
   const j=filJour(date);
@@ -4671,7 +4717,7 @@ function filNoterSansDetail(date){
   filApresNote(); filEnvoyer(date);
 }
 function filAnnuler(date){
-  delete FIL_FAITS[date]; FIL_ANNULER=null; filApresNote();
+  delete FIL_FAITS[date]; FIL_ANNULER=null; reculerApresAnnulation(date); filApresNote();
   if(FIL_DB) FIL_ENVOI=FIL_ENVOI.then(()=>FIL_DB.doc('journal/'+date).delete()).catch(()=>{});
 }
 function majFait(){

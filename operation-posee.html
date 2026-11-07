@@ -22,6 +22,8 @@
   --d:#c0392b; --d-bg:#fdeceb;
   --c:#157a3f; --c-bg:#e7f5ed;
   --m:#8a5a00; --m-bg:#fbf1dc;
+  --dm:#0e7686; --dm-bg:#e2f3f5;
+  --cm:#6b3fa0; --cm-bg:#efe8f8;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -110,18 +112,25 @@ button,select,input{font:inherit}
 .feuille{
   --encre:#171c21; --doux:#5f6d78; --trait:#c9d2da;
   color-scheme:light;
-  width:210mm; min-height:297mm; padding:12mm;
+  width:210mm; min-height:297mm; padding:0;
   background:#fff; color:var(--encre);
   box-shadow:0 2px 6px rgba(16,28,38,.14), 0 14px 40px rgba(16,28,38,.16);
   font-family:var(--lecture);
+  display:flex; flex-direction:column;
 }
+/* deux supports par feuille : on coupe au milieu, on plastifie en A5 */
+.demi{height:148.5mm; padding:9mm 10mm; overflow:hidden; display:flex; flex-direction:column}
+.coupe{position:relative; height:0; border-top:.3mm dashed #9aa6b1}
+.coupe span{position:absolute; left:50%; top:-2.6mm; transform:translateX(-50%);
+  background:#fff; padding:0 2mm; font-size:7.5pt; color:#9aa6b1; letter-spacing:.12em}
 .feuille + .feuille{margin-top:10mm}
 .feuille__tete{display:flex; align-items:baseline; justify-content:space-between; gap:10mm;
-  border-bottom:2.5px solid var(--encre); padding-bottom:2.5mm}
-.feuille__tete h3{font-family:var(--titre); font-size:15pt}
-.feuille__tete p{margin:0; font-family:var(--titre); font-size:9pt; color:var(--doux)}
+  border-bottom:.6mm solid var(--encre); padding-bottom:1.8mm}
+.feuille__tete h3{font-family:var(--titre); font-size:13pt}
+.feuille__tete p{margin:0; font-family:var(--titre); font-size:8.5pt; color:var(--doux)}
 
-.grilles{display:flex; flex-wrap:wrap; gap:4mm 9mm; align-items:flex-start; margin-top:3mm}
+.grilles{display:flex; flex-wrap:wrap; gap:4mm 8mm; align-items:flex-start;
+  justify-content:center; margin-top:4mm}
 
 .grille{--case:15mm; --sig:9mm; --petite:7mm; break-inside:avoid; page-break-inside:avoid}
 .rangee{display:grid; grid-template-columns:var(--sig) repeat(var(--cols), var(--case)); align-items:stretch}
@@ -130,22 +139,31 @@ button,select,input{font:inherit}
   display:grid; place-items:center; height:7mm;
   font-family:var(--titre); font-size:11pt; font-weight:700; text-transform:lowercase;
 }
-.rang--u{color:var(--u)} .rang--d{color:var(--d)} .rang--c{color:var(--c)} .rang--m{color:var(--m)}
+.rang--u{color:var(--u)} .rang--d{color:var(--d)} .rang--c{color:var(--c)}
+.rang--m{color:var(--m)} .rang--dm{color:var(--dm)} .rang--cm{color:var(--cm)}
 .case{
   height:var(--case); border:.4mm solid var(--trait); margin:-.2mm;
-  background:#fff;
+  background:#fff; position:relative;
+}
+/* une case, un chiffre : la ligne sur laquelle il se pose */
+.case::after{
+  content:''; position:absolute; left:2.2mm; right:2.2mm; bottom:3.2mm;
+  border-bottom:.3mm dashed currentColor; opacity:.5;
 }
 .case--u{background:var(--u-bg); border-color:var(--u)}
 .case--d{background:var(--d-bg); border-color:var(--d)}
 .case--c{background:var(--c-bg); border-color:var(--c)}
 .case--m{background:var(--m-bg); border-color:var(--m)}
+.case--dm{background:var(--dm-bg); border-color:var(--dm)}
+.case--cm{background:var(--cm-bg); border-color:var(--cm)}
 .case--vide{background:#fff; border-color:var(--trait)}
 .ret{height:var(--petite); display:grid; place-items:center}
 .ret i{
   display:block; width:7mm; height:5.5mm; border:.35mm dashed currentColor; border-radius:1mm;
   opacity:.75;
 }
-.ret--u{color:var(--u)} .ret--d{color:var(--d)} .ret--c{color:var(--c)} .ret--m{color:var(--m)}
+.ret--u{color:var(--u)} .ret--d{color:var(--d)} .ret--c{color:var(--c)}
+.ret--m{color:var(--m)} .ret--dm{color:var(--dm)} .ret--cm{color:var(--cm)}
 .barre{grid-column:1 / -1; height:1.1mm; background:var(--encre); margin:.8mm 0}
 .rangee--res .case{border-width:.7mm}
 
@@ -196,6 +214,8 @@ button,select,input{font:inherit}
         <option value="2">d · u</option>
         <option value="3" selected>c · d · u</option>
         <option value="4">m · c · d · u</option>
+        <option value="5">dm · m · c · d · u</option>
+        <option value="6">cm · dm · m · c · d · u</option>
       </select>
     </div>
     <div class="champ">
@@ -206,10 +226,9 @@ button,select,input{font:inherit}
       </select>
     </div>
     <div class="champ">
-      <label for="grilles">Grilles par feuille</label>
+      <label for="grilles">Grilles par demi-feuille</label>
       <select id="grilles">
-        <option>1</option><option>2</option><option>3</option>
-        <option value="4" selected>4</option><option>6</option>
+        <option>1</option><option value="2" selected>2</option><option>3</option><option>4</option>
       </select>
     </div>
     <label class="bascule"><input type="checkbox" id="retenue" checked> Cases de retenue</label>
@@ -241,16 +260,17 @@ const $$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const el=(t,c,x)=>{const e=document.createElement(t); if(c)e.className=c; if(x!=null)e.textContent=x; return e;};
 
 const CLE='operation-posee.v1';
-const RANGS=['m','c','d','u'];
-const NOMS={m:'milliers', c:'centaines', d:'dizaines', u:'unités'};
-const ETAT={op:'addition', colonnes:3, lignes:6, grilles:4, retenue:true, rituel:false};
+const RANGS=['cm','dm','m','c','d','u'];
+const NOMS={cm:'centaines de mille', dm:'dizaines de mille', m:'milliers',
+            c:'centaines', d:'dizaines', u:'unités'};
+const ETAT={op:'addition', colonnes:3, lignes:6, grilles:2, retenue:true, rituel:false};
 
 function charger(){
   try{
     const o=JSON.parse(localStorage.getItem(CLE));
     if(!o||typeof o!=='object') return;
     if(o.op==='addition'||o.op==='soustraction') ETAT.op=o.op;
-    [['colonnes',2,4],['lignes',2,8],['grilles',1,6]].forEach(([k,min,max])=>{
+    [['colonnes',2,6],['lignes',2,8],['grilles',1,4]].forEach(([k,min,max])=>{
       if(Number.isFinite(o[k])) ETAT[k]=Math.min(max,Math.max(min,o[k]|0));
     });
     if(typeof o.retenue==='boolean') ETAT.retenue=o.retenue;
@@ -272,11 +292,30 @@ function appliquerCouleurs(){
   }
 }
 
+/* ---------- la taille des cases : la plus grande qui tienne dans l'A5 ---------- */
+let CASE_MM = 15;
+function tailleCase(){
+  const cols=ETAT.colonnes;
+  const n = ETAT.op==='soustraction' ? 2 : ETAT.lignes;
+  const nRet = ETAT.retenue ? (ETAT.op==='soustraction' ? 2 : 1) : 0;
+  const hDispo=116.5, lDispo=190, sig=9, titres=7, petite=7, barre=2, gapL=8, gapH=4;
+  for(let c=16; c>=9; c-=0.5){
+    const lGrille = sig + cols*c;
+    if(lGrille > lDispo) continue;
+    const parRangee = Math.max(1, Math.floor((lDispo+gapL)/(lGrille+gapL)));
+    const rangees = Math.ceil(ETAT.grilles/parRangee);
+    const hGrille = titres + nRet*petite + n*c + barre + c;
+    if(rangees*hGrille + (rangees-1)*gapH <= hDispo) return c;
+  }
+  return 9;
+}
+
 /* ---------- une grille ---------- */
 function grille(){
-  const cols=RANGS.slice(4-ETAT.colonnes);
+  const cols=RANGS.slice(RANGS.length-ETAT.colonnes);
   const g=el('div','grille');
   g.style.setProperty('--cols',String(cols.length));
+  g.style.setProperty('--case',CASE_MM+'mm');
 
   const titres=el('div','rangee');
   titres.appendChild(el('span','sig'));
@@ -317,63 +356,51 @@ function grille(){
 }
 
 /* ---------- une feuille ---------- */
-function feuille(n, total){
-  const cols=RANGS.slice(4-ETAT.colonnes);
-  const f=el('div','feuille');
-
+function demi(){
+  const f=el('section','demi');
   const t=el('header','feuille__tete');
   t.appendChild(el('h3','', ETAT.op==='soustraction' ? 'La soustraction posée' : 'L’addition posée'));
-  t.appendChild(el('p','', total>1 ? 'Feuille '+n+' sur '+total : 'À plastifier'));
+  t.appendChild(el('p','', NOMS[RANGS[RANGS.length-ETAT.colonnes]]+' → unités'));
   f.appendChild(t);
-
   const z=el('div','grilles');
   for(let i=0;i<ETAT.grilles;i++) z.appendChild(grille());
   f.appendChild(z);
 
-  const lg=el('p','legende');
-  cols.forEach(k=>{
-    const s=el('span');
-    const p=el('span','pastille pastille--'+k); s.appendChild(p);
-    s.appendChild(el('b','',k)); s.appendChild(document.createTextNode(' = '+NOMS[k]));
-    lg.appendChild(s);
-  });
-  if(ETAT.retenue){
-    const s=el('span');
-    const i=el('i'); i.style.cssText='display:inline-block;width:5mm;height:4mm;border:.3mm dashed currentColor;border-radius:1mm;margin-right:1.5mm;vertical-align:-.5mm';
-    s.appendChild(i);
-    s.appendChild(document.createTextNode(ETAT.op==='soustraction'
-      ? 'les petites cases : la dizaine cassée en haut, la dizaine rendue en bas'
-      : 'les petites cases : la retenue'));
-    lg.appendChild(s);
-  }
-  f.appendChild(lg);
-
-  f.appendChild(el('p','feuille__pied',
-    'Feutre effaçable : on pose, on vérifie, on efface. Une case par chiffre, un chiffre par case.'));
   return f;
 }
 
+function feuille(){
+  const f=el('div','feuille');
+  f.appendChild(demi());
+  const c=el('div','coupe'); c.appendChild(el('span','','couper ici'));
+  f.appendChild(c);
+  f.appendChild(demi());
+  return f;
+}
 function rendre(){
   appliquerCouleurs();
+  CASE_MM=tailleCase();
   const z=$('#echelle'); z.textContent='';
-  z.appendChild(feuille(1,1));
+  z.appendChild(feuille());
   majNote();
   majEchelle();
 }
 
 function majNote(){
   const n=$('#note');
-  const f=$('.feuille');
-  const trop = f && f.getBoundingClientRect().height > (297.8*96/25.4);
+  const d=$('.demi');
+  const trop = d && d.scrollHeight > d.clientHeight+2;
   const lignes = ETAT.op==='soustraction' ? 2 : ETAT.lignes;
   n.innerHTML = ETAT.op==='soustraction'
     ? 'Deux nombres à poser, la barre, le résultat. Les petites cases servent aux deux méthodes : '
       + 'celle du haut pour la dizaine cassée, celle du bas pour la dizaine rendue — '
-      + '<b>décochez « cases de retenue »</b> si votre méthode n’en demande qu’une.'
+      + '<b>décochez « cases de retenue »</b> si votre méthode n’en demande qu’une. '
+      + 'La feuille porte deux fois le même support : on coupe au milieu, on plastifie en A5.'
     : '<b>'+lignes+' lignes</b> à poser, la barre, puis le résultat : de quoi additionner '
-      + lignes+' nombres d’affilée, comme 10 + 10 + 10 + 10 + 10 + 10.';
-  if(trop) n.innerHTML += ' <b>Cette combinaison dépasse la feuille</b> : elle s’imprimera sur deux pages — '
-    + 'réduisez les grilles ou les lignes pour tenir sur une seule.';
+      + lignes+' nombres d’affilée, comme 10 + 10 + 10 + 10 + 10 + 10. '
+      + 'La feuille porte deux fois le même support : on coupe au milieu, on plastifie en A5.';
+  if(trop) n.innerHTML += ' <b>Cette combinaison dépasse la demi-feuille</b> : réduisez les grilles, '
+    + 'les lignes ou les colonnes pour que tout tienne dans l’A5.';
 }
 
 /* l'aperçu tient dans la largeur disponible */
@@ -406,7 +433,7 @@ function motFlash(txt){
 }
 function htmlFeuille(){
   const styles=$$('style').map(x=>x.textContent).join('\n');
-  const f=feuille(1,1);
+  const f=feuille();
   return '<!doctype html><html lang="fr"><head><meta charset="utf-8">'
     +'<title>'+(ETAT.op==='soustraction'?'La soustraction posée':'L’addition posée')+'</title>'
     +'<link rel="preconnect" href="https://fonts.googleapis.com">'
