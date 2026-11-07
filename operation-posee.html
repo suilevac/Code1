@@ -1,0 +1,461 @@
+<title>L’opération posée</title>
+<meta name="description" content="Supports à imprimer et à plastifier pour poser additions et soustractions : une case par rang, une case pour la retenue, autant de lignes qu’on veut.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   Atelier : les réglages en haut, la feuille A4 dessous, à
+   l'échelle. La feuille garde le papier blanc dans les deux
+   thèmes — elle part à l'imprimante, pas à l'écran.
+   ============================================================ */
+:root{
+  --fond:#eceff2; --papier:#ffffff; --encre:#1a2026; --doux:#5d6b77; --trait:#d2dae1;
+  --accent:#1f6f8b; --accent-pale:#e2f0f4; --accent-fonce:#135266;
+  --rayon:14px;
+  --ombre:0 1px 2px rgba(16,28,38,.06), 0 10px 28px rgba(16,28,38,.08);
+  --titre:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --lecture:'Andika',Verdana,system-ui,sans-serif;
+  /* les rangs, couleurs de la classe */
+  --u:#1f5fbf; --u-bg:#e9f0fc;
+  --d:#c0392b; --d-bg:#fdeceb;
+  --c:#157a3f; --c-bg:#e7f5ed;
+  --m:#8a5a00; --m-bg:#fbf1dc;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --fond:#11161a; --papier:#1a2127; --encre:#e7edf1; --doux:#9aa9b4; --trait:#2d3942;
+    --accent:#63b6cf; --accent-pale:#143039; --accent-fonce:#8fd2e6;
+    --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --fond:#11161a; --papier:#1a2127; --encre:#e7edf1; --doux:#9aa9b4; --trait:#2d3942;
+  --accent:#63b6cf; --accent-pale:#143039; --accent-fonce:#8fd2e6;
+  --ombre:0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--fond); color:var(--encre);
+  font-family:var(--lecture); font-size:16px; line-height:1.5;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3{font-family:var(--titre); text-wrap:balance; margin:0}
+button,select,input{font:inherit}
+:focus-visible{outline:3px solid var(--accent); outline-offset:2px; border-radius:6px}
+
+.enveloppe{max-width:1180px; margin:0 auto; padding-block:18px 36px; padding-left:16px; padding-right:16px}
+
+.tete{display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:6px 18px}
+.tete h1{font-size:clamp(20px,3vw,27px); letter-spacing:-.01em}
+.tete p{margin:0; color:var(--doux); font-size:14px; max-width:62ch}
+
+/* ---------- les réglages ---------- */
+.reglages{
+  display:flex; flex-wrap:wrap; gap:10px 14px; align-items:flex-end;
+  background:var(--papier); border:1px solid var(--trait); border-radius:var(--rayon);
+  box-shadow:var(--ombre); padding:14px 16px; margin:16px 0 0;
+}
+.champ{display:flex; flex-direction:column; gap:5px; min-width:0}
+.champ label{font-family:var(--titre); font-size:11px; font-weight:700; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--doux)}
+.champ select{
+  padding:8px 10px; border:1px solid var(--trait); border-radius:10px;
+  background:var(--papier); color:var(--encre); min-width:118px;
+}
+.segm{display:inline-flex; gap:4px; background:var(--fond); border-radius:11px; padding:4px}
+.segm button{
+  border:0; background:transparent; color:var(--doux); cursor:pointer;
+  font-family:var(--titre); font-size:14px; font-weight:700; padding:7px 13px; border-radius:8px;
+}
+.segm button[aria-pressed="true"]{background:var(--papier); color:var(--encre); box-shadow:var(--ombre)}
+.bascule{display:inline-flex; align-items:center; gap:7px; cursor:pointer; user-select:none; font-size:14px; padding-bottom:8px}
+.bascule input{width:17px; height:17px; accent-color:var(--accent); margin:0}
+.btn{
+  cursor:pointer; padding:10px 17px; border-radius:11px; border:1px solid var(--trait);
+  background:var(--papier); color:var(--encre); font-family:var(--titre); font-weight:700; font-size:15px;
+  display:inline-flex; align-items:center; gap:8px;
+}
+.btn:hover{background:var(--fond)}
+.btn--plein{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn--plein:hover{background:var(--accent-fonce)}
+.btn[disabled]{opacity:.5; cursor:default}
+.ico{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; flex:none}
+.pousse{margin-left:auto}
+
+.mot-flash{
+  position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%);
+  z-index:70; max-width:min(92vw,460px); text-align:center;
+  background:var(--encre); color:var(--papier); border-radius:12px; padding:11px 16px;
+  font-family:var(--titre); font-size:14px; font-weight:700; box-shadow:var(--ombre);
+}
+
+.note{margin:14px 0 0; color:var(--doux); font-size:14px; max-width:78ch}
+.note b{color:var(--encre)}
+
+/* ---------- l'aperçu de la feuille ---------- */
+.apercu{margin:18px 0 0}
+.apercu__barre{display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 14px; margin:0 0 10px}
+.apercu__barre h2{font-size:13px; letter-spacing:.1em; text-transform:uppercase; color:var(--doux)}
+.apercu__barre span{font-size:13px; color:var(--doux)}
+.cadre{overflow:hidden}
+.echelle{transform-origin:top left}
+
+/* ---------- la feuille elle-même : toujours sur papier blanc ---------- */
+.feuille{
+  --encre:#171c21; --doux:#5f6d78; --trait:#c9d2da;
+  color-scheme:light;
+  width:210mm; min-height:297mm; padding:12mm;
+  background:#fff; color:var(--encre);
+  box-shadow:0 2px 6px rgba(16,28,38,.14), 0 14px 40px rgba(16,28,38,.16);
+  font-family:var(--lecture);
+}
+.feuille + .feuille{margin-top:10mm}
+.feuille__tete{display:flex; align-items:baseline; justify-content:space-between; gap:10mm;
+  border-bottom:2.5px solid var(--encre); padding-bottom:2.5mm}
+.feuille__tete h3{font-family:var(--titre); font-size:15pt}
+.feuille__tete p{margin:0; font-family:var(--titre); font-size:9pt; color:var(--doux)}
+
+.grilles{display:flex; flex-wrap:wrap; gap:4mm 9mm; align-items:flex-start; margin-top:3mm}
+
+.grille{--case:15mm; --sig:9mm; --petite:7mm; break-inside:avoid; page-break-inside:avoid}
+.rangee{display:grid; grid-template-columns:var(--sig) repeat(var(--cols), var(--case)); align-items:stretch}
+.sig{display:grid; place-items:center; font-family:var(--lecture); font-size:15pt; font-weight:700; color:var(--encre)}
+.rang{
+  display:grid; place-items:center; height:7mm;
+  font-family:var(--titre); font-size:11pt; font-weight:700; text-transform:lowercase;
+}
+.rang--u{color:var(--u)} .rang--d{color:var(--d)} .rang--c{color:var(--c)} .rang--m{color:var(--m)}
+.case{
+  height:var(--case); border:.4mm solid var(--trait); margin:-.2mm;
+  background:#fff;
+}
+.case--u{background:var(--u-bg); border-color:var(--u)}
+.case--d{background:var(--d-bg); border-color:var(--d)}
+.case--c{background:var(--c-bg); border-color:var(--c)}
+.case--m{background:var(--m-bg); border-color:var(--m)}
+.case--vide{background:#fff; border-color:var(--trait)}
+.ret{height:var(--petite); display:grid; place-items:center}
+.ret i{
+  display:block; width:7mm; height:5.5mm; border:.35mm dashed currentColor; border-radius:1mm;
+  opacity:.75;
+}
+.ret--u{color:var(--u)} .ret--d{color:var(--d)} .ret--c{color:var(--c)} .ret--m{color:var(--m)}
+.barre{grid-column:1 / -1; height:1.1mm; background:var(--encre); margin:.8mm 0}
+.rangee--res .case{border-width:.7mm}
+
+.legende{display:flex; flex-wrap:wrap; gap:2mm 7mm; margin:4mm 0 0; font-size:9pt; color:var(--doux)}
+.legende b{font-weight:700}
+.legende .pastille{display:inline-block; width:3.5mm; height:3.5mm; border-radius:1mm; margin-right:1.5mm;
+  vertical-align:-.4mm; border:.3mm solid}
+.pastille--u{background:var(--u-bg); border-color:var(--u)}
+.pastille--d{background:var(--d-bg); border-color:var(--d)}
+.pastille--c{background:var(--c-bg); border-color:var(--c)}
+.pastille--m{background:var(--m-bg); border-color:var(--m)}
+.feuille__pied{margin:3mm 0 0; font-size:8.5pt; color:var(--doux)}
+
+@page{size:A4 portrait; margin:0}
+@media print{
+  body{background:#fff}
+  .enveloppe{max-width:none; padding:0}
+  .tete,.reglages,.note,.apercu__barre,.mot-flash{display:none !important}
+  .cadre{overflow:visible}
+  .echelle{transform:none !important}
+  .feuille{box-shadow:none; break-after:page; page-break-after:always}
+  .feuille:last-child{break-after:auto; page-break-after:auto}
+  .feuille + .feuille{margin-top:0}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s !important; transition-duration:.001s !important}}
+</style>
+
+<div class="enveloppe">
+  <header class="tete">
+    <div>
+      <h1>L’opération posée</h1>
+      <p>Des grilles à imprimer et à plastifier : une case par rang, une petite case pour la retenue,
+        et autant de lignes qu’il en faut pour poser 10 + 10 + 10 + 10 + 10 + 10 + 10.</p>
+    </div>
+  </header>
+
+  <section class="reglages" aria-label="Réglages du support">
+    <div class="champ">
+      <span id="lbl-op">Opération</span>
+      <div class="segm" id="op" role="group" aria-labelledby="lbl-op">
+        <button type="button" data-v="addition">Addition</button>
+        <button type="button" data-v="soustraction">Soustraction</button>
+      </div>
+    </div>
+    <div class="champ">
+      <label for="colonnes">Colonnes</label>
+      <select id="colonnes">
+        <option value="2">d · u</option>
+        <option value="3" selected>c · d · u</option>
+        <option value="4">m · c · d · u</option>
+      </select>
+    </div>
+    <div class="champ">
+      <label for="lignes">Lignes à poser</label>
+      <select id="lignes">
+        <option>2</option><option>3</option><option>4</option><option>5</option>
+        <option selected>6</option><option>7</option><option>8</option>
+      </select>
+    </div>
+    <div class="champ">
+      <label for="grilles">Grilles par feuille</label>
+      <select id="grilles">
+        <option>1</option><option>2</option><option>3</option>
+        <option value="4" selected>4</option><option>6</option>
+      </select>
+    </div>
+    <label class="bascule"><input type="checkbox" id="retenue" checked> Cases de retenue</label>
+    <label class="bascule"><input type="checkbox" id="rituel"> Couleurs du rituel</label>
+    <button class="btn btn--plein pousse" id="btn-feuille" type="button" hidden>
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3.5h10V9M7 17.5h10V21H7z"></path><path d="M6 9h12a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-1M7 17H6a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2"></path></svg>
+      <span>Enregistrer la feuille</span>
+    </button>
+  </section>
+
+  <p class="note" id="note"></p>
+
+  <section class="apercu">
+    <div class="apercu__barre">
+      <h2>La feuille</h2>
+      <span id="apercu-dim">A4 · 210 × 297 mm</span>
+    </div>
+    <div class="cadre" id="cadre">
+      <div class="echelle" id="echelle"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=(s,r)=>(r||document).querySelector(s);
+const $$=(s,r)=>[...(r||document).querySelectorAll(s)];
+const el=(t,c,x)=>{const e=document.createElement(t); if(c)e.className=c; if(x!=null)e.textContent=x; return e;};
+
+const CLE='operation-posee.v1';
+const RANGS=['m','c','d','u'];
+const NOMS={m:'milliers', c:'centaines', d:'dizaines', u:'unités'};
+const ETAT={op:'addition', colonnes:3, lignes:6, grilles:4, retenue:true, rituel:false};
+
+function charger(){
+  try{
+    const o=JSON.parse(localStorage.getItem(CLE));
+    if(!o||typeof o!=='object') return;
+    if(o.op==='addition'||o.op==='soustraction') ETAT.op=o.op;
+    [['colonnes',2,4],['lignes',2,8],['grilles',1,6]].forEach(([k,min,max])=>{
+      if(Number.isFinite(o[k])) ETAT[k]=Math.min(max,Math.max(min,o[k]|0));
+    });
+    if(typeof o.retenue==='boolean') ETAT.retenue=o.retenue;
+    if(typeof o.rituel==='boolean') ETAT.rituel=o.rituel;
+  }catch(e){}
+}
+function sauver(){ try{ localStorage.setItem(CLE,JSON.stringify(ETAT)); }catch(e){} }
+
+/* les couleurs : celles de la classe, ou celles du rituel des nombres */
+function appliquerCouleurs(){
+  const r=document.documentElement.style;
+  if(ETAT.rituel){
+    r.setProperty('--u','#1d6f3f'); r.setProperty('--u-bg','#e3f5e8');
+    r.setProperty('--d','#1a5f94'); r.setProperty('--d-bg','#e0eef9');
+    r.setProperty('--c','#a83a2f'); r.setProperty('--c-bg','#fde6e1');
+    r.setProperty('--m','#5f4499'); r.setProperty('--m-bg','#ece5f8');
+  }else{
+    ['u','d','c','m'].forEach(k=>{ r.removeProperty('--'+k); r.removeProperty('--'+k+'-bg'); });
+  }
+}
+
+/* ---------- une grille ---------- */
+function grille(){
+  const cols=RANGS.slice(4-ETAT.colonnes);
+  const g=el('div','grille');
+  g.style.setProperty('--cols',String(cols.length));
+
+  const titres=el('div','rangee');
+  titres.appendChild(el('span','sig'));
+  cols.forEach(k=>titres.appendChild(el('span','rang rang--'+k,k)));
+  g.appendChild(titres);
+
+  const lignesRetenue=ETAT.retenue ? (ETAT.op==='soustraction'?1:1) : 0;
+  for(let i=0;i<lignesRetenue;i++){
+    const r=el('div','rangee');
+    r.appendChild(el('span','sig'));
+    cols.forEach(k=>{ const c=el('span','ret ret--'+k); c.appendChild(el('i')); r.appendChild(c); });
+    g.appendChild(r);
+  }
+
+  const n = ETAT.op==='soustraction' ? 2 : ETAT.lignes;
+  for(let i=0;i<n;i++){
+    const r=el('div','rangee');
+    const s=el('span','sig', i===n-1 ? (ETAT.op==='soustraction'?'−':'+') : '');
+    r.appendChild(s);
+    cols.forEach(k=>r.appendChild(el('span','case case--'+k)));
+    g.appendChild(r);
+    /* soustraction : la case de la dizaine ajoutée, sous le petit nombre */
+    if(ETAT.op==='soustraction' && ETAT.retenue && i===n-1){
+      const rr=el('div','rangee');
+      rr.appendChild(el('span','sig'));
+      cols.forEach(k=>{ const c=el('span','ret ret--'+k); c.appendChild(el('i')); rr.appendChild(c); });
+      g.appendChild(rr);
+    }
+  }
+
+  const b=el('div','rangee'); b.appendChild(el('div','barre')); g.appendChild(b);
+
+  const res=el('div','rangee rangee--res');
+  res.appendChild(el('span','sig'));
+  cols.forEach(k=>res.appendChild(el('span','case case--'+k)));
+  g.appendChild(res);
+  return g;
+}
+
+/* ---------- une feuille ---------- */
+function feuille(n, total){
+  const cols=RANGS.slice(4-ETAT.colonnes);
+  const f=el('div','feuille');
+
+  const t=el('header','feuille__tete');
+  t.appendChild(el('h3','', ETAT.op==='soustraction' ? 'La soustraction posée' : 'L’addition posée'));
+  t.appendChild(el('p','', total>1 ? 'Feuille '+n+' sur '+total : 'À plastifier'));
+  f.appendChild(t);
+
+  const z=el('div','grilles');
+  for(let i=0;i<ETAT.grilles;i++) z.appendChild(grille());
+  f.appendChild(z);
+
+  const lg=el('p','legende');
+  cols.forEach(k=>{
+    const s=el('span');
+    const p=el('span','pastille pastille--'+k); s.appendChild(p);
+    s.appendChild(el('b','',k)); s.appendChild(document.createTextNode(' = '+NOMS[k]));
+    lg.appendChild(s);
+  });
+  if(ETAT.retenue){
+    const s=el('span');
+    const i=el('i'); i.style.cssText='display:inline-block;width:5mm;height:4mm;border:.3mm dashed currentColor;border-radius:1mm;margin-right:1.5mm;vertical-align:-.5mm';
+    s.appendChild(i);
+    s.appendChild(document.createTextNode(ETAT.op==='soustraction'
+      ? 'les petites cases : la dizaine cassée en haut, la dizaine rendue en bas'
+      : 'les petites cases : la retenue'));
+    lg.appendChild(s);
+  }
+  f.appendChild(lg);
+
+  f.appendChild(el('p','feuille__pied',
+    'Feutre effaçable : on pose, on vérifie, on efface. Une case par chiffre, un chiffre par case.'));
+  return f;
+}
+
+function rendre(){
+  appliquerCouleurs();
+  const z=$('#echelle'); z.textContent='';
+  z.appendChild(feuille(1,1));
+  majNote();
+  majEchelle();
+}
+
+function majNote(){
+  const n=$('#note');
+  const f=$('.feuille');
+  const trop = f && f.getBoundingClientRect().height > (297.8*96/25.4);
+  const lignes = ETAT.op==='soustraction' ? 2 : ETAT.lignes;
+  n.innerHTML = ETAT.op==='soustraction'
+    ? 'Deux nombres à poser, la barre, le résultat. Les petites cases servent aux deux méthodes : '
+      + 'celle du haut pour la dizaine cassée, celle du bas pour la dizaine rendue — '
+      + '<b>décochez « cases de retenue »</b> si votre méthode n’en demande qu’une.'
+    : '<b>'+lignes+' lignes</b> à poser, la barre, puis le résultat : de quoi additionner '
+      + lignes+' nombres d’affilée, comme 10 + 10 + 10 + 10 + 10 + 10.';
+  if(trop) n.innerHTML += ' <b>Cette combinaison dépasse la feuille</b> : elle s’imprimera sur deux pages — '
+    + 'réduisez les grilles ou les lignes pour tenir sur une seule.';
+}
+
+/* l'aperçu tient dans la largeur disponible */
+function majEchelle(){
+  const cadre=$('#cadre'), z=$('#echelle');
+  if(!cadre||!z) return;
+  z.style.transform='none';
+  const large=z.firstChild ? z.firstChild.getBoundingClientRect().width : 0;
+  if(!large) return;
+  const k=Math.min(1, cadre.clientWidth/large);
+  z.style.transform='scale('+k+')';
+  cadre.style.height=(z.getBoundingClientRect().height*k)+'px';
+  const mm=Math.round(large/ (210/25.4) );   /* px par mm, pour l'indication */
+  $('#apercu-dim').textContent='A4 · 210 × 297 mm'+(k<.999?' · aperçu réduit à '+Math.round(k*100)+' %':'');
+}
+
+/* ---------- le fichier à imprimer ---------- */
+let DL=null;
+function brancherFeuille(){
+  const b=$('#btn-feuille'); if(!b) return;
+  b.hidden=true;
+  if(!window.claude || typeof window.claude.use!=='function') return;
+  window.claude.use('downloads').then(d=>{ if(d){ DL=d; b.hidden=false; } }).catch(()=>{});
+}
+function motFlash(txt){
+  const a=$('.mot-flash'); if(a) a.remove();
+  const m=el('div','mot-flash',txt); m.setAttribute('role','status');
+  document.body.appendChild(m);
+  window.setTimeout(()=>m.remove(),5200);
+}
+function htmlFeuille(){
+  const styles=$$('style').map(x=>x.textContent).join('\n');
+  const f=feuille(1,1);
+  return '<!doctype html><html lang="fr"><head><meta charset="utf-8">'
+    +'<title>'+(ETAT.op==='soustraction'?'La soustraction posée':'L’addition posée')+'</title>'
+    +'<link rel="preconnect" href="https://fonts.googleapis.com">'
+    +'<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&display=swap" rel="stylesheet">'
+    +'<style>'+styles+'\nbody{background:#fff;margin:0}\n.feuille{box-shadow:none}</style>'
+    +'</head><body>'+f.outerHTML+'</body></html>';
+}
+function enregistrer(){
+  if(!DL) return;
+  const b=$('#btn-feuille'); b.disabled=true;
+  let html='';
+  try{ html=htmlFeuille(); }
+  catch(e){ b.disabled=false; motFlash('La feuille n’a pas pu être préparée.'); return; }
+  const nom='operation-posee-'+(ETAT.op==='soustraction'?'soustraction':'addition')+'.html';
+  DL.save({filename:nom, data:new Blob([html],{type:'text/html'})})
+    .then(()=>motFlash('Feuille enregistrée : ouvrez-la, puis imprimez (Ctrl + P).'))
+    .catch(err=>{
+      const c=err&&err.code;
+      if(c==='declined') return;
+      motFlash(c==='rate_limited' ? 'Un instant, puis réessayez.' : 'L’enregistrement n’a pas abouti.');
+    })
+    .then(()=>{ b.disabled=false; });
+}
+
+/* ---------- réglages ---------- */
+function majReglages(){
+  $$('#op button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===ETAT.op)));
+  $('#colonnes').value=String(ETAT.colonnes);
+  $('#lignes').value=String(ETAT.lignes);
+  $('#lignes').disabled = ETAT.op==='soustraction';
+  $('#grilles').value=String(ETAT.grilles);
+  $('#retenue').checked=ETAT.retenue;
+  $('#rituel').checked=ETAT.rituel;
+}
+function change(f){ f(); sauver(); majReglages(); rendre(); }
+
+charger();
+majReglages();
+rendre();
+brancherFeuille();
+
+$$('#op button').forEach(b=>b.addEventListener('click',()=>change(()=>{ ETAT.op=b.dataset.v; })));
+$('#colonnes').addEventListener('change',e=>change(()=>{ ETAT.colonnes=parseInt(e.target.value,10)||3; }));
+$('#lignes').addEventListener('change',e=>change(()=>{ ETAT.lignes=parseInt(e.target.value,10)||6; }));
+$('#grilles').addEventListener('change',e=>change(()=>{ ETAT.grilles=parseInt(e.target.value,10)||2; }));
+$('#retenue').addEventListener('change',e=>change(()=>{ ETAT.retenue=e.target.checked; }));
+$('#rituel').addEventListener('change',e=>change(()=>{ ETAT.rituel=e.target.checked; }));
+$('#btn-feuille').addEventListener('click',enregistrer);
+window.addEventListener('resize',majEchelle);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(majEchelle);
+})();
+</script>
