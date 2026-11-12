@@ -558,9 +558,13 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
     <h4>Trace écrite</h4>
     <div class="row">
       <select id="te-n" style="flex:1"></select>
+      <select id="te-rows" style="flex:1"></select>
+    </div>
+    <div class="row">
+      <select id="te-rep" style="flex:1"></select>
       <button class="mini" id="te-btn">Télécharger la fiche (PDF)</button>
     </div>
-    <p class="note">Deux pages à imprimer, aux mêmes dimensions : la maison du nombre avec sa brique en haut et les cadres où coller, puis la planche de briques rouges et bleues à découper.</p>
+    <p class="note">Deux pages sans texte superflu, aux mêmes dimensions : la maison du nombre et ses cadres à coller, puis la planche de briques à découper — avec deux cartes « 0 » pour la décomposition n + 0. Le choix chiffre / points / rien s'applique aussi aux briques à l'écran.</p>
   </section>
 
   <section>
@@ -633,7 +637,7 @@ const FRESH = {
             {id:"s2",name:"Charlie",color:"rouge",stars:0},
             {id:"s3",name:"Tedo",color:"vert",stars:0}],
   digits:[1,2,3], level:0, autoLevel:true, streak:0,
-  mode:"plein", decoBoth:false, zeroMig:true, boulier:false, houses:{}, turn:0,
+  mode:"plein", decoBoth:false, zeroMig:true, boulier:false, brickLabel:"chiffre", houses:{}, turn:0,
   voice:true, sound:true, secret:true, flashMs:2000,
   updatedAt:0
 };
@@ -1258,7 +1262,15 @@ function brickSVG(k, col, label){
   o += '<g fill="' + col + '" stroke="' + dark + '" stroke-width="1.6" stroke-linejoin="round">';
   for(let i = 0; i < k; i++) o += '<rect x="' + (i*20 + 4.8) + '" y="0.8" width="10.4" height="10" rx="2.4"/>';
   o += '<rect x="0.8" y="9.5" width="' + (W - 1.6) + '" height="19.5" rx="3.6"/></g>';
-  if(label !== undefined) o += '<text x="' + (W/2) + '" y="19.6" text-anchor="middle" dominant-baseline="central" font-family="Fredoka, sans-serif" font-weight="700" font-size="16" fill="' + (col === MA || col === MB ? "#FFFFFF" : "#7A4F03") + '">' + label + '</text>';
+  if(label !== undefined){
+    const mode = S.brickLabel || "chiffre";
+    const lf = (col === MA || col === MB) ? "#FFFFFF" : "#7A4F03";
+    if(mode === "points"){
+      for(let i = 0; i < k; i++) o += '<circle cx="' + (i*20 + 10) + '" cy="19.3" r="3.4" fill="' + lf + '"/>';
+    } else if(mode !== "rien"){
+      o += '<text x="' + (W/2) + '" y="19.6" text-anchor="middle" dominant-baseline="central" font-family="Fredoka, sans-serif" font-weight="700" font-size="16" fill="' + lf + '">' + label + '</text>';
+    }
+  }
   o += '</svg>';
   return o;
 }
@@ -1936,6 +1948,18 @@ function renderPanel(){
     for(let d = 2; d <= 9; d++){ const o = document.createElement("option"); o.value = d; o.textContent = "La maison du " + d; te.appendChild(o); }
     te.value = "6";
   }
+  const tr = $("#te-rows");
+  if(tr && !tr.options.length){
+    for(let r = 2; r <= 6; r++){ const o = document.createElement("option"); o.value = r; o.textContent = r + " cadres à coller"; tr.appendChild(o); }
+    tr.value = "3";
+  }
+  const tp = $("#te-rep");
+  if(tp && !tp.options.length){
+    [["chiffre","Briques : chiffre écrit"],["points","Briques : points à compter"],["rien","Briques : rien"]].forEach(pr => {
+      const o = document.createElement("option"); o.value = pr[0]; o.textContent = pr[1]; tp.appendChild(o);
+    });
+  }
+  if(tp) tp.value = S.brickLabel || "chiffre";
   $("#opt-voice").checked = !!S.voice;
   $("#opt-sound").checked = !!S.sound;
   $("#opt-secret").checked = !!S.secret;
@@ -1986,22 +2010,29 @@ document.querySelectorAll("[data-preset]").forEach(b => {
   };
 });
 const PDF_MA = [217,43,43], PDF_MAd = [158,31,26], PDF_MB = [42,104,204], PDF_MBd = [29,74,150];
-function pdfBrick(doc, x, y, k, u, fill, stroke, label){
+function pdfBrick(doc, x, y, k, u, fill, stroke, label, mode, lf){
   const sh = u * 0.5, bh = u * 0.95, w = k * u;
   doc.setDrawColor(stroke[0], stroke[1], stroke[2]);
   doc.setFillColor(fill[0], fill[1], fill[2]);
   doc.setLineWidth(0.5);
   for(let i = 0; i < k; i++) doc.roundedRect(x + i*u + u*0.24, y, u*0.52, sh + 1.5, 1, 1, "FD");
   doc.roundedRect(x, y + sh, w, bh, 1.5, 1.5, "FD");
-  if(label !== undefined){
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(bh * 2.1);
-    doc.setTextColor(122, 79, 3);
-    doc.text(String(label), x + w/2, y + sh + bh * 0.72, {align:"center"});
+  const col = lf || [122, 79, 3];
+  if(label !== undefined && mode !== "rien"){
+    if(mode === "points"){
+      doc.setFillColor(col[0], col[1], col[2]);
+      for(let i = 0; i < k; i++) doc.circle(x + i*u + u/2, y + sh + bh/2, u * 0.16, "F");
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(bh * 2.1);
+      doc.setTextColor(col[0], col[1], col[2]);
+      doc.text(String(label), x + w/2, y + sh + bh * 0.72, {align:"center"});
+    }
   }
   return sh + bh;
 }
-function makeTracePDF(n){
+function makeTracePDF(n, rows, mode){
+  rows = rows || 3; mode = mode || "chiffre";
   const doc = new window.jspdf.jsPDF({unit:"mm", format:"a4"});
   const u = Math.min(13, 170 / n), bH = u * 1.45 + 1.5;
   /* page 1 : la maison a coller */
@@ -2010,16 +2041,16 @@ function makeTracePDF(n){
   doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(91, 110, 146);
   doc.text("Prénom : ______________________", 15, 28);
   doc.text("Date : ______________", 140, 28);
-  const hw = n * u + 26, left = 105 - hw / 2, yR = 38;
+  const hw = Math.max(n * u + 26, 70), left = 105 - hw / 2, yR = 38;
   doc.setDrawColor(154, 171, 200); doc.setFillColor(230, 237, 249); doc.setLineWidth(0.8);
   doc.triangle(left - 7, yR + 24, left + hw + 7, yR + 24, 105, yR, "FD");
   doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.setTextColor(22, 40, 79);
   doc.text(String(n), 105, yR + 20, {align:"center"});
-  const rows = 3, wallsH = 10 + bH + 8 + rows * (bH + 8) + 4;
+  const wallsH = 10 + bH + 8 + rows * (bH + 8) + 4;
   doc.setFillColor(255, 255, 255);
   doc.rect(left, yR + 24, hw, wallsH, "FD");
   let y = yR + 24 + 10;
-  pdfBrick(doc, 105 - (n * u) / 2, y, n, u, [243, 184, 31], [176, 126, 12], n);
+  pdfBrick(doc, 105 - (n * u) / 2, y, n, u, [243, 184, 31], [176, 126, 12], n, mode);
   y += bH + 8;
   for(let r = 0; r < rows; r++){
     doc.setDrawColor(159, 185, 224); doc.setLineWidth(0.5); doc.setLineDashPattern([2, 1.6], 0);
@@ -2030,34 +2061,40 @@ function makeTracePDF(n){
     doc.text("? + ?", 105, y + bH / 2 + 1.5, {align:"center"});
     y += bH + 8;
   }
-  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(91, 110, 146);
-  doc.text("Je colle dans chaque cadre deux briques qui, ensemble, font " + n + ".", 105, y + 10, {align:"center"});
-  doc.setFontSize(8); doc.setTextColor(154, 171, 200);
-  doc.text("Combien ? — le rituel des nombres", 105, 290, {align:"center"});
-  /* page 2 : la planche a decouper */
+  /* page 2 : la planche a decouper, sans texte */
   doc.addPage();
-  doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(22, 40, 79);
-  doc.text("Je découpe mes briques", 105, 16, {align:"center"});
-  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(91, 110, 146);
-  doc.text("Mêmes tailles que la maison : une brique rouge + une brique bleue par cadre.", 105, 23, {align:"center"});
-  let x = 15; y = 30;
-  const maxK = n;
-  for(let k = maxK; k >= 1; k--){
-    [[PDF_MA, PDF_MAd], [PDF_MB, PDF_MBd]].forEach(cc => {
+  doc.setDrawColor(154, 171, 200); doc.setLineWidth(0.5); doc.setLineDashPattern([3, 2], 0);
+  doc.line(10, 12, 200, 12);
+  doc.setLineDashPattern([], 0);
+  let x = 15; y = 18;
+  for(let k = n; k >= 1; k--){
+    [[PDF_MA, PDF_MAd, [255, 255, 255]], [PDF_MB, PDF_MBd, [255, 255, 255]]].forEach(cc => {
       const w = k * u + 6;
       if(x + w > 198){ x = 15; y += bH + 8; }
       if(y + bH > 282){ doc.addPage(); x = 15; y = 16; }
-      pdfBrick(doc, x + 3, y, k, u, cc[0], cc[1]);
+      pdfBrick(doc, x + 3, y, k, u, cc[0], cc[1], k, mode, cc[2]);
       x += w + 4;
     });
   }
+  /* deux cartes zero pour n + 0 */
+  [[PDF_MA, PDF_MAd], [PDF_MB, PDF_MBd]].forEach(cc => {
+    const w = u * 1.3 + 6;
+    if(x + w > 198){ x = 15; y += bH + 8; }
+    if(y + bH > 282){ doc.addPage(); x = 15; y = 16; }
+    doc.setDrawColor(cc[1][0], cc[1][1], cc[1][2]); doc.setFillColor(255, 255, 255); doc.setLineWidth(0.8);
+    doc.roundedRect(x + 3, y + u * 0.5, u * 1.3, u * 0.95, 1.5, 1.5, "FD");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(u * 0.95 * 2.1);
+    doc.setTextColor(cc[0][0], cc[0][1], cc[0][2]);
+    doc.text("0", x + 3 + u * 0.65, y + u * 0.5 + u * 0.95 * 0.72, {align:"center"});
+    x += w + 4;
+  });
   return doc.output("blob");
 }
 $("#te-btn").onclick = async () => {
   const n = +($("#te-n").value || 6);
   try{
     if(!window.jspdf || !window.jspdf.jsPDF){ toast("Le module PDF n'a pas pu se charger"); return; }
-    const blob = makeTracePDF(n);
+    const blob = makeTracePDF(n, +($("#te-rows").value || 3), $("#te-rep").value || S.brickLabel || "chiffre");
     const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
     if(!dl){ toast("Téléchargement indisponible ici"); return; }
     await dl.save({filename:"maison-du-" + n + ".pdf", data:blob});
@@ -2174,6 +2211,7 @@ makeBrickDrag("lbin-b", "b");
 $("#mode-sel").onchange = e => { S.mode = e.target.value; save(); renderChips(); toast(e.target.value === "deco" ? "Décomposer seulement" : (e.target.value === "compter" ? "Compter et écrire" : "Tour complet")); };
 $("#opt-both").onchange = e => { S.decoBoth = e.target.checked; save(); if(phase === "deco") renderDeco(); };
 $("#opt-boulier").onchange = e => { S.boulier = e.target.checked; save(); if(phase === "deco") renderDeco(); };
+$("#te-rep").onchange = e => { S.brickLabel = e.target.value; save(); if(phase === "deco") renderDeco(); };
 let armedH = false, armHT = null;
 $("#reset-houses").onclick = () => {
   const b = $("#reset-houses");
