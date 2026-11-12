@@ -1,4 +1,4 @@
-<title>Le rituel des nombres</title>
+<title>GS_R_Ecriture_decompo</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Lexend:wght@400;500;700&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -188,6 +188,8 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
 .lego-row .cell{width:var(--lu); border:2.5px dashed var(--rule-strong); border-radius:7px; margin:1px}
 .lego-row .placed{cursor:pointer}
 .lego-row.nope{animation:shake .45s}
+#lego-done{--lu:clamp(12px,1.7vw,26px); display:flex; flex-direction:column; gap:3px; align-items:center; opacity:.45}
+.ghostrow{display:flex}
 .dragbrick{--lu:clamp(18px,2.8vw,42px); position:fixed; transform:translate(-50%,-50%); z-index:60;
   pointer-events:none; filter:drop-shadow(0 12px 18px rgba(22,40,79,.5))}
 #view-deco.counting .lego-main{display:none}
@@ -199,7 +201,20 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
 /* ---------- le comptage final des doigts ---------- */
 #view-deco.counting .deco-main, #view-deco.counting .deco-turn{display:none}
 #view-deco.counting{justify-content:center; gap:clamp(10px,2.4vh,28px)}
-#view-deco.counting .hs{height:clamp(120px,30vh,330px)}
+#view-deco.counting .hs{height:clamp(96px,23vh,270px)}
+#view-deco.pending .handsrow{display:none}
+.mq{display:flex; flex-direction:column; align-items:center; gap:clamp(5px,1vh,10px); background:var(--card);
+  border-radius:16px; box-shadow:var(--lift); padding:clamp(6px,1vh,12px) clamp(10px,1.4vw,18px)}
+.mqeq{font-family:var(--font-display); font-weight:700; font-size:clamp(22px,3.2vw,44px); color:var(--ink)}
+.mqline{display:flex; gap:clamp(4px,.7vw,10px)}
+.mqn{width:clamp(34px,4.4vw,60px); aspect-ratio:1; border-radius:12px; border:3px solid var(--c); background:#fff;
+  font-family:var(--font-display); font-weight:700; font-size:clamp(18px,2.4vw,32px); color:var(--c); transition:transform .1s}
+.mqn:active{transform:scale(.9)}
+.mqn.bad{animation:shake .4s; background:#FFF0EF}
+.numlinewrap{align-self:center; width:min(760px,96%)}
+.numlinewrap svg{width:100%; height:auto; display:block}
+.nl .frame{transform-box:fill-box; transform-origin:center; transition:transform .35s cubic-bezier(.2,1.6,.4,1)}
+.nl .frame.on{transform:scale(1.28)}
 #view-deco.counting .handcard b{display:none}
 .eqrow{display:flex; align-items:center; justify-content:center; gap:clamp(8px,1.6vw,24px); flex-wrap:wrap}
 .eqcard{min-width:1.5em; padding:.02em .22em; text-align:center; border:5px solid var(--c,var(--ink)); border-radius:20px; background:#fff;
@@ -453,6 +468,8 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
         <div class="lego-center">
           <div id="lego-target"></div>
           <div class="lego-row" id="lego-row"></div>
+          <div id="lego-done"></div>
+          <div id="merge-q" hidden></div>
         </div>
         <div class="lego-bin" id="lbin-b" style="--m:var(--mB)"></div>
       </div>
@@ -461,6 +478,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
         <div class="lane" id="lane"></div>
         <button class="bigbin" id="bin-b" style="--m:var(--mB)" aria-label="boîte bleue"><span class="binpile" id="pile-b"></span></button>
       </div>
+      <div class="numlinewrap" id="numline" hidden></div>
       <div class="handsrow" id="deco-hands"></div>
       <div class="eqrow" id="deco-eq2" hidden></div>
       <div class="house" id="house"></div>
@@ -1240,7 +1258,7 @@ function brickSVG(k, col, label){
   o += '<g fill="' + col + '" stroke="' + dark + '" stroke-width="1.6" stroke-linejoin="round">';
   for(let i = 0; i < k; i++) o += '<rect x="' + (i*20 + 4.8) + '" y="0.8" width="10.4" height="10" rx="2.4"/>';
   o += '<rect x="0.8" y="9.5" width="' + (W - 1.6) + '" height="19.5" rx="3.6"/></g>';
-  if(label !== undefined) o += '<text x="' + (W/2) + '" y="19.6" text-anchor="middle" dominant-baseline="central" font-family="Fredoka, sans-serif" font-weight="700" font-size="16" fill="#7A4F03">' + label + '</text>';
+  if(label !== undefined) o += '<text x="' + (W/2) + '" y="19.6" text-anchor="middle" dominant-baseline="central" font-family="Fredoka, sans-serif" font-weight="700" font-size="16" fill="' + (col === MA || col === MB ? "#FFFFFF" : "#7A4F03") + '">' + label + '</text>';
   o += '</svg>';
   return o;
 }
@@ -1249,25 +1267,76 @@ function renderLego(n, a, b){
   const maxK = zeroAllowed(n) ? n : n - 1;
   let ha = "", hb = "";
   for(let k = maxK; k >= 1; k--){
-    ha += '<span class="bkw" data-col="a" data-k="' + k + '">' + brickSVG(k, MA) + '</span>';
-    hb += '<span class="bkw" data-col="b" data-k="' + k + '">' + brickSVG(k, MB) + '</span>';
+    ha += '<span class="bkw" data-col="a" data-k="' + k + '">' + brickSVG(k, MA, k) + '</span>';
+    hb += '<span class="bkw" data-col="b" data-k="' + k + '">' + brickSVG(k, MB, k) + '</span>';
   }
   $("#lbin-a").innerHTML = ha; $("#lbin-b").innerHTML = hb;
+  const P = D.pend;
+  const reds = [], blues = [];
+  if(P && P.col === "a"){ reds.push(P.from, P.add); } else if(a) reds.push(a);
+  if(P && P.col === "b"){ blues.push(P.from, P.add); } else if(b) blues.push(b);
+  const used = reds.reduce((x,y)=>x+y,0) + blues.reduce((x,y)=>x+y,0);
   let row = "";
-  if(a) row += '<span class="bkw placed" data-col="a">' + brickSVG(a, MA) + '</span>';
-  for(let i = 0; i < n - a - b; i++) row += '<span class="cell"></span>';
-  if(b) row += '<span class="bkw placed" data-col="b">' + brickSVG(b, MB) + '</span>';
+  reds.forEach((k, i) => { row += '<span class="bkw placed" data-col="a" data-part="'+i+'">' + brickSVG(k, MA, k) + '</span>'; });
+  for(let i = 0; i < n - used; i++) row += '<span class="cell"></span>';
+  blues.forEach((k, i) => { row += '<span class="bkw placed" data-col="b" data-part="'+i+'">' + brickSVG(k, MB, k) + '</span>'; });
   $("#lego-row").innerHTML = row;
+  let done = "";
+  ((R && R.decos) || []).forEach(dd => {
+    done += '<span class="ghostrow">' + (dd[0] ? brickSVG(dd[0], MA, dd[0]) : "") + (dd[1] ? brickSVG(dd[1], MB, dd[1]) : "") + '</span>';
+  });
+  $("#lego-done").innerHTML = done;
   $("#lego-row").querySelectorAll(".placed").forEach(el => {
-    el.onclick = () => { if(el.dataset.col === "a") D.a = 0; else D.b = 0; tone(300, 0.12, "sine", 0.1); renderDeco(); };
+    el.onclick = () => {
+      if(D.pend){
+        if(el.dataset.col === D.pend.col && el.dataset.part === "1"){ D.pend = null; tone(300, 0.12, "sine", 0.1); renderDeco(); }
+        return;
+      }
+      if(el.dataset.col === "a") D.a = 0; else D.b = 0;
+      tone(300, 0.12, "sine", 0.1); renderDeco();
+    };
+  });
+  renderMergeQ();
+}
+function renderMergeQ(){
+  const q = $("#merge-q");
+  const P = D && D.pend;
+  $("#view-deco").classList.toggle("pending", !!P);
+  if(!P){ q.hidden = true; return; }
+  const col = P.col === "a" ? MA : MB, good = P.from + P.add;
+  q.hidden = false;
+  let line = "";
+  for(let i = 1; i <= 9; i++) line += '<button class="mqn" data-i="' + i + '" style="--c:' + col + '">' + i + '</button>';
+  q.innerHTML = '<div class="mq"><span class="mqeq"><b style="color:' + col + '">' + P.from + '</b> + <b style="color:' + col + '">' + P.add + '</b> = ?</span><div class="mqline">' + line + '</div></div>';
+  q.querySelectorAll(".mqn").forEach(bt => {
+    bt.onclick = () => {
+      if(+bt.dataset.i === good){
+        D[P.col] = good; D.pend = null;
+        sfxPop(3);
+        speak(WORDS[P.from] + " et " + WORDS[P.add] + ", ça fait " + WORDS[good] + " !");
+        renderDeco();
+      } else {
+        bt.classList.remove("bad"); void bt.offsetWidth; bt.classList.add("bad");
+        sfxMiss();
+      }
+    };
   });
 }
 function placeBrick(col, k){
-  if(!D || !k) return;
+  if(!D || !k || D.pend) return;
+  const cur = col === "a" ? D.a : D.b;
   const other = col === "a" ? D.b : D.a;
-  if(k + other > D.n){ nope("Trop long !"); return; }
-  if(col === "a") D.a = k; else D.b = k;
-  tone(col === "a" ? 540 : 470, 0.13, "sine", 0.13);
+  if(cur + k + other > D.n){ nope("Trop long !"); return; }
+  if(cur === 0){
+    if(col === "a") D.a = k; else D.b = k;
+    tone(col === "a" ? 540 : 470, 0.13, "sine", 0.13);
+    renderDeco();
+    return;
+  }
+  /* on ajoute a un paquet existant : il faut dire combien ca fait sur la frise de la couleur */
+  D.pend = {col:col, from:cur, add:k};
+  tone(600, 0.14, "sine", 0.13);
+  speak(WORDS[cur] + (col === "a" ? " rouges" : " bleues") + " et " + WORDS[k] + " de plus : clique sur combien ça fait !");
   renderDeco();
 }
 function pileHTML(k){ let o = ""; for(let i=0;i<Math.max(0,k);i++) o += "<i></i>"; return o; }
@@ -1276,10 +1345,11 @@ function startDeco(){
   clearTimers(); phase = "deco"; picked = null;
   if(!R) return;
   if(!R.order.length) R.order = newOrderFrom(S.students[0]);
-  D = {n:R.n, a:0, b:0};
+  D = {n:R.n, a:0, b:0, pend:null};
   announce(decoStudent());
   $("#view-deco").classList.remove("counting");
   $("#deco-eq2").hidden = true;
+  $("#numline").hidden = true;
   show(["deco"]);
   const st = decoStudent(), c = COLORS[st.color] || COLORS.bleu;
   const both = bothRequired(D.n);
@@ -1339,8 +1409,9 @@ function renderDeco(){
   $("#deco-hands").innerHTML = handCard(a, MA) + '<span class="opsign">+</span>' + handCard(b, MB)
     + '<span class="opsign">=</span><span class="tot' + (tot === n ? "" : " wait") + '">' + tot + '</span>';
   renderHouse();
-  buttons(tot === n ? "✓ C'est fait" : "", tot === n ? validateDeco : null,
-          tot ? "↺" : "", tot ? () => { D.a = 0; D.b = 0; renderDeco(); } : null);
+  const ready = tot === n && !D.pend;
+  buttons(ready ? "✓ C'est fait" : "", ready ? validateDeco : null,
+          (tot || D.pend) ? "↺" : "", (tot || D.pend) ? () => { D.a = 0; D.b = 0; D.pend = null; renderDeco(); } : null);
 }
 
 function renderTurn(){
@@ -1390,7 +1461,7 @@ function nope(msg, a){
 }
 
 function validateDeco(){
-  if(!D || D.a + D.b !== D.n) return;
+  if(!D || D.pend || D.a + D.b !== D.n) return;
   const n = D.n, a = D.a, b = D.b;
   if(a === 0 || b === 0){
     if(!zeroAllowed(n)){ nope("Les deux boîtes !"); return; }
@@ -1408,6 +1479,33 @@ function validateDeco(){
   decoCount(st, a, b, n);
 }
 
+function numlineSVG(n, a, b){
+  const X = i => 26 + i * 47;
+  let o = '<svg class="nl" viewBox="0 0 476 84">';
+  o += '<line x1="' + X(0) + '" y1="36" x2="' + X(9) + '" y2="36" stroke="#9AABC8" stroke-width="3" stroke-linecap="round"/>';
+  for(let i = 0; i <= 9; i++){
+    o += '<line x1="' + X(i) + '" y1="29" x2="' + X(i) + '" y2="43" stroke="#9AABC8" stroke-width="3" stroke-linecap="round"/>';
+    if(i === n){
+      o += '<g class="frame" id="nl-frame"><rect x="' + (X(i) - 17) + '" y="48" width="34" height="32" rx="8" fill="#FFF6DC" stroke="#E9A51C" stroke-width="3.5"/>'
+        + '<text x="' + X(i) + '" y="65" text-anchor="middle" dominant-baseline="central" font-family="Fredoka, sans-serif" font-weight="700" font-size="24" fill="#16284F">' + i + '</text></g>';
+    } else {
+      o += '<text x="' + X(i) + '" y="60" text-anchor="middle" dominant-baseline="central" font-family="Fredoka, sans-serif" font-weight="600" font-size="13" fill="#5B6E92">' + i + '</text>';
+    }
+  }
+  const la = a * 47, lb = b * 47;
+  o += '<line id="nl-a" x1="' + X(0) + '" y1="22" x2="' + X(a) + '" y2="22" stroke="' + MA + '" stroke-width="9" stroke-linecap="round" style="stroke-dasharray:' + Math.max(la, 0.01) + ';stroke-dashoffset:' + Math.max(la, 0.01) + '"/>';
+  o += '<line id="nl-b" x1="' + X(a) + '" y1="22" x2="' + X(a + b) + '" y2="22" stroke="' + MB + '" stroke-width="9" stroke-linecap="round" style="stroke-dasharray:' + Math.max(lb, 0.01) + ';stroke-dashoffset:' + Math.max(lb, 0.01) + '"/>';
+  return o + '</svg>';
+}
+function animSeg(id, ms){
+  const el = document.getElementById(id);
+  if(!el) return;
+  void el.getBoundingClientRect();
+  el.style.transition = "stroke-dashoffset " + ms + "ms linear";
+  void el.getBoundingClientRect();
+  el.style.strokeDashoffset = "0";
+}
+
 /* on verifie sur les doigts : on compte chacun, puis [a] + [b] -> n */
 function decoCount(st, a, b, n){
   phase = "decocount";
@@ -1416,6 +1514,16 @@ function decoCount(st, a, b, n){
   say("On compte sur les doigts&nbsp;…", "");
   speak("On vérifie sur les doigts !");
   $("#deco-hands").innerHTML = handCard(a, MA, 0) + handCard(b, MB, a);
+  $("#numline").hidden = false;
+  $("#numline").innerHTML = numlineSVG(n, a, b);
+  later(() => { if(a){ animSeg("nl-a", 900); tone(430, 0.5, "triangle", 0.12); speak(WORDS[a] + " rouges"); } }, 600);
+  later(() => { if(b){ animSeg("nl-b", 900); tone(530, 0.5, "triangle", 0.12); speak("et " + WORDS[b] + " bleues"); } }, 1750);
+  later(() => {
+    const f = document.getElementById("nl-frame");
+    if(f) f.classList.add("on");
+    tone(880, 0.35, "triangle", 0.16);
+    speak("Ça fait bien " + WORDS[n] + " ! On compte sur les doigts.");
+  }, 2900);
   const eq = $("#deco-eq2");
   eq.hidden = false;
   eq.innerHTML = '<span class="eqcard" id="eq-a" style="--c:' + MA + '">' + a + '</span>'
@@ -1424,7 +1532,7 @@ function decoCount(st, a, b, n){
     + '<span class="arr" id="eq-f">→</span>'
     + '<span class="eqcard target" id="eq-n">' + n + '</span>';
   buttons("", null, "Passer →", () => finishDeco(st, a, b, n));
-  if(a === 0) later(() => { $("#eq-a").classList.add("on"); }, 500);
+  if(a === 0) later(() => { $("#eq-a").classList.add("on"); }, 3700);
   for(let i = 0; i < n; i++){
     later(() => {
       const f = document.querySelector('#deco-hands .fg[data-f="' + i + '"]');
@@ -1433,7 +1541,7 @@ function decoCount(st, a, b, n){
       speak(WORDS[i + 1]);
       if(i === a - 1){ $("#eq-a").classList.add("on"); $("#eq-p").classList.add("on"); }
       if(i === n - 1){ $("#eq-b").classList.add("on"); $("#eq-p").classList.add("on"); }
-    }, 700 + i * 660);
+    }, 3900 + i * 660);
   }
   later(() => {
     $("#eq-f").classList.add("on"); $("#eq-n").classList.add("on");
@@ -1443,13 +1551,14 @@ function decoCount(st, a, b, n){
     renderHouse();
     const w = document.querySelector('.win[data-a="' + a + '"]');
     if(w) w.classList.add("newwin");
-  }, 700 + n * 660 + 450);
-  later(() => finishDeco(st, a, b, n), 700 + n * 660 + 2600);
+  }, 3900 + n * 660 + 450);
+  later(() => finishDeco(st, a, b, n), 3900 + n * 660 + 2600);
 }
 function finishDeco(st, a, b, n){
   clearTimers();
   $("#view-deco").classList.remove("counting");
   $("#deco-eq2").hidden = true;
+  $("#numline").hidden = true;
   phase = "decowin";
   celebrate(st, a + "+" + b, '<b style="color:' + MA + '">' + a + '</b> + <b style="color:' + MB + '">' + b + '</b> = ' + n);
   say('<span style="color:' + MA + '">' + a + '</span> + <span style="color:' + MB + '">' + b + '</span> = <em>' + n + '</em>', "");
@@ -2031,6 +2140,7 @@ function makeBrickDrag(binId, col){
   const kill = () => { if(ghost){ ghost.remove(); ghost = null; } };
   bin.addEventListener("pointerdown", e => {
     if(phase !== "deco" || !D || S.boulier) return;
+    if(D.pend){ shake(); return; }
     const w = e.target.closest(".bkw"); if(!w) return;
     kSel = +w.dataset.k;
     e.preventDefault();
@@ -2039,7 +2149,7 @@ function makeBrickDrag(binId, col){
     kill();
     ghost = document.createElement("div");
     ghost.className = "dragbrick";
-    ghost.innerHTML = brickSVG(kSel, col === "a" ? MA : MB);
+    ghost.innerHTML = brickSVG(kSel, col === "a" ? MA : MB, kSel);
     ghost.style.left = e.clientX + "px"; ghost.style.top = e.clientY + "px";
     document.body.appendChild(ghost);
   });
