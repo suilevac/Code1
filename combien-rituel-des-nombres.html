@@ -615,6 +615,10 @@ const ANG = {
   8:{s:["M52,54 L24,30 L50,8 L78,30 L52,54 L18,72 L34,100 L66,100 L82,72 Z"], d:[[52,54],[24,30],[50,8],[78,30],[18,72],[34,100],[66,100],[82,72]]},
   9:{s:["M78,42 L50,58 L20,44 L20,18 L50,4 L78,18 Z","M78,28 L70,72 L54,98 L28,90"], d:[[78,42],[50,58],[20,44],[20,18],[50,4],[78,18],[70,72],[54,98],[28,90]]}
 };
+/* chaque chiffre a sa couleur, dans tout le systeme (frise, clavier, briques en mode des) */
+const NUMC = {1:"#E88A1A", 2:"#4FA8DD", 3:"#E0B000", 4:"#6FB84C", 5:"#D93A2B", 6:"#1FAEA9", 7:"#E86FB0", 8:"#2E7D32", 9:"#8E4FD0"};
+function hx(c){ return [parseInt(c.slice(1,3),16), parseInt(c.slice(3,5),16), parseInt(c.slice(5,7),16)]; }
+function hxDark(c){ return hx(c).map(v => Math.round(v * 0.62)); }
 const WORDS = {0:"zéro",1:"un",2:"deux",3:"trois",4:"quatre",5:"cinq",6:"six",7:"sept",8:"huit",9:"neuf"};
 const COLORS = {rose:"#DE4199", rouge:"#D22D2D", vert:"#17964C", bleu:"#2A68CC", orange:"#E2701A", violet:"#7B4CC4"};
 const PIPC = ["#2A68CC","#7B4CC4","#E2701A","#17964C"];
@@ -1022,7 +1026,8 @@ function renderFrise(){
     const c = document.createElement("button");
     c.className = "fcell" + (S.digits.indexOf(d) >= 0 ? " on" : "");
     c.dataset.d = d;
-    c.innerHTML = digitSVG(d) + '<span class="w">'+WORDS[d]+'</span>';
+    c.innerHTML = digitSVG(d) + '<span class="w" style="color:' + NUMC[d] + '">'+WORDS[d]+'</span>';
+    c.querySelectorAll(".trace").forEach(pa => pa.style.stroke = NUMC[d]);
     c.onclick = () => { traceIn(c.querySelector("svg"), 800); speak(WORDS[d]); };
     f.appendChild(c);
   }
@@ -1109,6 +1114,7 @@ function renderKeypad(){
   for(let d=1; d<=9; d++){
     const b = document.createElement("button");
     b.className = "key"; b.innerHTML = digitSVG(d); b.onclick = () => answer(d);
+    b.querySelectorAll(".trace").forEach(pa => pa.style.stroke = NUMC[d]);
     k.appendChild(b);
   }
   const x = document.createElement("button");
@@ -1257,16 +1263,23 @@ function handCard(count, col, tagStart){
   return '<span class="handcard"><span class="hs">' + handsSVG(count, col, tagStart) + '</span><b style="color:' + col + '">' + count + '</b></span>';
 }
 function brickSVG(k, col, label){
-  const W = k * 20, dark = col === MA ? "#9E1F1A" : (col === MB ? "#1D4A96" : "#B07E0C");
+  const W = k * 20, modeNow = S.brickLabel || "chiffre";
+  if(modeNow === "des" && NUMC[k]) col = NUMC[k];
+  const dark = col === MA ? "#9E1F1A" : (col === MB ? "#1D4A96" : (col === "#F3B81F" ? "#B07E0C"
+    : "rgb(" + hxDark(col).join(",") + ")"));
   let o = '<svg class="bk" viewBox="0 0 ' + W + ' 30" style="width:calc(var(--lu) * ' + k + ')" data-k="' + k + '">';
   o += '<g fill="' + col + '" stroke="' + dark + '" stroke-width="1.6" stroke-linejoin="round">';
   for(let i = 0; i < k; i++) o += '<rect x="' + (i*20 + 4.8) + '" y="0.8" width="10.4" height="10" rx="2.4"/>';
   o += '<rect x="0.8" y="9.5" width="' + (W - 1.6) + '" height="19.5" rx="3.6"/></g>';
   if(label !== undefined){
     const mode = S.brickLabel || "chiffre";
-    const lf = (col === MA || col === MB) ? "#FFFFFF" : "#7A4F03";
+    const lf = (col === "#F3B81F") ? "#7A4F03" : "#FFFFFF";
     if(mode === "points"){
       for(let i = 0; i < k; i++) o += '<circle cx="' + (i*20 + 10) + '" cy="19.3" r="3.4" fill="' + lf + '"/>';
+    } else if(mode === "des"){
+      (PIPPAT[Math.min(k, 9)] || []).forEach(pr => {
+        o += '<circle cx="' + (W/2 + (pr[0]-1) * 6.2) + '" cy="' + (19.3 + (pr[1]-1) * 5.4) + '" r="2.4" fill="' + lf + '"/>';
+      });
     } else if(mode !== "rien"){
       o += '<text x="' + (W/2) + '" y="19.6" text-anchor="middle" dominant-baseline="central" font-family="Fredoka, sans-serif" font-weight="700" font-size="16" fill="' + lf + '">' + label + '</text>';
     }
@@ -1955,7 +1968,7 @@ function renderPanel(){
   }
   const tp = $("#te-rep");
   if(tp && !tp.options.length){
-    [["chiffre","Briques : chiffre écrit"],["points","Briques : points à compter"],["rien","Briques : rien"]].forEach(pr => {
+    [["chiffre","Briques : chiffre écrit"],["points","Briques : points à compter"],["des","Briques : dés, couleur par chiffre"],["rien","Briques : rien"]].forEach(pr => {
       const o = document.createElement("option"); o.value = pr[0]; o.textContent = pr[1]; tp.appendChild(o);
     });
   }
@@ -2022,6 +2035,11 @@ function pdfBrick(doc, x, y, k, u, fill, stroke, label, mode, lf){
     if(mode === "points"){
       doc.setFillColor(col[0], col[1], col[2]);
       for(let i = 0; i < k; i++) doc.circle(x + i*u + u/2, y + sh + bh/2, u * 0.16, "F");
+    } else if(mode === "des"){
+      doc.setFillColor(col[0], col[1], col[2]);
+      (PIPPAT[Math.min(k, 9)] || []).forEach(pr => {
+        doc.circle(x + w/2 + (pr[0]-1) * u * 0.33, y + sh + bh/2 + (pr[1]-1) * u * 0.28, u * 0.12, "F");
+      });
     } else {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(bh * 2.1);
@@ -2050,7 +2068,8 @@ function makeTracePDF(n, rows, mode){
   doc.setFillColor(255, 255, 255);
   doc.rect(left, yR + 24, hw, wallsH, "FD");
   let y = yR + 24 + 10;
-  pdfBrick(doc, 105 - (n * u) / 2, y, n, u, [243, 184, 31], [176, 126, 12], n, mode);
+  if(mode === "des") pdfBrick(doc, 105 - (n * u) / 2, y, n, u, hx(NUMC[n] || "#F3B81F"), hxDark(NUMC[n] || "#F3B81F"), n, mode, [255, 255, 255]);
+  else pdfBrick(doc, 105 - (n * u) / 2, y, n, u, [243, 184, 31], [176, 126, 12], n, mode);
   y += bH + 8;
   for(let r = 0; r < rows; r++){
     doc.setDrawColor(159, 185, 224); doc.setLineWidth(0.5); doc.setLineDashPattern([2, 1.6], 0);
@@ -2068,7 +2087,10 @@ function makeTracePDF(n, rows, mode){
   doc.setLineDashPattern([], 0);
   let x = 15; y = 18;
   for(let k = n; k >= 1; k--){
-    [[PDF_MA, PDF_MAd, [255, 255, 255]], [PDF_MB, PDF_MBd, [255, 255, 255]]].forEach(cc => {
+    const pair = mode === "des"
+      ? [[hx(NUMC[k]), hxDark(NUMC[k]), [255, 255, 255]], [hx(NUMC[k]), hxDark(NUMC[k]), [255, 255, 255]]]
+      : [[PDF_MA, PDF_MAd, [255, 255, 255]], [PDF_MB, PDF_MBd, [255, 255, 255]]];
+    pair.forEach(cc => {
       const w = k * u + 6;
       if(x + w > 198){ x = 15; y += bH + 8; }
       if(y + bH > 282){ doc.addPage(); x = 15; y = 16; }
