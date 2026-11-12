@@ -191,6 +191,9 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
 .dragbrick{--lu:clamp(18px,2.8vw,42px); position:fixed; transform:translate(-50%,-50%); z-index:60;
   pointer-events:none; filter:drop-shadow(0 12px 18px rgba(22,40,79,.5))}
 #view-deco.counting .lego-main{display:none}
+#r-objs{transition:opacity .7s}
+#r-objs.faded{opacity:.13}
+.ptg.dim{opacity:.4; transition:opacity .5s}
 .prompt .bigN{font-size:1.45em}
 
 /* ---------- le comptage final des doigts ---------- */
@@ -421,13 +424,12 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 
     <div class="reveal" id="view-reveal" hidden>
       <div class="rtop">
-        <div class="minibox" id="r-collection"></div>
         <div class="rcap" id="rcap"></div>
       </div>
       <div class="rstage" id="rstage">
         <div class="rmodel">
           <svg class="glyphsvg" id="rsvg" viewBox="-14 -12 128 132" aria-label="le chiffre et ses points">
-            <g id="r-ang"></g><g id="r-school"></g><g id="r-start"></g><g id="r-dots"></g>
+            <g id="r-objs"></g><g id="r-ang"></g><g id="r-school"></g><g id="r-start"></g><g id="r-dots"></g>
           </svg>
         </div>
       </div>
@@ -1476,11 +1478,8 @@ function chain(k){
 function reveal(from){
   clearTimers(); phase = "reveal"; rvStep = (typeof from === "number") ? from : 0;
   show(["reveal"]);
-  const col = $("#r-collection"); col.innerHTML = "";
-  const clone = $("#field").cloneNode(true);
-  clone.querySelectorAll(".item").forEach(e => e.classList.add("in", "counted"));
-  col.appendChild(clone); watchU(col);
   say("Le secret du <em>" + R.n + "</em>", "");
+  $("#r-objs").innerHTML = ""; $("#r-objs").classList.remove("faded");
   $("#r-ang").innerHTML = ""; $("#r-school").innerHTML = ""; $("#r-start").innerHTML = ""; $("#r-dots").innerHTML = "";
   document.querySelectorAll(".fcell.target").forEach(e => e.classList.remove("target"));
   const f = $("#frise .fcell[data-d=\'" + R.n + "\']"); if(f) f.classList.add("target");
@@ -1493,28 +1492,35 @@ function stepReveal(){
   const n = R.n;
   if(rvStep === 0){
     chain(2);
-    $("#rcap").innerHTML = "On repose les objets en <b>points</b>&nbsp;…";
+    $("#rcap").innerHTML = "Un <b>point</b> sur chaque image&nbsp;…";
     $("#r-dots").innerHTML = "";
-    const from = posPips(n, {x0:6, x1:94, y0:4, y1:104});
+    const from = posPips(n, {x0:10, x1:90, y0:8, y1:100});
+    const emoji = R.kind !== "pips" && R.kind !== "paquets" && R.icon;
     for(let i=0;i<n;i++){
       later(() => {
+        const o = emoji
+          ? svgEl("text", {x:from[i].x, y:from[i].y, "font-size":22, "text-anchor":"middle", "dominant-baseline":"central"})
+          : svgEl("circle", {cx:from[i].x, cy:from[i].y, r:8.5, fill:R.pc});
+        if(emoji) o.textContent = R.icon;
+        $("#r-objs").appendChild(o);
         const g = svgEl("g", {class:"ptg"});
         g.dataset.i = i;
-        g.style.transform = "translate(" + from[i].x + "px," + from[i].y + "px)";
-        g.appendChild(svgEl("circle", {class:"pt", r:9}));
+        g.style.transform = "translate(" + (from[i].x + 10) + "px," + (from[i].y - 11) + "px)";
+        g.appendChild(svgEl("circle", {class:"pt", r:6.5}));
         const t = svgEl("text", {class:"ptn", x:0, y:0}); t.textContent = i + 1; g.appendChild(t);
         $("#r-dots").appendChild(g);
         tone(500 + i*60, 0.18, "triangle", 0.14); speak(WORDS[i+1]);
-        $("#rcap").innerHTML = "On compte les points&nbsp;: <b>" + (i+1) + "</b>";
+        $("#rcap").innerHTML = "Un <b>point</b> sur chaque image&nbsp;: " + (i+1);
       }, 220 + i*620);
     }
-    later(() => { $("#rcap").innerHTML = "<b>" + n + "</b> points, comme " + n + " objets."; speak("Il y en a " + WORDS[n]); },
+    later(() => { $("#rcap").innerHTML = "<b>" + n + "</b> images, <b>" + n + "</b> points."; speak("Il y en a " + WORDS[n]); },
           300 + n*620);
     buttons("Les points dans les coins →", nextStep, "", null);
     return;
   }
   if(rvStep === 1){
     chain(3);
+    $("#r-objs").classList.add("faded");
     $("#rcap").innerHTML = "Chaque point va se poser dans un <b>coin</b> du " + n + ".";
     $("#r-ang").innerHTML = (ANG[n] ? ANG[n].s : []).map(d => '<path class="ang" d="' + d + '"/>').join("");
     const tgt = (ANG[n] || {d:[]}).d;
@@ -1525,9 +1531,25 @@ function stepReveal(){
       tone(600 + i*45, 0.16, "sine", 0.12); speak(WORDS[i+1]);
     }, 420 + i*520));
     later(() => {
-      $("#rcap").innerHTML = "Le " + n + " cache <b>" + n + " coins</b>&nbsp;: un pour chaque objet.";
+      $("#rcap").innerHTML = "Le " + n + " cache <b>" + n + " coins</b>&nbsp;: un pour chaque image.";
       speak("Le " + WORDS[n] + " cache " + WORDS[n] + " coins.");
     }, 560 + n*520);
+    buttons("Le vrai chiffre →", nextStep, "", null);
+    return;
+  }
+  if(rvStep === 2){
+    chain(4);
+    $("#rcap").innerHTML = "Et voilà le <b>vrai " + n + "</b>&nbsp;!";
+    $("#r-objs").innerHTML = "";
+    $("#rsvg").querySelectorAll(".ang").forEach(pa => pa.classList.add("dark"));
+    tone(220, 0.5, "triangle", 0.1);
+    later(() => {
+      $("#rsvg").querySelectorAll(".ang").forEach(pa => { pa.classList.remove("dark"); pa.classList.add("fade"); });
+      document.querySelectorAll("#r-dots .ptg").forEach(g => g.classList.add("dim"));
+      $("#r-school").innerHTML = (DIGITS[n] ? DIGITS[n].p : []).map(d => '<path class="trace" d="' + d + '"/>').join("");
+      traceIn($("#r-school"), 1000);
+      speak("Et voilà le vrai " + WORDS[n] + " ! À vous de le tracer.");
+    }, 900);
     buttons("À vous d'écrire →", nextStep, "", null);
     return;
   }
@@ -1954,7 +1976,7 @@ function openPanel(o){
   if(o) renderPanel();
 }
 $("#tpad-clear").onclick = () => { if(phase === "trace" && T) setStage(T.stage); else tracePad.clear(); };
-$("#rsvg").onclick = () => { if(phase === "reveal" && rvStep < 2) nextStep(); };
+$("#rsvg").onclick = () => { if(phase === "reveal" && rvStep < 3) nextStep(); };
 function makeBinDrag(binId, col){
   const bin = $("#" + binId);
   let ball = null, pid = null, moved = false, sx = 0, sy = 0;
