@@ -1,6 +1,7 @@
 <title>Le rituel des nombres</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Lexend:wght@400;500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 /* Layout : trois bandes fixes — barre des medailles en haut, scene centrale plein cadre, frise des chiffres en pied. Un seul theme assume : papier d'ecole regle Seyes, encre bleue, et le rouge reserve aux points du chiffre. */
 :root{
@@ -171,6 +172,26 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
   font-size:clamp(11px,1.2vw,15.5px); color:var(--ink-faint); background:#fff; font-family:var(--font-display)}
 .tstep.now{border-color:var(--bleu); color:var(--bleu)}
 .tstep.done{border-color:var(--vert); color:var(--vert)}
+
+/* ---------- les briques a assembler ---------- */
+#view-deco{--lu:clamp(18px,2.8vw,42px)}
+.lego-main{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:clamp(8px,1.8vw,28px); align-items:center; width:100%}
+.lego-bin{--lu:clamp(10px,1.3vw,19px); display:flex; flex-direction:column; gap:clamp(3px,.5vh,6px); align-items:flex-start;
+  background:var(--card); border-radius:18px; box-shadow:var(--lift); border:5px solid var(--m);
+  padding:clamp(5px,.9vh,11px); touch-action:none}
+#lbin-b{align-items:flex-end}
+.bkw{display:block; cursor:grab}
+.bk{display:block; height:auto}
+.lego-center{display:flex; flex-direction:column; align-items:center; gap:clamp(5px,1vh,12px); min-width:0}
+.lego-row{display:flex; align-items:stretch; background:#fff; border-radius:12px; box-shadow:var(--lift);
+  padding:clamp(5px,.9vh,10px); min-height:calc(var(--lu) * 1.5 + clamp(10px,1.8vh,20px))}
+.lego-row .cell{width:var(--lu); border:2.5px dashed var(--rule-strong); border-radius:7px; margin:1px}
+.lego-row .placed{cursor:pointer}
+.lego-row.nope{animation:shake .45s}
+.dragbrick{--lu:clamp(18px,2.8vw,42px); position:fixed; transform:translate(-50%,-50%); z-index:60;
+  pointer-events:none; filter:drop-shadow(0 12px 18px rgba(22,40,79,.5))}
+#view-deco.counting .lego-main{display:none}
+.prompt .bigN{font-size:1.45em}
 
 /* ---------- le comptage final des doigts ---------- */
 #view-deco.counting .deco-main, #view-deco.counting .deco-turn{display:none}
@@ -425,7 +446,15 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
     </div>
     <div id="view-deco" hidden>
       <div class="deco-turn" id="deco-turn"></div>
-      <div class="deco-main">
+      <div class="lego-main" id="lego-main" hidden>
+        <div class="lego-bin" id="lbin-a" style="--m:var(--mA)"></div>
+        <div class="lego-center">
+          <div id="lego-target"></div>
+          <div class="lego-row" id="lego-row"></div>
+        </div>
+        <div class="lego-bin" id="lbin-b" style="--m:var(--mB)"></div>
+      </div>
+      <div class="deco-main" id="deco-main">
         <button class="bigbin" id="bin-a" style="--m:var(--mA)" aria-label="boîte rouge"><span class="binpile" id="pile-a"></span></button>
         <div class="lane" id="lane"></div>
         <button class="bigbin" id="bin-b" style="--m:var(--mB)" aria-label="boîte bleue"><span class="binpile" id="pile-b"></span></button>
@@ -474,6 +503,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
       <option value="deco">Décomposer seulement</option>
     </select>
     <label class="lab"><input type="checkbox" id="opt-both"> Interdire les paquets vides (sinon : un seul paquet vide par nombre)</label>
+    <label class="lab"><input type="checkbox" id="opt-boulier"> Boulier à billes (sinon : briques à assembler)</label>
     <p class="note">Dans la maison du nombre, chacun passe à son tour et doit trouver une décomposition que personne n'a encore posée. Les maisons se remplissent de jour en jour.</p>
   </section>
 
@@ -505,6 +535,15 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
   </section>
 
   <section>
+    <h4>Trace écrite</h4>
+    <div class="row">
+      <select id="te-n" style="flex:1"></select>
+      <button class="mini" id="te-btn">Télécharger la fiche (PDF)</button>
+    </div>
+    <p class="note">Deux pages à imprimer, aux mêmes dimensions : la maison du nombre avec sa brique en haut et les cadres où coller, puis la planche de briques rouges et bleues à découper.</p>
+  </section>
+
+  <section>
     <h4>Compteurs</h4>
     <button class="danger" id="reset-medals">Remettre les étoiles à zéro</button>
     <button class="mini" id="reset-houses">Vider les maisons des nombres</button>
@@ -517,7 +556,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
       <b>Le tour.</b> La boîte s'ouvre, la collection apparaît → chacun compte dans sa tête et écrit le nombre sur son ardoise → on lève les ardoises → tu cliques sur l'élève qui a écrit juste le premier → il vient écrire le chiffre au tableau → tu cliques sur le chiffre qu'il a écrit. Juste : médaille. Faux : on recompte tous ensemble, personne ne perd rien, un autre peut essayer.<br><br>
       <b>Le secret du chiffre.</b> Le chiffre se retrace, puis il se couvre d'autant de points rouges que le nombre : 4 points pour le 4. On les compte à voix haute. Les points sont posés sur le tracé : ils servent aussi de repères pour écrire le chiffre.<br><br>
       <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau et clique sur le chiffre qu'il a écrit sur son ardoise. On déroule le secret du chiffre (les objets deviennent des points, les points filent dans les coins), puis <b>chacun s'entraîne en trois temps, dans un ordre tiré au sort</b> affiché à l'écran — une grande annonce colorée dit à chaque fois qui passe : ① relier les points numérotés dans l'ordre au stylet — à chaque point touché on compte (1, 2, 3…) et le chiffre apparaît morceau par morceau ; ② repasser sur le chiffre dans le sens du tracé, en partant du rond qui clignote — l'écran n'avance que si le stylet suit vraiment le chemin ; ③ l'écrire tout seul, sans modèle — c'est toi qui donnes l'étoile. Ensuite vient la décomposition du même nombre, et c'est <b>celui qui avait trouvé le premier qui recommence</b>.<br><br>
-      <b>La décomposition.</b> Chacun son tour : <b>faire glisser</b> une bille depuis une boîte jusqu'au boulier (un simple clic ne suffit pas). La maison du nombre reste affichée en haut à droite et s'allume à chaque nouvelle fenêtre trouvée. Le paquet vide est permis (7 = 7 + 0) mais une seule fois par nombre — réglable ci-dessus. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand elle est juste, on vérifie en comptant les doigts un par un, les deux cases s'affichent — <b>3</b> + <b>4</b> — puis la flèche vers le nombre de départ : → 7. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
+      <b>La décomposition.</b> La grande brique dorée montre le nombre à construire. Chacun son tour <b>fait glisser</b> une brique rouge et une brique bleue sous la brique modèle : les longueurs doivent tomber juste (2 tenons + 1 tenon sous la brique de 3). Le boulier à billes se retrouve dans les réglages si tu le préfères. La maison du nombre reste en haut à droite et s'allume à chaque nouvelle fenêtre. La <b>trace écrite</b> (réglages) donne un PDF : la maison à coller et la planche de briques à découper, aux mêmes dimensions. Le paquet vide est permis (7 = 7 + 0) mais une seule fois par nombre — réglable ci-dessus. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand elle est juste, on vérifie en comptant les doigts un par un, les deux cases s'affichent — <b>3</b> + <b>4</b> — puis la flèche vers le nombre de départ : → 7. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
       <b>Au clavier.</b> <kbd>Espace</kbd> bouton principal · <kbd>1</kbd>…<kbd>9</kbd> le chiffre écrit au tableau · <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> l'élève qui va au tableau · <kbd>R</kbd> recompter · <kbd>Échap</kbd> fermer.<br><br>
       <b>Programmes.</b> Cycle 1 : dénombrer une collection jusqu'à 10, dire combien il y en a, utiliser le nombre pour exprimer une quantité, reconnaître de petites quantités organisées, écrire les chiffres. Cycle 2, CP : dénombrer, lire et écrire les nombres, associer les représentations (collection, constellation, doigts, chiffre), décomposer avec les deux paquets.
     </p>
@@ -574,7 +613,7 @@ const FRESH = {
             {id:"s2",name:"Charlie",color:"rouge",stars:0},
             {id:"s3",name:"Tedo",color:"vert",stars:0}],
   digits:[1,2,3], level:0, autoLevel:true, streak:0,
-  mode:"plein", decoBoth:false, zeroMig:true, houses:{}, turn:0,
+  mode:"plein", decoBoth:false, zeroMig:true, boulier:false, houses:{}, turn:0,
   voice:true, sound:true, secret:true, flashMs:2000,
   updatedAt:0
 };
@@ -1193,6 +1232,42 @@ function handsSVG(count, col, tagStart){
 function handCard(count, col, tagStart){
   return '<span class="handcard"><span class="hs">' + handsSVG(count, col, tagStart) + '</span><b style="color:' + col + '">' + count + '</b></span>';
 }
+function brickSVG(k, col, label){
+  const W = k * 20, dark = col === MA ? "#9E1F1A" : (col === MB ? "#1D4A96" : "#B07E0C");
+  let o = '<svg class="bk" viewBox="0 0 ' + W + ' 30" style="width:calc(var(--lu) * ' + k + ')" data-k="' + k + '">';
+  o += '<g fill="' + col + '" stroke="' + dark + '" stroke-width="1.6" stroke-linejoin="round">';
+  for(let i = 0; i < k; i++) o += '<rect x="' + (i*20 + 4.8) + '" y="0.8" width="10.4" height="10" rx="2.4"/>';
+  o += '<rect x="0.8" y="9.5" width="' + (W - 1.6) + '" height="19.5" rx="3.6"/></g>';
+  if(label !== undefined) o += '<text x="' + (W/2) + '" y="19.6" text-anchor="middle" dominant-baseline="central" font-family="Fredoka, sans-serif" font-weight="700" font-size="16" fill="#7A4F03">' + label + '</text>';
+  o += '</svg>';
+  return o;
+}
+function renderLego(n, a, b){
+  $("#lego-target").innerHTML = brickSVG(n, "#F3B81F", n);
+  const maxK = zeroAllowed(n) ? n : n - 1;
+  let ha = "", hb = "";
+  for(let k = maxK; k >= 1; k--){
+    ha += '<span class="bkw" data-col="a" data-k="' + k + '">' + brickSVG(k, MA) + '</span>';
+    hb += '<span class="bkw" data-col="b" data-k="' + k + '">' + brickSVG(k, MB) + '</span>';
+  }
+  $("#lbin-a").innerHTML = ha; $("#lbin-b").innerHTML = hb;
+  let row = "";
+  if(a) row += '<span class="bkw placed" data-col="a">' + brickSVG(a, MA) + '</span>';
+  for(let i = 0; i < n - a - b; i++) row += '<span class="cell"></span>';
+  if(b) row += '<span class="bkw placed" data-col="b">' + brickSVG(b, MB) + '</span>';
+  $("#lego-row").innerHTML = row;
+  $("#lego-row").querySelectorAll(".placed").forEach(el => {
+    el.onclick = () => { if(el.dataset.col === "a") D.a = 0; else D.b = 0; tone(300, 0.12, "sine", 0.1); renderDeco(); };
+  });
+}
+function placeBrick(col, k){
+  if(!D || !k) return;
+  const other = col === "a" ? D.b : D.a;
+  if(k + other > D.n){ nope("Trop long !"); return; }
+  if(col === "a") D.a = k; else D.b = k;
+  tone(col === "a" ? 540 : 470, 0.13, "sine", 0.13);
+  renderDeco();
+}
 function pileHTML(k){ let o = ""; for(let i=0;i<Math.max(0,k);i++) o += "<i></i>"; return o; }
 
 function startDeco(){
@@ -1206,7 +1281,7 @@ function startDeco(){
   show(["deco"]);
   const st = decoStudent(), c = COLORS[st.color] || COLORS.bleu;
   const both = bothRequired(D.n);
-  say('<span style="color:' + c + '">' + st.name + '</span> fabrique <em>' + D.n + '</em>', "");
+  say('<span style="color:' + c + '">' + st.name + '</span> construit le <em class="bigN">' + D.n + '</em>', "");
   speak(R.decoIdx === 0 ? (st.name + ", fabrique " + WORDS[D.n] + " avec les billes. Une décomposition que personne n'a encore trouvée.")
                         : ("À toi, " + st.name + " ! Fabrique " + WORDS[D.n] + " autrement."));
   renderDeco();
@@ -1220,7 +1295,7 @@ function takeBille(col){
   renderDeco();
 }
 function shake(){
-  const L = $("#lane");
+  const L = S.boulier ? $("#lane") : $("#lego-row");
   if(L){ L.classList.remove("nope"); void L.offsetWidth; L.classList.add("nope"); }
   tone(260, 0.14, "sine", 0.1);
 }
@@ -1229,29 +1304,36 @@ function renderDeco(){
   if(!D) return;
   const n = D.n, a = D.a, b = D.b, tot = a + b;
   renderTurn();
-  $("#pile-a").innerHTML = pileHTML(n - a);
-  $("#pile-b").innerHTML = pileHTML(n - b);
-  $("#bin-a").classList.toggle("empty", n - a <= 0);
-  $("#bin-b").classList.toggle("empty", n - b <= 0);
-  const L = $("#lane"); L.innerHTML = "";
-  const empty = n - tot, eA = Math.ceil(empty/2), eB = empty - eA;
-  const slot = (col) => {
-    const sl = document.createElement("button");
-    sl.className = "slot" + (col ? " full" : "");
-    if(col){
-      sl.style.setProperty("--m", col === "a" ? MA : MB);
-      sl.innerHTML = '<span class="bille"></span>';
-      sl.onclick = () => { if(col === "a") D.a--; else D.b--; tone(300, 0.12, "sine", 0.1); renderDeco(); };
-    } else sl.onclick = shake;
-    L.appendChild(sl);
-  };
-  const capL = document.createElement("i"); capL.className = "cap"; L.appendChild(capL);
-  for(let i=0;i<a;i++) slot("a");
-  for(let i=0;i<eA;i++) slot(null);
-  const sep = document.createElement("i"); sep.className = "gapsep"; L.appendChild(sep);
-  for(let i=0;i<eB;i++) slot(null);
-  for(let i=0;i<b;i++) slot("b");
-  const capR = document.createElement("i"); capR.className = "cap"; L.appendChild(capR);
+  const lego = !S.boulier;
+  $("#lego-main").hidden = !lego;
+  $("#deco-main").hidden = lego;
+  if(lego){
+    renderLego(n, a, b);
+  } else {
+    $("#pile-a").innerHTML = pileHTML(n - a);
+    $("#pile-b").innerHTML = pileHTML(n - b);
+    $("#bin-a").classList.toggle("empty", n - a <= 0);
+    $("#bin-b").classList.toggle("empty", n - b <= 0);
+    const L = $("#lane"); L.innerHTML = "";
+    const empty = n - tot, eA = Math.ceil(empty/2), eB = empty - eA;
+    const slot = (col) => {
+      const sl = document.createElement("button");
+      sl.className = "slot" + (col ? " full" : "");
+      if(col){
+        sl.style.setProperty("--m", col === "a" ? MA : MB);
+        sl.innerHTML = '<span class="bille"></span>';
+        sl.onclick = () => { if(col === "a") D.a--; else D.b--; tone(300, 0.12, "sine", 0.1); renderDeco(); };
+      } else sl.onclick = shake;
+      L.appendChild(sl);
+    };
+    const capL = document.createElement("i"); capL.className = "cap"; L.appendChild(capL);
+    for(let i=0;i<a;i++) slot("a");
+    for(let i=0;i<eA;i++) slot(null);
+    const sep = document.createElement("i"); sep.className = "gapsep"; L.appendChild(sep);
+    for(let i=0;i<eB;i++) slot(null);
+    for(let i=0;i<b;i++) slot("b");
+    const capR = document.createElement("i"); capR.className = "cap"; L.appendChild(capR);
+}
   $("#deco-hands").innerHTML = handCard(a, MA) + '<span class="opsign">+</span>' + handCard(b, MB)
     + '<span class="opsign">=</span><span class="tot' + (tot === n ? "" : " wait") + '">' + tot + '</span>';
   renderHouse();
@@ -1292,7 +1374,7 @@ function renderHouse(){
 
 function nope(msg, a){
   sfxMiss();
-  const L = $("#lane");
+  const L = S.boulier ? $("#lane") : $("#lego-row");
   if(L){ L.classList.remove("nope"); void L.offsetWidth; L.classList.add("nope"); }
   if(!msg) return;
   const sub = $("#sub");
@@ -1717,6 +1799,12 @@ function renderPanel(){
   $("#auto-level").checked = !!S.autoLevel;
   $("#mode-sel").value = S.mode || "compter";
   $("#opt-both").checked = !!S.decoBoth;
+  $("#opt-boulier").checked = !!S.boulier;
+  const te = $("#te-n");
+  if(te && !te.options.length){
+    for(let d = 2; d <= 9; d++){ const o = document.createElement("option"); o.value = d; o.textContent = "La maison du " + d; te.appendChild(o); }
+    te.value = "6";
+  }
   $("#opt-voice").checked = !!S.voice;
   $("#opt-sound").checked = !!S.sound;
   $("#opt-secret").checked = !!S.secret;
@@ -1766,6 +1854,88 @@ document.querySelectorAll("[data-preset]").forEach(b => {
     save(); renderPanel(); renderFrise();
   };
 });
+const PDF_MA = [217,43,43], PDF_MAd = [158,31,26], PDF_MB = [42,104,204], PDF_MBd = [29,74,150];
+function pdfBrick(doc, x, y, k, u, fill, stroke, label){
+  const sh = u * 0.5, bh = u * 0.95, w = k * u;
+  doc.setDrawColor(stroke[0], stroke[1], stroke[2]);
+  doc.setFillColor(fill[0], fill[1], fill[2]);
+  doc.setLineWidth(0.5);
+  for(let i = 0; i < k; i++) doc.roundedRect(x + i*u + u*0.24, y, u*0.52, sh + 1.5, 1, 1, "FD");
+  doc.roundedRect(x, y + sh, w, bh, 1.5, 1.5, "FD");
+  if(label !== undefined){
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(bh * 2.1);
+    doc.setTextColor(122, 79, 3);
+    doc.text(String(label), x + w/2, y + sh + bh * 0.72, {align:"center"});
+  }
+  return sh + bh;
+}
+function makeTracePDF(n){
+  const doc = new window.jspdf.jsPDF({unit:"mm", format:"a4"});
+  const u = Math.min(13, 170 / n), bH = u * 1.45 + 1.5;
+  /* page 1 : la maison a coller */
+  doc.setFont("helvetica", "bold"); doc.setFontSize(22); doc.setTextColor(22, 40, 79);
+  doc.text("La maison du " + n, 105, 18, {align:"center"});
+  doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(91, 110, 146);
+  doc.text("Prénom : ______________________", 15, 28);
+  doc.text("Date : ______________", 140, 28);
+  const hw = n * u + 26, left = 105 - hw / 2, yR = 38;
+  doc.setDrawColor(154, 171, 200); doc.setFillColor(230, 237, 249); doc.setLineWidth(0.8);
+  doc.triangle(left - 7, yR + 24, left + hw + 7, yR + 24, 105, yR, "FD");
+  doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.setTextColor(22, 40, 79);
+  doc.text(String(n), 105, yR + 20, {align:"center"});
+  const rows = 3, wallsH = 10 + bH + 8 + rows * (bH + 8) + 4;
+  doc.setFillColor(255, 255, 255);
+  doc.rect(left, yR + 24, hw, wallsH, "FD");
+  let y = yR + 24 + 10;
+  pdfBrick(doc, 105 - (n * u) / 2, y, n, u, [243, 184, 31], [176, 126, 12], n);
+  y += bH + 8;
+  for(let r = 0; r < rows; r++){
+    doc.setDrawColor(159, 185, 224); doc.setLineWidth(0.5); doc.setLineDashPattern([2, 1.6], 0);
+    doc.roundedRect(105 - (n * u) / 2, y, n * u, bH, 1.5, 1.5, "D");
+    for(let i = 1; i < n; i++) doc.line(105 - (n * u) / 2 + i * u, y + 2, 105 - (n * u) / 2 + i * u, y + bH - 2);
+    doc.setLineDashPattern([], 0);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(200, 211, 232);
+    doc.text("? + ?", 105, y + bH / 2 + 1.5, {align:"center"});
+    y += bH + 8;
+  }
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(91, 110, 146);
+  doc.text("Je colle dans chaque cadre deux briques qui, ensemble, font " + n + ".", 105, y + 10, {align:"center"});
+  doc.setFontSize(8); doc.setTextColor(154, 171, 200);
+  doc.text("Combien ? — le rituel des nombres", 105, 290, {align:"center"});
+  /* page 2 : la planche a decouper */
+  doc.addPage();
+  doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(22, 40, 79);
+  doc.text("Je découpe mes briques", 105, 16, {align:"center"});
+  doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(91, 110, 146);
+  doc.text("Mêmes tailles que la maison : une brique rouge + une brique bleue par cadre.", 105, 23, {align:"center"});
+  let x = 15; y = 30;
+  const maxK = n;
+  for(let k = maxK; k >= 1; k--){
+    [[PDF_MA, PDF_MAd], [PDF_MB, PDF_MBd]].forEach(cc => {
+      const w = k * u + 6;
+      if(x + w > 198){ x = 15; y += bH + 8; }
+      if(y + bH > 282){ doc.addPage(); x = 15; y = 16; }
+      pdfBrick(doc, x + 3, y, k, u, cc[0], cc[1]);
+      x += w + 4;
+    });
+  }
+  return doc.output("blob");
+}
+$("#te-btn").onclick = async () => {
+  const n = +($("#te-n").value || 6);
+  try{
+    if(!window.jspdf || !window.jspdf.jsPDF){ toast("Le module PDF n'a pas pu se charger"); return; }
+    const blob = makeTracePDF(n);
+    const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+    if(!dl){ toast("Téléchargement indisponible ici"); return; }
+    await dl.save({filename:"maison-du-" + n + ".pdf", data:blob});
+    toast("Fiche enregistrée — à imprimer");
+  }catch(e){
+    if(e && e.code === "declined") return;
+    toast("Téléchargement impossible");
+  }
+};
 let armed = false, armTimer = null;
 $("#reset-medals").onclick = () => {
   const b = $("#reset-medals");
@@ -1833,8 +2003,45 @@ function makeBinDrag(binId, col){
 }
 makeBinDrag("bin-a", "a");
 makeBinDrag("bin-b", "b");
+function makeBrickDrag(binId, col){
+  const bin = $("#" + binId);
+  let ghost = null, pid = null, moved = false, sx = 0, sy = 0, kSel = 0;
+  const kill = () => { if(ghost){ ghost.remove(); ghost = null; } };
+  bin.addEventListener("pointerdown", e => {
+    if(phase !== "deco" || !D || S.boulier) return;
+    const w = e.target.closest(".bkw"); if(!w) return;
+    kSel = +w.dataset.k;
+    e.preventDefault();
+    try{ bin.setPointerCapture(e.pointerId); }catch(err){}
+    pid = e.pointerId; moved = false; sx = e.clientX; sy = e.clientY;
+    kill();
+    ghost = document.createElement("div");
+    ghost.className = "dragbrick";
+    ghost.innerHTML = brickSVG(kSel, col === "a" ? MA : MB);
+    ghost.style.left = e.clientX + "px"; ghost.style.top = e.clientY + "px";
+    document.body.appendChild(ghost);
+  });
+  bin.addEventListener("pointermove", e => {
+    if(!ghost || e.pointerId !== pid) return;
+    e.preventDefault();
+    if(Math.hypot(e.clientX - sx, e.clientY - sy) > 8) moved = true;
+    ghost.style.left = e.clientX + "px"; ghost.style.top = e.clientY + "px";
+  });
+  bin.addEventListener("pointerup", e => {
+    if(!ghost || e.pointerId !== pid) return;
+    const r = $("#lego-row").getBoundingClientRect(), pad = 60;
+    const over = e.clientX > r.left - pad && e.clientX < r.right + pad && e.clientY > r.top - pad && e.clientY < r.bottom + pad;
+    kill();
+    if(moved && over) placeBrick(col, kSel);
+    else if(!moved) shake();
+  });
+  bin.addEventListener("pointercancel", kill);
+}
+makeBrickDrag("lbin-a", "a");
+makeBrickDrag("lbin-b", "b");
 $("#mode-sel").onchange = e => { S.mode = e.target.value; save(); renderChips(); toast(e.target.value === "deco" ? "Décomposer seulement" : (e.target.value === "compter" ? "Compter et écrire" : "Tour complet")); };
 $("#opt-both").onchange = e => { S.decoBoth = e.target.checked; save(); if(phase === "deco") renderDeco(); };
+$("#opt-boulier").onchange = e => { S.boulier = e.target.checked; save(); if(phase === "deco") renderDeco(); };
 let armedH = false, armHT = null;
 $("#reset-houses").onclick = () => {
   const b = $("#reset-houses");
