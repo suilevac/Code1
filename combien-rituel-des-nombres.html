@@ -106,11 +106,11 @@ button{font:inherit; color:inherit; cursor:pointer; border:0; background:none}
 
 /* ---------- tableau : nom + clavier ---------- */
 .boardname{font-family:var(--font-display); font-weight:700; color:var(--c); font-size:clamp(24px,4.4vw,56px); line-height:1; text-align:center}
-.keypad{display:grid; grid-template-columns:repeat(5,1fr); gap:clamp(6px,1vw,12px); width:100%; max-width:760px}
+.keypad{display:grid; grid-template-columns:repeat(5,1fr); gap:clamp(6px,1vw,14px); width:100%; max-width:860px}
 .key{background:var(--card); border-radius:16px; box-shadow:var(--lift); padding:clamp(6px,1.2vh,12px) 0;
   display:grid; place-items:center; transition:transform .1s ease}
 .key:active{transform:scale(.94)}
-.key svg{width:clamp(28px,4.4vw,62px); height:auto}
+.key svg{width:clamp(30px,5vw,72px); height:auto}
 .key.no{font-weight:700; color:var(--ink-soft); font-size:clamp(11px,1.5vmin,15px); grid-column:span 1}
 .key.no b{display:block; font-size:clamp(18px,3vmin,28px); color:var(--rouge)}
 
@@ -393,10 +393,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
 
     <div id="view-board" hidden style="display:flex;flex-direction:column;align-items:center;gap:clamp(6px,1.4vh,16px);width:100%;flex:1;min-height:0;justify-content:center">
       <div class="boardname" id="boardname">Wendy</div>
-      <div class="boardgrid">
-        <div class="wframe"><span class="wtag">écris ici au stylet</span><canvas id="pad"></canvas><button class="wclear" id="pad-clear">effacer</button></div>
-        <div class="keypad" id="keypad"></div>
-      </div>
+      <div class="keypad" id="keypad"></div>
     </div>
 
     <div class="medal" id="view-medal" hidden></div>
@@ -519,7 +516,7 @@ select{border:2px solid var(--rule); border-radius:12px; padding:9px 11px; font:
     <p class="note">
       <b>Le tour.</b> La boîte s'ouvre, la collection apparaît → chacun compte dans sa tête et écrit le nombre sur son ardoise → on lève les ardoises → tu cliques sur l'élève qui a écrit juste le premier → il vient écrire le chiffre au tableau → tu cliques sur le chiffre qu'il a écrit. Juste : médaille. Faux : on recompte tous ensemble, personne ne perd rien, un autre peut essayer.<br><br>
       <b>Le secret du chiffre.</b> Le chiffre se retrace, puis il se couvre d'autant de points rouges que le nombre : 4 points pour le 4. On les compte à voix haute. Les points sont posés sur le tracé : ils servent aussi de repères pour écrire le chiffre.<br><br>
-      <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau, écrit le chiffre au stylet et le valide. On déroule le secret du chiffre (les objets deviennent des points, les points filent dans les coins), puis <b>chacun s'entraîne en trois temps, dans un ordre tiré au sort</b> affiché à l'écran — une grande annonce colorée dit à chaque fois qui passe : ① relier les points numérotés dans l'ordre au stylet — à chaque point touché on compte (1, 2, 3…) et le chiffre apparaît morceau par morceau ; ② repasser sur le chiffre dans le sens du tracé, en partant du rond qui clignote — l'écran n'avance que si le stylet suit vraiment le chemin ; ③ l'écrire tout seul, sans modèle — c'est toi qui donnes l'étoile. Ensuite vient la décomposition du même nombre, et c'est <b>celui qui avait trouvé le premier qui recommence</b>.<br><br>
+      <b>Le tour complet.</b> Tu cliques sur l'élève qui a levé son ardoise le premier : il vient au tableau et clique sur le chiffre qu'il a écrit sur son ardoise. On déroule le secret du chiffre (les objets deviennent des points, les points filent dans les coins), puis <b>chacun s'entraîne en trois temps, dans un ordre tiré au sort</b> affiché à l'écran — une grande annonce colorée dit à chaque fois qui passe : ① relier les points numérotés dans l'ordre au stylet — à chaque point touché on compte (1, 2, 3…) et le chiffre apparaît morceau par morceau ; ② repasser sur le chiffre dans le sens du tracé, en partant du rond qui clignote — l'écran n'avance que si le stylet suit vraiment le chemin ; ③ l'écrire tout seul, sans modèle — c'est toi qui donnes l'étoile. Ensuite vient la décomposition du même nombre, et c'est <b>celui qui avait trouvé le premier qui recommence</b>.<br><br>
       <b>La décomposition.</b> Chacun son tour : <b>faire glisser</b> une bille depuis une boîte jusqu'au boulier (un simple clic ne suffit pas). La maison du nombre reste affichée en haut à droite et s'allume à chaque nouvelle fenêtre trouvée. Le paquet vide est permis (7 = 7 + 0) mais une seule fois par nombre — réglable ci-dessus. Une main rouge et une main bleue lèvent leurs doigts au fur et à mesure, avec le chiffre de la même couleur écrit dessous — 3 doigts rouges et 6 doigts bleus, ça fait bien 9. Chaque élève doit trouver une décomposition <b>différente</b> de celles déjà posées ; sinon l'écran refuse. Quand elle est juste, on vérifie en comptant les doigts un par un, les deux cases s'affichent — <b>3</b> + <b>4</b> — puis la flèche vers le nombre de départ : → 7. Quand tout le monde en a trouvé une, on passe au nombre suivant.<br><br>
       <b>Au clavier.</b> <kbd>Espace</kbd> bouton principal · <kbd>1</kbd>…<kbd>9</kbd> le chiffre écrit au tableau · <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> l'élève qui va au tableau · <kbd>R</kbd> recompter · <kbd>Échap</kbd> fermer.<br><br>
       <b>Programmes.</b> Cycle 1 : dénombrer une collection jusqu'à 10, dire combien il y en a, utiliser le nombre pour exprimer une quantité, reconnaître de petites quantités organisées, écrire les chiffres. Cycle 2, CP : dénombrer, lire et écrire les nombres, associer les représentations (collection, constellation, doigts, chiffre), décomposer avec les deux paquets.
@@ -895,7 +892,7 @@ function fitBox(){
 try{ new ResizeObserver(fitBox).observe(document.getElementById("view-box")); }catch(e){}
 window.addEventListener("resize", fitBox);
 
-const padBoard = makePad("pad"), tracePad = makePad("tpad", (x, y) => traceHit(x, y));
+const tracePad = makePad("tpad", (x, y) => traceHit(x, y));
 const VIEWS = {box:"#view-box", picks:"#view-picks", board:"#view-board", medal:"#view-medal", reveal:"#view-reveal", deco:"#view-deco", trace:"#view-trace"};
 function show(list){
   Object.keys(VIEWS).forEach(k => { $(VIEWS[k]).hidden = list.indexOf(k) < 0; });
@@ -1039,11 +1036,9 @@ function goBoard(st){
   const c = COLORS[st.color] || COLORS.bleu;
   $("#view-board").style.setProperty("--c", c);
   $("#boardname").textContent = st.name;
-  say("Au tableau&nbsp;!", "Écris le chiffre en grand au stylet, puis touche ici le même chiffre pour vérifier.");
-  speak(st.name + ", au tableau ! Écris le chiffre.");
+  say("Au tableau&nbsp;!", "Montre ton ardoise, puis clique sur le chiffre que tu as écrit.");
+  speak(st.name + ", au tableau ! Clique sur le chiffre que tu as écrit sur ton ardoise.");
   renderKeypad();
-  padBoard.setColor(c); padBoard.clear();
-  requestAnimationFrame(() => padBoard.fit());
   buttons("", null, "← Un autre élève", () => askPhase());
 }
 function renderKeypad(){
@@ -1788,7 +1783,6 @@ function openPanel(o){
   $("#panel").hidden = !o; $("#scrim").hidden = !o;
   if(o) renderPanel();
 }
-$("#pad-clear").onclick = () => padBoard.clear();
 $("#tpad-clear").onclick = () => { if(phase === "trace" && T) setStage(T.stage); else tracePad.clear(); };
 $("#rsvg").onclick = () => { if(phase === "reveal" && rvStep < 2) nextStep(); };
 function makeBinDrag(binId, col){
