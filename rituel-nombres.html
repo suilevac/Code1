@@ -74,6 +74,17 @@ button{font:inherit}
 .reprise{margin:4px 0 0; display:flex; flex-wrap:wrap; align-items:center; gap:4px 6px; font-size:13px; color:var(--doux)}
 .reprise__t{font-weight:700; color:var(--encre)}
 .reprise__b{display:inline-block; padding:2px 9px; border-radius:999px; background:var(--accent-pale); color:var(--encre); font-weight:700}
+/* rouge : ce jour-la est deja fait ; vert : c'est celui qui reste a faire (Robin, 13/11/2026) */
+.reprise__b--fait{background:var(--rouge-pale); box-shadow:inset 0 0 0 2px var(--rouge)}
+.reprise__b--afaire{background:var(--vert-pale); box-shadow:inset 0 0 0 2px var(--vert)}
+.etat{font-family:var(--titre); font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  padding:2px 8px; border-radius:999px; line-height:1.5; white-space:nowrap}
+.etat--fait{background:var(--rouge-pale); color:var(--rouge); box-shadow:inset 0 0 0 2px var(--rouge)}
+.etat--afaire{background:var(--vert-pale); color:var(--vert); box-shadow:inset 0 0 0 2px var(--vert)}
+.compteur__corps[data-etat="fait"]{background:var(--rouge-pale); box-shadow:inset 0 0 0 2px var(--rouge)}
+.compteur__corps[data-etat="fait"] label{color:var(--rouge)}
+.compteur__corps[data-etat="afaire"]{background:var(--vert-pale); box-shadow:inset 0 0 0 2px var(--vert)}
+.compteur__corps[data-etat="afaire"] label{color:var(--vert)}
 .reprise__s{font-size:12px}
 
 .compteur{display:flex; align-items:center; gap:8px}
@@ -705,8 +716,11 @@ body.feuille-doc{margin:0; background:#fff; color:#171c21; font-family:var(--lec
 .fil-jour__b i{display:block; height:7px; border-radius:4px; flex:1 1 40%}
 .fil-jour__ch{font-size:11px; line-height:1.2; color:var(--doux)}
 .fil-jour[data-auj="1"]{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-pale)}
-.fil-jour[data-fait="1"]{background:var(--vert-pale); border-color:var(--vert)}
-.fil-jour[data-fait="1"]::after{content:'✓'; position:absolute; top:4px; right:7px; font-weight:700; color:var(--vert); font-size:16px}
+.fil-jour[data-fait="1"]{background:var(--rouge-pale); border-color:var(--rouge)}
+.fil-jour[data-fait="1"]::after{content:'✓'; position:absolute; top:4px; right:7px; font-weight:700; color:var(--rouge); font-size:16px}
+.fil-jour[data-prochain="1"]{background:var(--vert-pale); border-color:var(--vert); box-shadow:0 0 0 3px var(--vert-pale)}
+.fil-jour[data-prochain="1"]::after{content:'à faire'; position:absolute; top:4px; right:7px; font-family:var(--titre);
+  font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--vert)}
 .fil-jour[data-manque="1"]{background:repeating-linear-gradient(135deg,var(--papier) 0 8px,var(--fond-2) 8px 16px)}
 .fil-jour[data-off="1"]{opacity:.45; cursor:default}
 .fil-jour[aria-pressed="true"]{outline:3px solid var(--or); outline-offset:1px}
@@ -832,7 +846,14 @@ main{flex:1 0 auto; width:100%; padding:10px 20px 16px}
 .fil-role--manque{border-color:#8e9bab; color:#5b6b7a; background:#fff}
 .fil-jour{border:3px solid #c3ccd6}
 .fil-jour[data-auj="1"]{border-color:#17212b; box-shadow:0 0 0 3px #ffcc00}
-.fil-jour[data-fait="1"]{background:#d9f2e3; border-color:#1e8a4c}
+.fil-jour[data-fait="1"]{background:#fbe4e4; border-color:#b42318}
+.fil-jour[data-fait="1"]::after{color:#b42318}
+.fil-jour[data-prochain="1"]{background:#d9f2e3; border-color:#1e8a4c}
+.etat{font-family:var(--lecture); font-size:.8em; letter-spacing:0; text-transform:none; border-radius:999px}
+.etat--fait{background:#fbe4e4; color:#b42318; box-shadow:inset 0 0 0 2px #b42318}
+.etat--afaire{background:#d9f2e3; color:#136b3a; box-shadow:inset 0 0 0 2px #1e8a4c}
+.reprise__b--fait{background:#fbe4e4; box-shadow:inset 0 0 0 2px #b42318}
+.reprise__b--afaire{background:#d9f2e3; box-shadow:inset 0 0 0 2px #1e8a4c}
 .fil-sem__nom, .fil-jour__n, .fil-detail h4{font-family:var(--lecture)}
 .fil-detail{border:3px solid #c3ccd6; border-radius:16px}
 dialog{border:3px solid #c3ccd6; border-radius:20px; box-shadow:none}
@@ -1097,7 +1118,7 @@ dialog{border:3px solid #c3ccd6; border-radius:20px; box-shadow:none}
       <span><span class="fil-role fil-role--dec">Découverte</span></span>
       <span><span class="fil-role fil-role--ent">Entraînement</span></span>
       <span><span class="fil-role fil-role--rap">Rappel</span></span>
-      <span>✓ fait · rayé : pas noté fait</span>
+      <span><b class="etat etat--fait">déjà fait</b> <b class="etat etat--afaire">à faire</b> · rayé : passé, pas noté</span>
     </div>
     <div class="segm fil-periodes" id="fil-periodes"></div>
     <div id="fil-frise"></div>
@@ -4668,13 +4689,53 @@ function posAppliquer(x){
     ETAT.filVu=vu; FIL_VU=(vu && vu!==filAujourdhui())?vu:null; prepFil(false); }
   sauver(); rerendre();
 }
+/* ---------- rouge et vert : ce qui est fait, ce qui reste a faire ----------
+   Robin, 13/11/2026 : « les jours que j'ai fait doivent etre en rouge si je recule dans les jours
+   et de meme pour le fil du fichier ; en vert ca doit etre celui que je dois faire. »
+   Un seul code, partout : rouge = deja fait, vert = a faire. */
+function nbJourFait(n){
+  if(!Number.isFinite(n)) return false;
+  const h=((ETAT.histo||{}).nombres||{})[n];
+  if(h && h.total) return true;
+  return Object.keys(FIL_FAITS).some(d=>{ const e=FIL_FAITS[d]; return !!(e && e.jour_progression===n); });
+}
+function filDejaFait(iso){
+  if(!iso) return false;
+  if(FIL_FAITS[iso]) return true;
+  return Object.keys(FIL_FAITS).some(d=>{ const e=FIL_FAITS[d]; return !!(e && e.fil && e.fil.jour_du_plan===iso); });
+}
+/* le jour du fil qui reste a faire : le plus ancien jour de classe non note, sinon le prochain */
+function filJourAFaire(){
+  try{
+    const P=filPlan(), auj=filAujourdhui();
+    const js=P.jours.slice(Math.max(0,P.lance||0));
+    const du=js.filter(d=>d<=auj && filPasDuJour(d).length && !filDejaFait(d));
+    if(du.length) return du[0];
+    return js.find(d=>d>=auj && filPasDuJour(d).length) || null;
+  }catch(e){ return null; }
+}
+function etiqEtat(fait){ return el('span','etat etat--'+(fait?'fait':'afaire'), fait?'déjà fait':'à faire'); }
+/* le compteur du haut prend la couleur du jour affiche */
+function majEtatCompteur(){
+  const c=document.querySelector('.compteur__corps'); if(!c) return;
+  c.dataset.etat = nbJourFait(ETAT.rituel) ? 'fait' : 'afaire';
+  c.title = (nbJourFait(ETAT.rituel)
+    ? 'Jour '+ETAT.rituel+' : déjà fait (en rouge). '
+    : 'Jour '+ETAT.rituel+' : à faire (en vert). ')
+    + 'Le numéro du jour dans la progression : c’est lui qui décide des nombres du jour et de la difficulté des deux onglets.';
+}
 function majReprise(){
+  majEtatCompteur();
   const z=document.getElementById('reprise'); if(!z) return;
   const iso=(typeof filJourVu==='function') ? filJourVu() : '';
   z.textContent='';
   z.appendChild(el('span','reprise__t','Tu reprends ici :'));
-  z.appendChild(el('span','reprise__b','Lire et écrire · jour '+ETAT.rituel));
-  if(iso) z.appendChild(el('span','reprise__b','Fil du fichier · '+FIL_NOMS_JL[filJS(iso)]+' '+filJolieLongue(iso)+(FIL_VU?' (gardé)':'')));
+  const fn=nbJourFait(ETAT.rituel);
+  z.appendChild(el('span','reprise__b reprise__b--'+(fn?'fait':'afaire'),
+    'Lire et écrire · jour '+ETAT.rituel+' · '+(fn?'déjà fait':'à faire')));
+  if(iso){ const ff=filDejaFait(iso);
+    z.appendChild(el('span','reprise__b reprise__b--'+(ff?'fait':'afaire'),
+      'Fil du fichier · '+FIL_NOMS_JL[filJS(iso)]+' '+filJolieLongue(iso)+(FIL_VU?' (gardé)':'')+' · '+(ff?'déjà fait':'à faire'))); }
   z.appendChild(el('span','reprise__s', FIL_DB_ETAT==='ok' ? 'gardé sur tous tes écrans' : 'gardé sur cet écran'));
 }
 
@@ -4699,7 +4760,7 @@ function majFilTete(){
   h.appendChild(el('span','',lib+' · '+FIL_NOMS_JL[filJS(iso)]+' '+filJolieLongue(iso)));
   const nExo=(ETAT.items.fil||[]).length;
   if(nExo) h.appendChild(el('span','fil-duree-txt','environ '+filDuree()+' min · '+(ETAT.items.nombres||[]).length+' nombres, '+nExo+' exercices du fil'));
-  if(FIL_FAITS[iso]) h.appendChild(el('span','fil-role fil-role--ent','fait'));
+  if(nExo || j.neuf || j.retour) h.appendChild(etiqEtat(filDejaFait(iso)));
   g.appendChild(h);
   [j.neuf,j.retour].forEach(id=>{ if(!id) return; const x=filInfoPas(id); if(!x) return;
     const p=el('p','fil-pas');
@@ -4788,7 +4849,7 @@ function filEnvoyer(date){
   }).catch(()=>{});
   return FIL_ENVOI;
 }
-function filApresNote(){ filSauver(); filReplanifier(); majFait(); majFrise(); if(ETAT.onglet==='fil') majFilTete(); majSemaine(); }
+function filApresNote(){ filSauver(); filReplanifier(); majFait(); majFrise(); majReprise(); if(ETAT.onglet==='fil') majFilTete(); majSemaine(); }
 function filMarquerFait(){
   const e=filEntree(); e.envoye=false; FIL_FAITS[e.date]=e; FIL_ANNULER=null;
   filApresNote(); filEnvoyer(e.date);
@@ -4889,6 +4950,7 @@ function majFrise(){
     FIL_PERIODES.forEach(([a,b],k)=>{ if(b<P.jours[P.lance]) return; const bt=el('button','','P'+(k+1)+' · '+filJolie(a).replace(/^\S+ /,'')+' → '+filJolie(b).replace(/^\S+ /,'')); bt.type='button';
       bt.setAttribute('aria-pressed',String(k===FIL_PERIODE)); bt.addEventListener('click',()=>{ FIL_PERIODE=k; majFrise(); }); per.appendChild(bt); }); }
   const z=$('#fil-frise'); if(!z) return; z.textContent='';
+  const aFaire=filJourAFaire();
   const [a,b]=FIL_PERIODES[FIL_PERIODE==null?filPeriodeDe(auj):FIL_PERIODE];
   for(let l=filLundi(a); l<=b; l=filPlus(l,7)){
     const row=el('div','fil-sem'); row.appendChild(el('div','fil-sem__nom','sem. '+filJolie(l).replace(/^\S+ /,'')));
@@ -4903,10 +4965,12 @@ function majFrise(){
       const xn=j.neuf&&FIL_PAS[j.neuf];
       c.appendChild(el('span','fil-jour__ch', xn ? 'ch. '+xn.ch+(xn.role==='dec'?' · découverte':'') : (i<P.lance?'avant le fil':(j.retour?'reprise':''))));
       if(d===auj) c.dataset.auj='1';
-      if(FIL_FAITS[d]) c.dataset.fait='1';
+      const dejaFait=filDejaFait(d);
+      if(dejaFait) c.dataset.fait='1';
+      else if(d===aFaire) c.dataset.prochain='1';
       else if(d<auj && i>=P.lance && (j.neuf||j.retour)) c.dataset.manque='1';
       c.setAttribute('aria-pressed',String(d===FIL_DETAIL));
-      c.setAttribute('aria-label',FIL_NOMS_JL[js]+' '+filJolieLongue(d)+(FIL_FAITS[d]?', fait':''));
+      c.setAttribute('aria-label',FIL_NOMS_JL[js]+' '+filJolieLongue(d)+(dejaFait?', déjà fait':d===aFaire?', à faire':''));
       c.addEventListener('click',()=>{ FIL_DETAIL=d; FIL_ANNULER=null; majFrise(); });
       row.appendChild(c);
     });
